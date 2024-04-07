@@ -63,13 +63,7 @@ class _ShowFilesState extends State<ShowFiles> {
           IconButton(
             icon: Icon(Icons.check), // Add tick icon
             onPressed: () {
-
               Navigator.pop(context, _selectedFiles);
-
-              // Navigator.pushReplacement(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => XeroxHome(fileData: _selectedFiles)),
-              // );
             },
           ),
         ],
@@ -113,8 +107,10 @@ class _ShowFilesState extends State<ShowFiles> {
                               setState(() {
                                 if (isSelected) {
                                   _selectedFiles.remove(filename); // Remove file from selected files
+                                  utils.showToastMessage('$filename removed from your xerox list', context);
                                 } else {
                                   _selectedFiles[filename] = url; // Add file to selected files
+                                  utils.showToastMessage('$filename added in your xerox list', context);
                                 }
                               }); // Rebuild UI
                             },

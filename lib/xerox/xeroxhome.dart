@@ -377,7 +377,7 @@ class _XeroxHomeState extends State<XeroxHome> {
     }
 
     // Show progress loading bar
-    loadingDialog.showProgressLoading(0.0, 'Uploading files...');
+    loadingDialog.showProgressLoading(progress, 'Uploading files...');
 
     // List to store uploaded file URLs
     List<String> uploadedUrls = [];
@@ -388,14 +388,18 @@ class _XeroxHomeState extends State<XeroxHome> {
     for (String value in _uploadedFiles.values) {
       File file = File(value);
       print('Value: ${file.path}');
-
+      String? uploadedUrl = '';
       // Upload the file to Firebase Storage
-      String? uploadedUrl = await firebaseStorageHelper.uploadFile(file, 'XeroList/${utils.getTodayDate()}', '${getFileName(file)}',);
+      if(utils.isURL(value)){
+        uploadedUrl = value;
+      }else{
+        uploadedUrl = await firebaseStorageHelper.uploadFile(file, 'XeroList/${utils.getTodayDate().replaceAll('/', ',')}', '${getFileName(file)}',);
+      }
       print("Url: $uploadedUrl");
-      progress+=totalprogress;
       // Add the uploaded URL to the list
       if (uploadedUrl != null) {
         uploadedUrls.add(uploadedUrl);
+        progress+=totalprogress;
         loadingDialog.showProgressLoading(progress, 'Uploading Files...');
       }
     }
@@ -419,7 +423,7 @@ class _XeroxHomeState extends State<XeroxHome> {
     // Once all files are uploaded, update the Google Sheets
     userSheetsApi.updateCell(sheetData);
     loadingDialog.showProgressLoading(progress+0.05, 'Uploading Files...');
-    utils.deleteFolder('/data/user/0/com.example.findany_flutter/cache/uploadedFiles/');
+    utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/uploadedFiles/');
     EasyLoading.dismiss();
 
     // Hide progress loading bar after updating Google Sheets
@@ -458,12 +462,14 @@ class _XeroxHomeState extends State<XeroxHome> {
             _uploadedFiles[fileName] = filePath;
           });
         }
-        utils.deleteFolder('/data/user/0/com.example.findany_flutter/cache/file_picker/');
+        utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/file_picker/');
       }
     } catch (e) {
       print('Error uploading file: $e');
     }
   }
+
+
 
   Future<void> _openFile(String filePath) async {
     try {
