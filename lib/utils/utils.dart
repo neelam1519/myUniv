@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:path/path.dart' as path;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -54,13 +56,10 @@ class Utils{
 
   String getCurrentUserUID() {
     User? user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
-      // The user is logged in
       return user.uid;
     } else {
-      // No user is logged in
-      return ""; // Return an empty string or null to indicate no user is logged in
+      return "";
     }
   }
 
@@ -117,11 +116,7 @@ class Utils{
     }
 
     bool isValidMobileNumber(String mobileNumber) {
-      // Regular expression for a valid mobile number
-      // Assumes a 10-digit number without any formatting characters
       RegExp regExp = RegExp(r'^[0-9]{10}$');
-
-      // Check if the mobile number matches the regular expression
       return regExp.hasMatch(mobileNumber);
     }
 
@@ -132,24 +127,70 @@ class Utils{
     int month = now.month;
     int year = now.year;
 
-    // Formatting the date in desired format (dd/mm/yyyy)
     String formattedDate = '$day/${month.toString().padLeft(2, '0')}/$year';
 
     return formattedDate;
   }
 
   String getFileExtension(File file) {
-    // Get the file path from the File object
     String filePath = file.path;
-
-    // Extract the file extension using the extension method from the path package
     String extension = path.extension(filePath);
-
-    // Remove the dot (.) from the extension if present
     if (extension.isNotEmpty && extension.startsWith('.')) {
       extension = extension.substring(1);
     }
-
     return extension;
   }
+
+  Future<void> signOut() async{
+    await FirebaseAuth.instance.signOut();
+    await GoogleSignIn().disconnect(); // Disconnect Google Sign-In
+  }
+
+  String removeTextAfterFirstNumber(String input) {
+    List<String> characters = input.split('');
+
+    int indexOfNumber = characters.indexWhere((char) => RegExp(r'[0-9]').hasMatch(char));
+
+    if (indexOfNumber != -1) {
+      return input.substring(0, indexOfNumber).trim();
+    } else {
+      return input.trim();
+    }
+  }
+
+  String removeEmailDomain(String email) {
+    List<String> parts = email.split('@');
+
+    if (parts.length == 2) {
+      return parts[0];
+    } else {
+      return email;
+    }
+  }
+
+  Future<bool> checkInternetConnection() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+
+    bool isConnected = connectivityResult.contains(ConnectivityResult.mobile) ||
+        connectivityResult.contains(ConnectivityResult.wifi) ||
+        connectivityResult.contains(ConnectivityResult.ethernet);
+
+    print('Connected to: ${_getConnectionType(connectivityResult)}');
+
+    return isConnected;
+  }
+
+  String _getConnectionType(List<ConnectivityResult> connectivityResult) {
+    if (connectivityResult.contains(ConnectivityResult.mobile)) {
+      return 'Mobile data';
+    } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
+      return 'WiFi';
+    } else if (connectivityResult.contains(ConnectivityResult.ethernet)) {
+      return 'Ethernet';
+    } else {
+      return 'No network';
+    }
+  }
+
+
 }

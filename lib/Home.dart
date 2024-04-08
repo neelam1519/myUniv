@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Login/login.dart';
-import 'package:findany_flutter/main.dart';
-import 'package:findany_flutter/profile/profile.dart';
+import 'package:findany_flutter/groupchat/groupchathome.dart';
+import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
@@ -11,6 +13,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class Home extends StatefulWidget {
+
   @override
   _HomeState createState() => _HomeState();
 }
@@ -20,7 +23,7 @@ class _HomeState extends State<Home> {
   LoadingDialog loadingDialog = new LoadingDialog();
   SharedPreferences sharedPreferences = new SharedPreferences();
   FirebaseAuth auth = FirebaseAuth.instance;
-  User? currentUser; // Store the current user
+  User? currentUser;
 
   String? email='',name='',imageUrl='';
 
@@ -46,25 +49,23 @@ class _HomeState extends State<Home> {
               decoration: BoxDecoration(
                 color: Colors.blue,
               ),
-              currentAccountPicture: Align(
-                alignment: Alignment.centerRight,
-                child: CircleAvatar(
-                  radius: 80,
-                  backgroundImage: imageUrl != null && imageUrl!.isNotEmpty ? NetworkImage(imageUrl!) : null,
-                  backgroundColor: Colors.white, // Add a background color if needed
-                ),
+              currentAccountPicture: CircleAvatar(
+                radius: 80,
+                backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
+                    ? CachedNetworkImageProvider(imageUrl!) as ImageProvider<Object>?
+                    : AssetImage('assets/white paper.png'),
+                backgroundColor: Colors.white, // Add a background color if needed
               ),
-              otherAccountsPictures: [
-                // Add additional images if needed
-              ],
+              otherAccountsPictures: [],
             ),
+
             ListTile(
               leading: Icon(Icons.person),
               title: Text('Profile'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Profile()),
+                  MaterialPageRoute(builder: (context) => UserAccount()),
                 );
               },
             ),
@@ -82,6 +83,30 @@ class _HomeState extends State<Home> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GroupChatHome()),
+                );              },
+              child: Container(
+                padding: EdgeInsets.all(10),
+                child: Column(
+                  children: [
+                    Image.asset(
+                      'assets/images/groupchat.jpg',
+                      width: 100,
+                      height: 100,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Lets Talk',
+                      style: TextStyle(fontSize: 20),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -107,28 +132,7 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
-            GestureDetector(
-              onTap: () {
-                //utils.showToastMessage('Clicked', context);
-              },
-              child: Container(
-                padding: EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      color: Colors.white,
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      '',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+
           ],
         ),
       ),
@@ -137,10 +141,11 @@ class _HomeState extends State<Home> {
 
   Future<void> loadData() async {
     loadingDialog.showDefaultLoading("Getting Details...");
-    email = await utils.getCurrentUserEmail() ?? '';
+    email = await sharedPreferences.getSecurePrefsValue('Email')?? '';
     name = await sharedPreferences.getSecurePrefsValue("Name") ??  '';
     imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL')?? '';
 
+    print('$email  $name  $imageUrl');
     EasyLoading.dismiss().then((value){
       setState(() {});
     });
@@ -150,13 +155,13 @@ class _HomeState extends State<Home> {
     if (mounted) {
       loadingDialog.showDefaultLoading('Signing Out...');
       try {
-        await FirebaseAuth.instance.signOut();
-        await GoogleSignIn().disconnect(); // Disconnect Google Sign-In
 
+        await FirebaseAuth.instance.signOut();
+        await GoogleSignIn().disconnect();
+        utils.deleteFolder('/data/data/com.neelam.FindAny/shared_prefs');
+        utils.deleteFolder('/data/data/com.neelam.FindAny/cache/libCachedImageData');
         EasyLoading.dismiss();
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
-        // Navigate to the login screen without checking mounted
-
       } catch (error) {
         print("Error signing out: $error");
         EasyLoading.dismiss();

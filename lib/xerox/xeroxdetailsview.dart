@@ -77,7 +77,6 @@ class _XeroxDetailViewState extends State<XeroxDetailView> {
     );
   }
 
-
   String getFileNameFromUrl(String url) {
     Uri uri = Uri.parse(Uri.decodeFull(url));
     return uri.pathSegments.last;

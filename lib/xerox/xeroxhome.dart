@@ -47,7 +47,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   int pages=0,bindings =0;
   double progress=0,xeroxPrice=1.5, bindingPrice = 1, pagesCost =0, bindingsCost =0;
   String xeroxVenue='We will let you know where to collect else contact 8501070702';
-
+  String paymentNumber = '';
   int totalFileCount=0;
 
   @override
@@ -63,11 +63,19 @@ class _XeroxHomeState extends State<XeroxHome> {
     email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
 
     int? xeroxInt = await realTimeDatabase.getCurrentValue('Xerox/XeroxPrice');
+    print('1 $xeroxInt');
+    int? bindingInt = await realTimeDatabase.getCurrentValue('Xerox/BindingPrice');
+    print('2 $bindingInt');
     xeroxPrice = xeroxInt!.toDouble();
-    print(xeroxPrice);
+    bindingPrice = bindingInt!.toDouble();
+    print('Xerox Price: $xeroxPrice');
+    print('Binding Price$bindingPrice');
+
 
     xeroxVenue = await realTimeDatabase.getCurrentValue('Xerox/XeroxVenue');
     print("Venue: $xeroxVenue");
+
+    paymentNumber = await realTimeDatabase.getCurrentValue('Xerox/paymentNumber');
     setState(() {
 
     });
@@ -101,7 +109,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                 child: RichText(
                   text: TextSpan(
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       color: Colors.black, // Default text color
                     ),
                     children: <TextSpan>[
@@ -120,17 +128,16 @@ class _XeroxHomeState extends State<XeroxHome> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
-                ),
+                  border: Border(bottom: BorderSide(color: Colors.grey)),),
                 child: TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
                     labelText: 'Name*',
                     border: InputBorder.none,
+                    labelStyle: TextStyle(fontSize: 15),
                   ),
                 ),
               ),
-              SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: Colors.grey)),
@@ -140,6 +147,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                   decoration: InputDecoration(
                     labelText: 'Mobile Number*',
                     border: InputBorder.none,
+                    labelStyle: TextStyle(fontSize: 15),
                   ),
                   keyboardType: TextInputType.phone,
                   inputFormatters: <TextInputFormatter>[
@@ -147,7 +155,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                   ],
                 ),
               ),
-              SizedBox(height: 40),
+              SizedBox(height: 30),
               Container(
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: Colors.grey)),
@@ -155,7 +163,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                 child: Text(
                   email,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -219,6 +227,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                   decoration: InputDecoration(
                     labelText: 'Enter the numbers of files for binding (default is no binding)',
                     border: InputBorder.none,
+                    labelStyle: TextStyle(fontSize: 15),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -231,6 +240,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                   decoration: InputDecoration(
                     labelText: 'Enter the numbers of 2-side print files (default is 1-side print)',
                     border: InputBorder.none,
+                    labelStyle: TextStyle(fontSize: 15),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -244,6 +254,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                   decoration: InputDecoration(
                     labelText: 'Specify any additional specifications (Extra cost applies)',
                     border: InputBorder.none,
+                    labelStyle: TextStyle(fontSize: 15),
                   ),
                   keyboardType: TextInputType.multiline,
                   maxLines: null, // Allows multiple lines of text input
@@ -257,6 +268,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'no of pages',
+                        labelStyle: TextStyle(fontSize: 15),
                       ),
                       onChanged: (value) {
                         setState(() {
@@ -283,6 +295,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'no of bindings',
+                        labelStyle: TextStyle(fontSize: 15),
                       ),
                       onChanged: (value) {
                         setState(() {
@@ -312,9 +325,9 @@ class _XeroxHomeState extends State<XeroxHome> {
                   border: Border(bottom: BorderSide(color: Colors.grey)),
                 ),
                 child: Text(
-                  'paytm/gpay/phonepe:  1234567890',
+                  'paytm/gpay/phonepe: $paymentNumber',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -330,6 +343,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                         decoration: InputDecoration(
                           labelText: 'Transaction Id*',
                           border: InputBorder.none,
+                          labelStyle: TextStyle(fontSize: 15),
                         ),
                       ),
                     ),
@@ -468,8 +482,6 @@ class _XeroxHomeState extends State<XeroxHome> {
       print('Error uploading file: $e');
     }
   }
-
-
 
   Future<void> _openFile(String filePath) async {
     try {

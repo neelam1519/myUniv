@@ -65,7 +65,7 @@ class DefaultFirebaseOptions {
     projectId: 'findany-84c36',
     databaseURL: 'https://findany-84c36-default-rtdb.firebaseio.com',
     storageBucket: 'findany-84c36.appspot.com',
-    androidClientId: '87807759596-in2t1puib00ri4ucu6m6k5f57levmv77.apps.googleusercontent.com',
+    androidClientId: '87807759596-0pmrvm443ho3dfbuiau7ghm2pk0m1c5q.apps.googleusercontent.com',
     iosClientId: '87807759596-95vs04smcs1tqjka3qipd6c14mmiu0ia.apps.googleusercontent.com',
     iosBundleId: 'com.example.findanyFlutter',
   );

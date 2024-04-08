@@ -12,9 +12,6 @@ import 'package:path_provider/path_provider.dart';
 
 class ShowFiles extends StatefulWidget {
 
-  // final Map<String, String> fileData;
-  // ShowFiles({required this.fileData});
-
   @override
   _ShowFilesState createState() => _ShowFilesState();
 }
@@ -79,6 +76,14 @@ class _ShowFilesState extends State<ShowFiles> {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else {
               Map<String, String> fileUrls = snapshot.data!;
+              if (fileUrls.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No files found',
+                    style: TextStyle(fontSize: 16.0),
+                  ),
+                );
+              }
               return ListView.builder(
                 itemCount: fileUrls.length,
                 itemBuilder: (context, index) {
@@ -154,8 +159,7 @@ class _ShowFilesState extends State<ShowFiles> {
 
   Future<Map<String, String>> fetchFiles() async {
     try {
-
-      final ListResult result = await FirebaseStorage.instance.ref().child('LabRecords/$_selectedValue').listAll();
+      final ListResult result = await FirebaseStorage.instance.ref().child('ShowFiles/$_selectedValue').listAll();
       Map<String, String> fileUrls = {};
       for (final ref in result.items) {
         String url = await ref.getDownloadURL();
