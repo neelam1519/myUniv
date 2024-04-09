@@ -172,7 +172,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   ElevatedButton(
-                    onPressed: _uploadFile,
+                    onPressed: pickFile,
                     child: Text('Upload File'),
                   ),
                   ElevatedButton(
@@ -450,7 +450,7 @@ class _XeroxHomeState extends State<XeroxHome> {
     return path.basename(file.path);
   }
 
-  Future<void> _uploadFile() async {
+  Future<void> pickFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
@@ -490,6 +490,7 @@ class _XeroxHomeState extends State<XeroxHome> {
       print('Error opening file: $error');
     }
   }
+
   @override
   void dispose() {
     // Dispose the controllers when the widget is disposed

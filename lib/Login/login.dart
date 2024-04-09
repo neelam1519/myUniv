@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Home.dart';
-import 'package:findany_flutter/main.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
@@ -72,16 +71,49 @@ class _LoginState extends State<Login> {
 
         if (user != null && mounted) { // Check if the widget is still mounted
           if (user.email != null && user.email!.endsWith('@klu.ac.in')) {
-            DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
+            DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
+
             Map<String,String> data= await storeRequiredData();
-            await sharedPreferences.storeMapValuesInSecureStorage(data).then((value) {
-              fireStoreService.uploadMapDataToFirestore(data, userRef).then((value) {
-                EasyLoading.dismiss().then((value) {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+            documentReference.get().then((DocumentSnapshot documentSnapshot) async {
+              if (documentSnapshot.exists) {
+                print('Document exists');
+                Map<String, dynamic>? retrievedData = await fireStoreService.getDocumentDetails(documentReference);
+                print("Retrived Data: $retrievedData");
+                // Check if the retrieved data contains the ProfileImageURL field
+                if (retrievedData != null && retrievedData.containsKey('ProfileImageURL')) {
+                  String profileImageURL = retrievedData['ProfileImageURL'];
+                  print('Image Link: $profileImageURL');
+
+                  // Check if the profile image URL is a Firebase storage link or a current email profile link
+                  if (profileImageURL.startsWith('https://firebasestorage.googleapis.com')) {
+                    // Update the data with the new profile image URL
+                    data['ProfileImageURL'] = retrievedData['ProfileImageURL'];
+                    print('Profile image URL updated');
+                  } else {
+                    // Profile image URL is a current email profile link, don't change it
+                    print('Profile image URL is a current email profile link, not updating');
+                  }
+                } else {
+                  print('ProfileImageURL field not found in retrieved data');
+                }
+              } else {
+                print('Document does not exist');
+              }
+            }).catchError((error) {
+              print('Error: $error');
+            }).then((value) async {
+              DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
+              print('SharedPreferences Values: ${data.toString()}');
+              await sharedPreferences.storeMapValuesInSecureStorage(data).then((value) {
+                fireStoreService.uploadMapDataToFirestore(data, userRef).then((value) {
+                  EasyLoading.dismiss().then((value) {
+                    if(mounted){
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+                    }
+                  });
                 });
               });
             });
-
           } else {
             // Sign out the user if the email domain is not "@klu.ac.in"
             await FirebaseAuth.instance.signOut();
@@ -128,6 +160,10 @@ class _LoginState extends State<Login> {
     }
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
 }
 

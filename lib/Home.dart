@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Login/login.dart';
-import 'package:findany_flutter/groupchat/groupchathome.dart';
+import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
@@ -13,7 +12,6 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class Home extends StatefulWidget {
-
   @override
   _HomeState createState() => _HomeState();
 }
@@ -38,43 +36,50 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text('Home')),
+          title: Text('Home')
+      ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: <Widget>[
             UserAccountsDrawerHeader(
-              accountName: Text(name!),
+              accountName: Text(name ?? ''), // Add a fallback value if name is null
               accountEmail: null,
               decoration: BoxDecoration(
                 color: Colors.blue,
               ),
               currentAccountPicture: CircleAvatar(
-                radius: 80,
+                radius: 100,
                 backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
                     ? CachedNetworkImageProvider(imageUrl!) as ImageProvider<Object>?
-                    : AssetImage('assets/white paper.png'),
-                backgroundColor: Colors.white, // Add a background color if needed
+                    : AssetImage('assets/images/defaultimage.png'),
+                backgroundColor: Colors.white,
               ),
+
               otherAccountsPictures: [],
             ),
-
-            ListTile(
-              leading: Icon(Icons.person),
-              title: Text('Profile'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => UserAccount()),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.exit_to_app),
-              title: Text('Sign Out'),
-              onTap: () {
-                signOut();
-              },
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: <Widget>[
+                  ListTile(
+                    leading: Icon(Icons.person),
+                    title: Text('Profile'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => UserAccount()),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.exit_to_app),
+                    title: Text('Sign Out'),
+                    onTap: () {
+                      signOut();
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -87,8 +92,9 @@ class _HomeState extends State<Home> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GroupChatHome()),
-                );              },
+                  MaterialPageRoute(builder: (context) => UniversityChat()),
+                );
+              },
               child: Container(
                 padding: EdgeInsets.all(10),
                 child: Column(
@@ -132,7 +138,6 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
-
           ],
         ),
       ),
@@ -145,9 +150,11 @@ class _HomeState extends State<Home> {
     name = await sharedPreferences.getSecurePrefsValue("Name") ??  '';
     imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL')?? '';
 
-    print('$email  $name  $imageUrl');
-    EasyLoading.dismiss().then((value){
-      setState(() {});
+    print('Loaded data: $email  $name  $imageUrl');
+    EasyLoading.dismiss().then((value) {
+      setState(() {
+
+      });
     });
   }
 
@@ -166,9 +173,13 @@ class _HomeState extends State<Home> {
         print("Error signing out: $error");
         EasyLoading.dismiss();
       }
-    }else{
+    } else {
       print('Unmounted singOut');
     }
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
 }

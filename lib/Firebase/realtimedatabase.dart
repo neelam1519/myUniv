@@ -1,7 +1,25 @@
+import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 class RealTimeDatabase {
   final DatabaseReference _databaseReference = FirebaseDatabase.instance.reference();
+
+  Future<void> updateTypingStatus(ChatUser chatUser,String userId) async {
+    try {
+      await _databaseReference.child('/UniversityChat/$userId/$chatUser');
+    } catch (e) {
+      print('Error updating typing status: $e');
+    }
+  }
+
+  Future<void> removeTypingStatus(ChatUser chatUser, String userId) async {
+    try {
+      await _databaseReference.child('UniversityChat').child(userId).child(chatUser.id).remove();
+    } catch (e) {
+      print('Error removing typing status: $e');
+    }
+  }
+
 
   Future<int?> incrementValue(String location) async {
     try {

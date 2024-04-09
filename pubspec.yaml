@@ -35,11 +35,14 @@ dependencies:
   firebase_analytics: ^10.10.0
   cached_network_image: ^3.3.1
   connectivity_plus: ^6.0.1
+  image_cropper: ^5.0.1
+  dash_chat_2: ^0.0.20
+
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^3.0.0
 
 flutter:
@@ -47,6 +50,6 @@ flutter:
   assets:
     - assets/images/google-signin-button.png
     - assets/images/xerox.png
-    - assets/images/white paper.png
+    - assets/images/defaultimage.png
     - assets/images/groupchat.jpg
 
