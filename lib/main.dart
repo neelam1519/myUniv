@@ -15,10 +15,7 @@ void main() async {
   );
   // Initialize EasyLoading
   runApp(MyApp());
-
-
-    AuthWrapper().checkForUpdate();
-
+  AuthWrapper().checkForUpdate();
 }
 
 
@@ -39,13 +36,13 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return FutureBuilder<User?>(
+      future: FirebaseAuth.instance.authStateChanges().first,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return CircularProgressIndicator();
         } else {
-          if (snapshot.hasData) {
+          if (snapshot.data != null) {
             return Home();
           } else {
             return Login();
@@ -56,7 +53,7 @@ class AuthWrapper extends StatelessWidget {
   }
 
   Future<void> checkForUpdate() async {
-    if(await utils.checkInternetConnection()) {
+    if (await utils.checkInternetConnection()) {
       try {
         final info = await InAppUpdate.checkForUpdate();
         if (info.updateAvailability == UpdateAvailability.updateAvailable) {
@@ -72,9 +69,8 @@ class AuthWrapper extends StatelessWidget {
       } catch (e) {
         print('Error checking for update: $e');
       }
-    }else{
+    } else {
       print('No internet connection no update checked');
     }
   }
-
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Home.dart';
+import 'package:findany_flutter/main.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
@@ -69,61 +70,26 @@ class _LoginState extends State<Login> {
         await FirebaseAuth.instance.signInWithCredential(credential);
         final User? user = authResult.user;
 
-        if (user != null && mounted) { // Check if the widget is still mounted
+        if (user != null && mounted) {
           if (user.email != null && user.email!.endsWith('@klu.ac.in')) {
-            DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
 
-            Map<String,String> data= await storeRequiredData();
-            documentReference.get().then((DocumentSnapshot documentSnapshot) async {
-              if (documentSnapshot.exists) {
-                print('Document exists');
-                Map<String, dynamic>? retrievedData = await fireStoreService.getDocumentDetails(documentReference);
-                print("Retrived Data: $retrievedData");
-                // Check if the retrieved data contains the ProfileImageURL field
-                if (retrievedData != null && retrievedData.containsKey('ProfileImageURL')) {
-                  String profileImageURL = retrievedData['ProfileImageURL'];
-                  print('Image Link: $profileImageURL');
-
-                  // Check if the profile image URL is a Firebase storage link or a current email profile link
-                  if (profileImageURL.startsWith('https://firebasestorage.googleapis.com')) {
-                    // Update the data with the new profile image URL
-                    data['ProfileImageURL'] = retrievedData['ProfileImageURL'];
-                    print('Profile image URL updated');
-                  } else {
-                    // Profile image URL is a current email profile link, don't change it
-                    print('Profile image URL is a current email profile link, not updating');
-                  }
-                } else {
-                  print('ProfileImageURL field not found in retrieved data');
-                }
-              } else {
-                print('Document does not exist');
+            Map<String, String>? data = await storeRequiredData().then((value) {
+              print('Login Value: $value');
+              if(value!=null){
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+              }else{
+                utils.showToastMessage('Error occurred unable to login', context);
               }
-            }).catchError((error) {
-              print('Error: $error');
-            }).then((value) async {
-              DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
-              print('SharedPreferences Values: ${data.toString()}');
-              await sharedPreferences.storeMapValuesInSecureStorage(data).then((value) {
-                fireStoreService.uploadMapDataToFirestore(data, userRef).then((value) {
-                  EasyLoading.dismiss().then((value) {
-                    if(mounted){
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-                    }
-                  });
-                });
-              });
             });
+
           } else {
-            // Sign out the user if the email domain is not "@klu.ac.in"
             await FirebaseAuth.instance.signOut();
-            await _googleSignIn.disconnect(); // Disconnect the user
+            await _googleSignIn.disconnect();
             EasyLoading.showError('Please sign in with a valid KLU email.');
           }
         }
         print("LOGIN UID: ${utils.getCurrentUserUID()}");
       } else {
-        // User canceled the sign-in
         print('Google Sign in canceled.');
         EasyLoading.dismiss();
       }
@@ -133,18 +99,63 @@ class _LoginState extends State<Login> {
     }
   }
 
-  Future<Map<String,String>> storeRequiredData() async {
+
+  Future<Map<String, String>?> storeRequiredData() async {
     String email = await utils.getCurrentUserEmail() ?? '';
     String displayName = await utils.getCurrentUserDisplayName() ?? '';
-    String name =  utils.removeTextAfterFirstNumber(displayName);
+    String name = utils.removeTextAfterFirstNumber(displayName);
     String imageUrl = await getCurrentUserProfileImage() ?? '';
     String regNo = utils.removeEmailDomain(email);
 
-    Map<String, String> data = {'Email': email, 'Name': name, 'ProfileImageURL': imageUrl,'Registration Number':regNo};
+    Map<String, String> data = {
+      'Email': email,
+      'Name': name,
+      'ProfileImageURL': imageUrl,
+      'Registration Number': regNo
+    };
     print('Login Details: $data');
 
-    return data;
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
+
+    try {
+      DocumentSnapshot documentSnapshot = await documentReference.get();
+      if (documentSnapshot.exists) {
+        print('Document exists');
+        Map<String, dynamic>? retrievedData = await fireStoreService.getDocumentDetails(documentReference);
+        print("Retrieved Data: $retrievedData");
+        if (retrievedData != null && retrievedData.containsKey('ProfileImageURL')) {
+          String profileImageURL = retrievedData['ProfileImageURL'];
+          print('Image Link: $profileImageURL');
+          if (profileImageURL.startsWith('https://firebasestorage.googleapis.com')) {
+            data['ProfileImageURL'] = retrievedData['ProfileImageURL'];
+            print('Profile image URL updated');
+          } else {
+            print('Profile image URL is a current email profile link, not updating');
+          }
+        } else {
+          print('ProfileImageURL field not found in retrieved data');
+        }
+      } else {
+        print('Document does not exist');
+      }
+    } catch (error) {
+      print('Error: $error');
+    }
+
+    DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
+    try {
+      await sharedPreferences.storeMapValuesInSecureStorage(data);
+      await fireStoreService.uploadMapDataToFirestore(data, userRef);
+      EasyLoading.dismiss();
+      if (mounted) {
+        return data;
+      }
+    } catch (error) {
+      print('Error storing data: $error');
+    }
+    return null;
   }
+
 
   Future<String?> getCurrentUserProfileImage() async {
     try {

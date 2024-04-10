@@ -132,6 +132,21 @@ class Utils{
     return formattedDate;
   }
 
+  Future<void> deleteFile(String filePath) async {
+    try {
+      // Check if the file exists
+      if (await File(filePath).exists()) {
+        // Delete the file
+        await File(filePath).delete();
+        print('File deleted successfully: $filePath');
+      } else {
+        print('File not found: $filePath');
+      }
+    } catch (e) {
+      print('Error deleting file: $e');
+    }
+  }
+
   String getFileExtension(File file) {
     String filePath = file.path;
     String extension = path.extension(filePath);

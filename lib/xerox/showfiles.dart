@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
@@ -21,6 +20,8 @@ class _ShowFilesState extends State<ShowFiles> {
   LoadingDialog loadingDialog = new LoadingDialog();
   String _selectedValue = '1'; // Default selected value
   Map<String, String> _selectedFiles = {}; // List to store selected file names
+  Icon addIcon = Icon(Icons.add);
+  Icon minusIcon = Icon(Icons.remove);
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +90,8 @@ class _ShowFilesState extends State<ShowFiles> {
                 itemBuilder: (context, index) {
                   String filename = fileUrls.keys.elementAt(index);
                   String url = fileUrls.values.elementAt(index);
-                  bool isSelected = _selectedFiles.containsKey(filename); // Check if file is selected
+                  bool isSelected = _selectedFiles.containsKey(filename);
+
                   return Container(
                     margin: EdgeInsets.symmetric(vertical: 5.0),
                     decoration: BoxDecoration(
@@ -117,7 +119,7 @@ class _ShowFilesState extends State<ShowFiles> {
                                   _selectedFiles[filename] = url; // Add file to selected files
                                   utils.showToastMessage('$filename added in your xerox list', context);
                                 }
-                              }); // Rebuild UI
+                              });
                             },
                           ),
                         ),
@@ -131,6 +133,21 @@ class _ShowFilesState extends State<ShowFiles> {
         ),
       ),
     );
+  }
+
+  Future<Map<String, String>> fetchFiles() async {
+    try {
+      final ListResult result = await FirebaseStorage.instance.ref().child('ShowFiles/$_selectedValue').listAll();
+      Map<String, String> fileUrls = {};
+      for (final ref in result.items) {
+        String url = await ref.getDownloadURL();
+        fileUrls[ref.name] = url;
+      }
+      print('File List: $fileUrls');
+      return fileUrls;
+    } catch (e) {
+      throw e.toString();
+    }
   }
 
   Future<void> _downloadAndOpenFile(String url, String filename) async {
@@ -154,21 +171,6 @@ class _ShowFilesState extends State<ShowFiles> {
     } catch (e) {
       EasyLoading.dismiss(); // Dismiss progress indicator in case of error
       print('Error downloading or opening file: $e');
-    }
-  }
-
-  Future<Map<String, String>> fetchFiles() async {
-    try {
-      final ListResult result = await FirebaseStorage.instance.ref().child('ShowFiles/$_selectedValue').listAll();
-      Map<String, String> fileUrls = {};
-      for (final ref in result.items) {
-        String url = await ref.getDownloadURL();
-        fileUrls[ref.name] = url;
-      }
-      print('File List: $fileUrls');
-      return fileUrls;
-    } catch (e) {
-      throw e.toString();
     }
   }
 

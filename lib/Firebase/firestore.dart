@@ -28,6 +28,17 @@ class FireStoreService {
     }
   }
 
+  Future<void> deleteDocument(DocumentReference documentReference) async {
+    try {
+      // Delete the document
+      await documentReference.delete();
+      print('Document deleted successfully');
+    } catch (e) {
+      print('Error deleting document: $e');
+      // Handle any errors that occur during the deletion process
+    }
+  }
+
   Future<List<String>> getDocumentNames(CollectionReference collectionReference) async {
     try {
       // Query the Firestore collection

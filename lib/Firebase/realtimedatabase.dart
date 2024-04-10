@@ -4,22 +4,64 @@ import 'package:firebase_database/firebase_database.dart';
 class RealTimeDatabase {
   final DatabaseReference _databaseReference = FirebaseDatabase.instance.reference();
 
-  Future<void> updateTypingStatus(ChatUser chatUser,String userId) async {
+  Future<void> updateTypingStatus(ChatUser chatUser, String userId) async {
     try {
-      await _databaseReference.child('/UniversityChat/$userId/$chatUser');
+      String path = 'UniversityChat/$userId/';
+
+      await _databaseReference.child(path).set(chatUser.toJson());
+
     } catch (e) {
       print('Error updating typing status: $e');
     }
   }
 
-  Future<void> removeTypingStatus(ChatUser chatUser, String userId) async {
+  Future<List<ChatUser>> getAllChatUserIds() async {
     try {
-      await _databaseReference.child('UniversityChat').child(userId).child(chatUser.id).remove();
+      String path = 'UniversityChat';
+      List<ChatUser> chatUsersList = []; // Store the user IDs
+
+      DatabaseReference ref = FirebaseDatabase.instance.ref(path);
+      DatabaseEvent event = await ref.once();
+      DataSnapshot dataSnapshot = event.snapshot;
+
+      if (dataSnapshot.exists) {
+        Map<dynamic, dynamic> data = dataSnapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          print('User ID: $key');
+          print('First Name: ${value['firstName']}');
+          print('Profile Image URL: ${value['profileImage']}');
+          print('---');
+
+          chatUsersList.add(
+            ChatUser(
+              id: value['id'],
+              firstName: value['firstName'],
+            ),
+          );
+        });
+      } else {
+        print('DataSnapShot Does not exist');
+      }
+
+      print('Chatting Users List: $chatUsersList');
+      return chatUsersList;
+    } catch (e) {
+      print('Error fetching all chat user IDs: $e');
+      rethrow;
+    }
+  }
+
+
+
+
+  Future<void> removeTypingStatus(String userId) async {
+    try {
+      String path = 'UniversityChat/$userId/';
+      await _databaseReference.child(path).remove();
     } catch (e) {
       print('Error removing typing status: $e');
     }
   }
-
 
   Future<int?> incrementValue(String location) async {
     try {

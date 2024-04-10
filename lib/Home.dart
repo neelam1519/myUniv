@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
+import 'package:findany_flutter/main.dart';
 import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
@@ -21,16 +22,15 @@ class _HomeState extends State<Home> {
   LoadingDialog loadingDialog = new LoadingDialog();
   SharedPreferences sharedPreferences = new SharedPreferences();
   FirebaseAuth auth = FirebaseAuth.instance;
-  User? currentUser;
 
   String? email='',name='',imageUrl='';
 
   @override
   void initState() {
     super.initState();
-    currentUser = auth.currentUser;
     loadData();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -39,28 +39,32 @@ class _HomeState extends State<Home> {
           title: Text('Home')
       ),
       drawer: Drawer(
-        child: Column(
-          children: <Widget>[
-            UserAccountsDrawerHeader(
-              accountName: Text(name ?? ''), // Add a fallback value if name is null
-              accountEmail: null,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-              currentAccountPicture: CircleAvatar(
-                radius: 100,
-                backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
-                    ? CachedNetworkImageProvider(imageUrl!) as ImageProvider<Object>?
-                    : AssetImage('assets/images/defaultimage.png'),
-                backgroundColor: Colors.white,
-              ),
-
-              otherAccountsPictures: [],
-            ),
-            Expanded(
-              child: ListView(
+        child: FutureBuilder<void>(
+          future: loadData(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else {
+              print('ON drawer opened $imageUrl');
+              return ListView(
                 padding: EdgeInsets.zero,
                 children: <Widget>[
+                  UserAccountsDrawerHeader(
+                    accountName: Text(name!),
+                    accountEmail: null,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                    ),
+                    currentAccountPicture: CircleAvatar(
+                      radius: 100,
+                      backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
+                          ? CachedNetworkImageProvider(imageUrl!) as ImageProvider<Object>?
+                          : AssetImage('assets/images/defaultimage.png'),
+                      backgroundColor: Colors.white, // Add a background color if needed
+                    ),
+                    otherAccountsPictures: [],
+                  ),
+
                   ListTile(
                     leading: Icon(Icons.person),
                     title: Text('Profile'),
@@ -74,14 +78,18 @@ class _HomeState extends State<Home> {
                   ListTile(
                     leading: Icon(Icons.exit_to_app),
                     title: Text('Sign Out'),
-                    onTap: () {
-                      signOut();
+                    onTap: () async {
+                      if(await utils.checkInternetConnection()){
+                        signOut();
+                      }else{
+                        utils.showToastMessage('Check your internet connections', context);
+                      }
                     },
                   ),
                 ],
-              ),
-            ),
-          ],
+              );
+            }
+          },
         ),
       ),
       body: Center(
@@ -150,12 +158,8 @@ class _HomeState extends State<Home> {
     name = await sharedPreferences.getSecurePrefsValue("Name") ??  '';
     imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL')?? '';
 
-    print('Loaded data: $email  $name  $imageUrl');
-    EasyLoading.dismiss().then((value) {
-      setState(() {
-
-      });
-    });
+    print('Home Page Loaded data: $email  $name  $imageUrl');
+    EasyLoading.dismiss();
   }
 
   Future<void> signOut() async {
@@ -165,7 +169,7 @@ class _HomeState extends State<Home> {
 
         await FirebaseAuth.instance.signOut();
         await GoogleSignIn().disconnect();
-        utils.deleteFolder('/data/data/com.neelam.FindAny/shared_prefs');
+        utils.deleteFile('/data/data/com.neelam.FindAny/shared_prefs/FlutterSecureStorage.xml');
         utils.deleteFolder('/data/data/com.neelam.FindAny/cache/libCachedImageData');
         EasyLoading.dismiss();
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));

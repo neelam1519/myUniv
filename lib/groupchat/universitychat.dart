@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dash_chat_2/dash_chat_2.dart';
@@ -21,7 +22,9 @@ class _UniversityChatState extends State<UniversityChat> {
   TextEditingController textEditingController = TextEditingController();
   late final InputDecoration? inputDecoration;
   late final bool alwaysShowSend;
-  final _textController = TextEditingController();
+
+  Timer? _typingTimer;
+
 
   late ChatUser user;
   late List<ChatUser>? typingUsers = [];
@@ -30,6 +33,7 @@ class _UniversityChatState extends State<UniversityChat> {
   @override
   void initState() {
     super.initState();
+
     getDetails().then((_) {
       setState(() {
         user = ChatUser(
@@ -41,13 +45,14 @@ class _UniversityChatState extends State<UniversityChat> {
     });
   }
 
-
   Future<void> getDetails() async {
     name = (await sharedPreferences.getSecurePrefsValue('Name'))!;
     email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
     regNo = (await sharedPreferences.getSecurePrefsValue('Registration Number'))!;
     profileUrl = (await sharedPreferences.getSecurePrefsValue('ProfileImageURL'))!; // Retrieve profile URL
     print('$name  $email  $regNo  $profileUrl');
+
+    //typingUsers!.add(user);
   }
 
   Future<String> uploadImageToFirestore(File imageFile) async {
@@ -64,7 +69,6 @@ class _UniversityChatState extends State<UniversityChat> {
 
   @override
   Widget build(BuildContext context) {
-    print('Typing Users: $typingUsers');
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -105,59 +109,91 @@ class _UniversityChatState extends State<UniversityChat> {
                   );
                 }).toList();
 
-                for (ChatMessage message in messages) {
-                  print(message.text); // Access the text property of each ChatMessage
-                }
-
-                return DashChat(
-                  currentUser: user,
-                  onSend: (ChatMessage m) async {
-
-                    Map<String, dynamic> messageData = {
-                      'Message': m.text,
-                      'regNo': m.user.id,
-                      'Name': m.user.firstName,
-                      'createdAt': Timestamp.fromDate(m.createdAt),
-                      'profileUrl': profileUrl,
-                    };
-                    DocumentReference documentReference = FirebaseFirestore.instance.doc('Chatting/${DateTime.now().millisecondsSinceEpoch}');
-                    fireStoreService.uploadMapDataToFirestore(messageData, documentReference);
-                  },
-                  inputOptions: InputOptions(
-                    inputDecoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20.0),
-                        ),
-                        hintText: 'Type your message...',
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.image),
-                          onPressed: () {
-                          },
-                        )),
-                    onTextChange: (String value){
-                      print('Value: $value');
-                      typingUsers!.add(user);
-                      realTimeDatabase.updateTypingStatus(user, user.id);
-                    }
-                  ),
-                  messages: messages,
-                  messageOptions: MessageOptions(
-                    messagePadding: EdgeInsets.all(10),
-                    showTime: true,
-                    messageTimeBuilder: (ChatMessage chatMessage, bool isOwnMessage) {
-                      return Padding(
-                        padding: EdgeInsets.only(left: 40.0),
-                        child: Text(
-                          '${chatMessage.createdAt.hour}:${chatMessage.createdAt.minute}',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 6.0,
-                          ),
-                        ),
+                return StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance.collection('TypingDetails').snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text('Error: ${snapshot.error}'),
                       );
-                    },
-                  ),
-                  typingUsers: typingUsers
+                    }
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    List<ChatUser> chatUsersList = [];
+
+                    snapshot.data!.docs.forEach((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                      ChatUser chatUser = ChatUser(id: data['id'], firstName: data['firstName']);
+                      if (chatUser.id != user.id) {
+                        chatUsersList.add(chatUser);
+                      }
+                    });
+
+                    typingUsers = chatUsersList;
+                    print('TypingUsers: $typingUsers');
+
+
+
+                    return DashChat(
+                      currentUser: user,
+                      onSend: (ChatMessage m) async {
+
+                        Map<String, dynamic> messageData = {
+                          'Message': m.text,
+                          'regNo': m.user.id,
+                          'Name': m.user.firstName,
+                          'createdAt': Timestamp.fromDate(m.createdAt),
+                          'profileUrl': profileUrl,
+                        };
+                        DocumentReference documentReference = FirebaseFirestore.instance.doc('Chatting/${DateTime.now().millisecondsSinceEpoch}');
+                        fireStoreService.uploadMapDataToFirestore(messageData, documentReference);
+                      },
+                      messages: messages,
+                      typingUsers: typingUsers,
+                      inputOptions: InputOptions(
+                        inputDecoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            hintText: 'Type your message...',
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.attach_file),
+                              onPressed: () {
+
+                              },
+                            ),
+                          ),
+                          onTextChange: (String value) async {
+                            DocumentReference documentReference = FirebaseFirestore.instance.doc('TypingDetails/${user.id}');
+
+                            _typingTimer?.cancel();
+                            _typingTimer = Timer(Duration(seconds: 1), () {
+                              print('User stopped typing');
+                              fireStoreService.deleteDocument(documentReference);
+                            });
+
+                            Map<String,String> data= {'id':user.id,'Name':user.firstName!};
+                            fireStoreService.uploadMapDataToFirestore(data, documentReference);
+                          }
+                      ),
+                      messageOptions: MessageOptions(
+                        messagePadding: EdgeInsets.all(10),
+                        showTime: true,
+                        messageTimeBuilder: (ChatMessage chatMessage, bool isOwnMessage) {
+                          return Padding(
+                            padding: EdgeInsets.only(left: 40.0),
+                            child: Text('${chatMessage.createdAt.hour}:${chatMessage.createdAt.minute}',
+                              style: TextStyle(color: Colors.grey, fontSize: 6.0,),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             );
