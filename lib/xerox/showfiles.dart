@@ -97,31 +97,28 @@ class _ShowFilesState extends State<ShowFiles> {
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey),
                     ),
-                    child: Stack(
+                    child: Row(
                       children: [
-                        ListTile(
-                          title: Text(filename),
-                          onTap: () {
-                            _downloadAndOpenFile(url, filename);
-                          },
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: IconButton(
-                            icon: isSelected ? Icon(Icons.remove) : Icon(Icons.add), // Change icon based on selection
-                            onPressed: () {
-                              setState(() {
-                                if (isSelected) {
-                                  _selectedFiles.remove(filename); // Remove file from selected files
-                                  utils.showToastMessage('$filename removed from your xerox list', context);
-                                } else {
-                                  _selectedFiles[filename] = url; // Add file to selected files
-                                  utils.showToastMessage('$filename added in your xerox list', context);
-                                }
-                              });
+                        Expanded(
+                          child: ListTile(
+                            title: Text(filename),
+
+                            onTap: () {
+                              _downloadAndOpenFile(url, filename);
                             },
                           ),
+                        ),
+                        IconButton(
+                          icon: isSelected ? Icon(Icons.remove) : Icon(Icons.add), // Change icon based on selection
+                          onPressed: () {
+                              if (isSelected) {
+                                _selectedFiles.remove(filename); // Remove file from selected files
+                                utils.showToastMessage('$filename removed from your xerox list', context);
+                              } else {
+                                _selectedFiles[filename] = url; // Add file to selected files
+                                utils.showToastMessage('$filename added in your xerox list', context);
+                              }
+                          },
                         ),
                       ],
                     ),
@@ -165,9 +162,9 @@ class _ShowFilesState extends State<ShowFiles> {
         }
       });
 
-      EasyLoading.dismiss(); // Dismiss progress indicator
-      setState(() {}); // Trigger rebuild to update UI
-      await OpenFile.open(filePath); // Open the downloaded file
+      EasyLoading.dismiss();
+      setState(() {});
+      await OpenFile.open(filePath);
     } catch (e) {
       EasyLoading.dismiss(); // Dismiss progress indicator in case of error
       print('Error downloading or opening file: $e');
