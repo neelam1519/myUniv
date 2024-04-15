@@ -1,15 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
-import 'package:findany_flutter/main.dart';
 import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class Home extends StatefulWidget {
@@ -22,15 +21,29 @@ class _HomeState extends State<Home> {
   LoadingDialog loadingDialog = new LoadingDialog();
   SharedPreferences sharedPreferences = new SharedPreferences();
   FirebaseAuth auth = FirebaseAuth.instance;
-
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
   String? email='',name='',imageUrl='';
 
   @override
   void initState() {
     super.initState();
     loadData();
+    requestPermission();
+    utils.getToken();
   }
 
+  Future<void> requestPermission() async {
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+    print('User granted permission: ${settings.authorizationStatus}');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +82,7 @@ class _HomeState extends State<Home> {
                     leading: Icon(Icons.person),
                     title: Text('Profile'),
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (context) => UserAccount()),
                       );
@@ -159,7 +172,9 @@ class _HomeState extends State<Home> {
     imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL')?? '';
 
     print('Home Page Loaded data: $email  $name  $imageUrl');
-    EasyLoading.dismiss();
+    utils.updateToken().then((value) {
+      loadingDialog.dismiss();
+    });
   }
 
   Future<void> signOut() async {
@@ -171,16 +186,17 @@ class _HomeState extends State<Home> {
         await GoogleSignIn().disconnect();
         utils.deleteFile('/data/data/com.neelam.FindAny/shared_prefs/FlutterSecureStorage.xml');
         utils.deleteFolder('/data/data/com.neelam.FindAny/cache/libCachedImageData');
-        EasyLoading.dismiss();
+        loadingDialog.dismiss();
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
       } catch (error) {
         print("Error signing out: $error");
-        EasyLoading.dismiss();
+        loadingDialog.dismiss();
       }
     } else {
       print('Unmounted singOut');
     }
   }
+
 
   @override
   void dispose() {

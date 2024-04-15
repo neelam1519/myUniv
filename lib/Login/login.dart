@@ -1,13 +1,14 @@
+import 'dart:ffi';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Home.dart';
-import 'package:findany_flutter/main.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 
@@ -51,6 +52,7 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+  
   Future<void> _handleGoogleSignIn() async {
     print('Handle google sign');
     try {
@@ -73,7 +75,7 @@ class _LoginState extends State<Login> {
         if (user != null && mounted) {
           if (user.email != null && user.email!.endsWith('@klu.ac.in')) {
 
-            Map<String, String>? data = await storeRequiredData().then((value) {
+            await storeRequiredData().then((value) {
               print('Login Value: $value');
               if(value!=null){
                 Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
@@ -85,20 +87,19 @@ class _LoginState extends State<Login> {
           } else {
             await FirebaseAuth.instance.signOut();
             await _googleSignIn.disconnect();
-            EasyLoading.showError('Please sign in with a valid KLU email.');
+            loadingDialog.showError('Please sign in with a valid KLU email.');
           }
         }
         print("LOGIN UID: ${utils.getCurrentUserUID()}");
       } else {
         print('Google Sign in canceled.');
-        EasyLoading.dismiss();
+        loadingDialog.dismiss();
       }
     } catch (error) {
-      EasyLoading.dismiss();
+      loadingDialog.dismiss();
       print('Error signing in with Google: $error');
     }
   }
-
 
   Future<Map<String, String>?> storeRequiredData() async {
     String email = await utils.getCurrentUserEmail() ?? '';
@@ -106,13 +107,15 @@ class _LoginState extends State<Login> {
     String name = utils.removeTextAfterFirstNumber(displayName);
     String imageUrl = await getCurrentUserProfileImage() ?? '';
     String regNo = utils.removeEmailDomain(email);
+    String? token = await utils.getToken();
 
     Map<String, String> data = {
       'Email': email,
       'Name': name,
       'ProfileImageURL': imageUrl,
-      'Registration Number': regNo
+      'Registration Number': regNo,
     };
+    
     print('Login Details: $data');
 
     DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
@@ -138,15 +141,17 @@ class _LoginState extends State<Login> {
       } else {
         print('Document does not exist');
       }
+      
     } catch (error) {
       print('Error: $error');
     }
-
+    DocumentReference tokenRef= FirebaseFirestore.instance.doc('Tokens/Tokens');
+    await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
     DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
     try {
       await sharedPreferences.storeMapValuesInSecureStorage(data);
       await fireStoreService.uploadMapDataToFirestore(data, userRef);
-      EasyLoading.dismiss();
+      loadingDialog.dismiss();
       if (mounted) {
         return data;
       }
@@ -155,7 +160,6 @@ class _LoginState extends State<Login> {
     }
     return null;
   }
-
 
   Future<String?> getCurrentUserProfileImage() async {
     try {
@@ -170,7 +174,7 @@ class _LoginState extends State<Login> {
       return null;
     }
   }
-
+  
   @override
   void dispose() {
     super.dispose();

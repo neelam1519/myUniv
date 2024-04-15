@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:path/path.dart' as path;
@@ -11,6 +14,7 @@ import 'package:path_provider/path_provider.dart';
 class Utils{
 
   FirebaseAuth auth = FirebaseAuth.instance;
+  FireStoreService fireStoreService = new FireStoreService();
 
   Future<void> clearCache() async {
     Directory cacheDir = await getTemporaryDirectory();
@@ -205,6 +209,36 @@ class Utils{
     } else {
       return 'No network';
     }
+  }
+
+  final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
+
+  Future<String?> getToken() async {
+    String? token = await firebaseMessaging.getToken();
+    if (token != null) {
+      print('Token: $token');
+      return token;
+    } else {
+      print('Failed to get token.');
+      return 'no Token';
+    }
+  }
+
+
+  Future<void> updateToken() async{
+    // Listen for token refresh event
+    FirebaseMessaging.instance.onTokenRefresh
+        .listen((fcmToken) async {
+      print('Updated Token: $fcmToken');
+      String? email = await getCurrentUserEmail();
+      String regNo = removeEmailDomain(email!);
+      DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
+      fireStoreService.uploadMapDataToFirestore({regNo:fcmToken}, tokenRef);
+    }).onError((err) {
+      // Error getting token.
+      print('Error while refreshing token');
+    });
+
   }
 
 

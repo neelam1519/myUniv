@@ -41,4 +41,14 @@ class LoadingDialog{
     );
   }
 
+  void showError(String text){
+    EasyLoading.showError(text,
+      maskType: EasyLoadingMaskType.black,
+    );
+  }
+
+  void dismiss(){
+    EasyLoading.dismiss();
+  }
+
 }

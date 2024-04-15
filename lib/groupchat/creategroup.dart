@@ -10,7 +10,6 @@ import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class CreateGroupChat extends StatefulWidget {
   @override
@@ -142,7 +141,7 @@ class _CreateGroupChatState extends State<CreateGroupChat> {
                     Navigator.pushReplacement(context,
                       MaterialPageRoute(builder: (context) => GroupChatHome()),
                     );
-                    EasyLoading.dismiss();
+                    loadingDialog.dismiss();
                   },
                   child: Text('Create Group'),
                 ),
@@ -188,15 +187,15 @@ class _CreateGroupChatState extends State<CreateGroupChat> {
         final TaskSnapshot snapshot = await uploadTask.whenComplete(() {});
         final String downloadUrl = await snapshot.ref.getDownloadURL();
         print('Download URL: $downloadUrl');
-        EasyLoading.dismiss();
+        loadingDialog.dismiss();
         setState(() {
         });
         return downloadUrl;
       }
-      EasyLoading.dismiss();
+      loadingDialog.dismiss();
     } catch (e) {
       print('Error uploading file and storing URL: $e');
-      EasyLoading.dismiss();
+      loadingDialog.dismiss();
     }
     return null;
   }

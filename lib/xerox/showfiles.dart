@@ -16,12 +16,22 @@ class ShowFiles extends StatefulWidget {
 }
 
 class _ShowFilesState extends State<ShowFiles> {
-  Utils utils = new Utils();
-  LoadingDialog loadingDialog = new LoadingDialog();
+  Utils utils = Utils();
+  LoadingDialog loadingDialog = LoadingDialog();
   String _selectedValue = '1'; // Default selected value
   Map<String, String> _selectedFiles = {}; // List to store selected file names
+
+  Map<String,String> retrievedFiles = {};
   Icon addIcon = Icon(Icons.add);
   Icon minusIcon = Icon(Icons.remove);
+
+  @override
+  void initState() {
+    super.initState();
+    addIcon = Icon(Icons.add); // Initialize add icon
+    minusIcon = Icon(Icons.remove); // Initialize remove icon
+    fetchFiles(); // Fetch files when the widget is initialized
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +40,7 @@ class _ShowFilesState extends State<ShowFiles> {
         title: Text('Xerox Home'),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 20.0), // Adjust the padding value as needed
+            padding: const EdgeInsets.only(right: 20.0),
             child: Row(
               children: [
                 Text(
@@ -39,13 +49,13 @@ class _ShowFilesState extends State<ShowFiles> {
                     fontSize: 16.0,
                   ),
                 ),
-                SizedBox(width: 10), // Add some space between the text and the dropdown
+                SizedBox(width: 10),
                 DropdownButton(
                   value: _selectedValue,
                   onChanged: (newValue) {
                     setState(() {
                       _selectedValue = newValue.toString();
-                      // Add your logic here based on the selected value
+                      fetchFiles();
                     });
                   },
                   items: ['1', '2', '3', '4'].map<DropdownMenuItem<String>>((value) {
@@ -59,7 +69,7 @@ class _ShowFilesState extends State<ShowFiles> {
             ),
           ),
           IconButton(
-            icon: Icon(Icons.check), // Add tick icon
+            icon: Icon(Icons.check),
             onPressed: () {
               Navigator.pop(context, _selectedFiles);
             },
@@ -68,82 +78,75 @@ class _ShowFilesState extends State<ShowFiles> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0),
-        child: FutureBuilder<Map<String, String>>(
-          future: fetchFiles(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else {
-              Map<String, String> fileUrls = snapshot.data!;
-              if (fileUrls.isEmpty) {
-                return Center(
-                  child: Text(
-                    'No files found',
-                    style: TextStyle(fontSize: 16.0),
+        child: retrievedFiles.isEmpty ? Center(
+          child: Text(
+            'No files found',
+            style: TextStyle(fontSize: 16.0),
+          ),
+        ) :
+        ListView.builder(
+          itemCount: retrievedFiles.length,
+          itemBuilder: (context, index) {
+            String filename = retrievedFiles.keys.elementAt(index);
+            String url = retrievedFiles.values.elementAt(index);
+            bool isSelected = _selectedFiles.containsKey(filename);
+
+            return Container(
+              margin: EdgeInsets.symmetric(vertical: 5.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ListTile(
+                      title: Text(filename),
+                      onTap: () {
+                        _downloadAndOpenFile(url, filename);
+                      },
+                    ),
                   ),
-                );
-              }
-              return ListView.builder(
-                itemCount: fileUrls.length,
-                itemBuilder: (context, index) {
-                  String filename = fileUrls.keys.elementAt(index);
-                  String url = fileUrls.values.elementAt(index);
-                  bool isSelected = _selectedFiles.containsKey(filename);
-
-                  return Container(
-                    margin: EdgeInsets.symmetric(vertical: 5.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: ListTile(
-                            title: Text(filename),
-
-                            onTap: () {
-                              _downloadAndOpenFile(url, filename);
-                            },
-                          ),
-                        ),
-                        IconButton(
-                          icon: isSelected ? Icon(Icons.remove) : Icon(Icons.add), // Change icon based on selection
-                          onPressed: () {
-                              if (isSelected) {
-                                _selectedFiles.remove(filename); // Remove file from selected files
-                                utils.showToastMessage('$filename removed from your xerox list', context);
-                              } else {
-                                _selectedFiles[filename] = url; // Add file to selected files
-                                utils.showToastMessage('$filename added in your xerox list', context);
-                              }
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            }
+                  IconButton(
+                    icon: isSelected ? minusIcon : addIcon,
+                    onPressed: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedFiles.remove(filename);
+                          utils.showToastMessage('$filename removed from your xerox list', context);
+                        } else {
+                          _selectedFiles[filename] = url;
+                          utils.showToastMessage('$filename added in your xerox list', context);
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            );
           },
         ),
       ),
     );
   }
 
-  Future<Map<String, String>> fetchFiles() async {
+
+  Future<void> fetchFiles() async {
+    loadingDialog.showDefaultLoading('Getting Files...');
     try {
+      print('Fetching Files..');
       final ListResult result = await FirebaseStorage.instance.ref().child('ShowFiles/$_selectedValue').listAll();
-      Map<String, String> fileUrls = {};
+      retrievedFiles.clear(); // Clear existing files
       for (final ref in result.items) {
         String url = await ref.getDownloadURL();
-        fileUrls[ref.name] = url;
+        retrievedFiles[ref.name] = url;
       }
-      print('File List: $fileUrls');
-      return fileUrls;
+      print('File List: $retrievedFiles');
+      EasyLoading.dismiss();
+      setState(() {}); // Update UI after fetching files
     } catch (e) {
+      EasyLoading.dismiss();
       throw e.toString();
+
     }
   }
 

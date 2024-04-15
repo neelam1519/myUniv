@@ -3,13 +3,12 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Home.dart';
+import 'package:findany_flutter/useraccount/personalDetails.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:image_cropper/image_cropper.dart';
 import '../utils/sharedpreferences.dart';
 import '../utils/utils.dart';
 
@@ -44,7 +43,8 @@ class _UserAccountState extends State<UserAccount> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => Home()),
-        );        return true; // Return true to allow back button press
+        );
+        return true; // Return true to allow back button press
       },
       child: Scaffold(
         appBar: AppBar(
@@ -125,40 +125,43 @@ class _UserAccountState extends State<UserAccount> {
                           title: Text('Personal details'),
                           trailing: Icon(Icons.arrow_forward_ios),
                           onTap: () {
-                            utils.showToastMessage('Under Development', context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => PersonalDetails()),
+                            );
                           },
                         ),
                       ),
-                      Visibility(
-                        visible: showFacultyDetails,
-                        child: ListTile(
-                          title: Text('Faculty details'),
-                          trailing: Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            utils.showToastMessage('Under Development', context);
-                          },
-                        ),
-                      ),
-                      Visibility(
-                        visible: showPersonalDetails,
-                        child: ListTile(
-                          title: Text('Academic details'),
-                          trailing: Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            utils.showToastMessage('Under Development', context);
-                          },
-                        ),
-                      ),
-                      Visibility(
-                        visible: showHostelDetails,
-                        child: ListTile(
-                          title: Text('Hostel details'),
-                          trailing: Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            utils.showToastMessage('Under Development', context);
-                          },
-                        ),
-                      ),
+                      // Visibility(
+                      //   visible: showPersonalDetails,
+                      //   child: ListTile(
+                      //     title: Text('Academic details'),
+                      //     trailing: Icon(Icons.arrow_forward_ios),
+                      //     onTap: () {
+                      //       utils.showToastMessage('Under Development', context);
+                      //     },
+                      //   ),
+                      // ),
+                      // Visibility(
+                      //   visible: showFacultyDetails,
+                      //   child: ListTile(
+                      //     title: Text('Faculty details'),
+                      //     trailing: Icon(Icons.arrow_forward_ios),
+                      //     onTap: () {
+                      //       utils.showToastMessage('Under Development', context);
+                      //     },
+                      //   ),
+                      // ),
+                      // Visibility(
+                      //   visible: showHostelDetails,
+                      //   child: ListTile(
+                      //     title: Text('Hostel details'),
+                      //     trailing: Icon(Icons.arrow_forward_ios),
+                      //     onTap: () {
+                      //       utils.showToastMessage('Under Development', context);
+                      //     },
+                      //   ),
+                      // ),
                     ],
                   ),
                 ],
@@ -215,10 +218,10 @@ class _UserAccountState extends State<UserAccount> {
         setState(() {
         });
       }
-      EasyLoading.dismiss();
+      loadingDialog.dismiss();
     } catch (e) {
       print('Error uploading file and storing URL: $e');
-      EasyLoading.dismiss();
+      loadingDialog.dismiss();
     }
   }
 
@@ -228,6 +231,5 @@ class _UserAccountState extends State<UserAccount> {
     regNo = await sharedPreferences.getSecurePrefsValue('Registration Number');
     imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL');
     print('Profile ImageUrl: $imageUrl');
-    //setState(() {});
   }
 }

@@ -45,42 +45,32 @@ class _XeroxHomeState extends State<XeroxHome> {
   String email='';
   double _calculatedPrice=0;
   int pages=0,bindings =0;
-  double progress=0,xeroxPrice=1.5, bindingPrice = 1, pagesCost =0, bindingsCost =0;
-  String xeroxVenue='We will let you know where to collect else contact 8501070702';
+  double progress=0,printPrice=1.5, bindingPrice = 1, pagesCost =0, bindingsCost =0;
+  String xeroxNote='We will let you know where to collect else contact 8501070702';
   String paymentNumber = '';
   int totalFileCount=0;
 
   @override
   void initState() {
     super.initState();
-    initializeData();
+    getData();
     totalFileCount = _uploadedFiles.length;
   }
 
-  Future<void> initializeData() async {
+  Future<void> getData() async {
     loadingDialog.showDefaultLoading('Getting Details...');
-    // Initialize email here
-    email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
-
-    int? xeroxInt = await realTimeDatabase.getCurrentValue('Xerox/XeroxPrice');
-    print('1 $xeroxInt');
-    int? bindingInt = await realTimeDatabase.getCurrentValue('Xerox/BindingPrice');
-    print('2 $bindingInt');
-    xeroxPrice = xeroxInt!.toDouble();
-    bindingPrice = bindingInt!.toDouble();
-    print('Xerox Price: $xeroxPrice');
-    print('Binding Price$bindingPrice');
-
-
-    xeroxVenue = await realTimeDatabase.getCurrentValue('Xerox/XeroxVenue');
-    print("Venue: $xeroxVenue");
-
-    paymentNumber = await realTimeDatabase.getCurrentValue('Xerox/paymentNumber');
-    setState(() {
-
+    DocumentReference detailsRef = FirebaseFirestore.instance.doc('XeroxDetails/DisplayDetails');
+    await fireStoreService.getDocumentDetails(detailsRef).then((value) {
+      bindingPrice = value!['BindingPrice'] as double;
+      printPrice = value['PrintPrice'] as double;
+      xeroxNote = value['XeroxNote'];
+      paymentNumber = value['PaymentNumber'];
     });
+
+    setState(() {});
     EasyLoading.dismiss();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +96,7 @@ class _XeroxHomeState extends State<XeroxHome> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
+                margin: EdgeInsets.only(bottom: 20),
                 child: RichText(
                   text: TextSpan(
                     style: TextStyle(
@@ -120,146 +111,132 @@ class _XeroxHomeState extends State<XeroxHome> {
                         ),
                       ),
                       TextSpan(
-                        text: xeroxVenue, // Rest of the text
+                        text: xeroxNote, // Rest of the text
                       ),
                     ],
                   ),
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),),
-                child: TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Name*',
-                    border: InputBorder.none,
-                    labelStyle: TextStyle(fontSize: 15),
-                  ),
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
-                ),
-                child: TextFormField(
-                  controller: _mobilenumberController,
-                  decoration: InputDecoration(
-                    labelText: 'Mobile Number*',
-                    border: InputBorder.none,
-                    labelStyle: TextStyle(fontSize: 15),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                ),
-              ),
-              SizedBox(height: 30),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
-                ),
-                child: Text(
-                  email,
-                  style: TextStyle(
-                    fontSize: 15,
-                  ),
+              Text(
+                email,
+                style: TextStyle(
+                  fontSize: 15,
                 ),
               ),
               SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: pickFile,
-                    child: Text('Upload File'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Define action for the second button
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ShowFiles(),
-                        ),
-                      ).then((value) {
-                        // Handle the returned map data here
-                        if (value != null) {
-                          // Do something with the returned map data
-                          setState(() {
-                            _uploadedFiles.addAll(value);
-                            totalFileCount = _uploadedFiles.length;
-                          });
-                        }
-                      });
-                    },
-                    child: Text('Select Files'),
-                  ),
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name*',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 10),
+              TextFormField(
+                controller: _mobilenumberController,
+                decoration: InputDecoration(
+                  labelText: 'Mobile Number*',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
                 ],
               ),
+
               SizedBox(height: 20),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (int index = 0; index < _uploadedFiles.length; index++)
-                    ListTile(
-                      title: Text('${index + 1}. ${_uploadedFiles.keys.toList()[index]}'),
-                      onTap: () => _openFile(_uploadedFiles.values.toList()[index]),
-                      trailing: IconButton(
-                        icon: Icon(Icons.close),
-                        onPressed: () {
-                          setState(() {
-                            utils.deleteFileInCache(_uploadedFiles.values.toList()[index]);
-                            _uploadedFiles.remove(_uploadedFiles.keys.toList()[index]);
-                            totalFileCount = _uploadedFiles.length;
-                          });
-                        },
-                      ),
+                  Container(
+                    margin: EdgeInsets.only(bottom: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        ElevatedButton(
+                          onPressed: pickFile,
+                          child: Text('Upload File'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ShowFiles(),
+                              ),
+                            ).then((value) {
+                              if (value != null) {
+                                setState(() {
+                                  _uploadedFiles.addAll(value);
+                                  totalFileCount = _uploadedFiles.length;
+                                });
+                              }
+                            });
+                          },
+                          child: Text('Select Files'),
+                        ),
+                      ],
                     ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (int index = 0; index < _uploadedFiles.length; index++)
+                          ListTile(
+                            title: Text('${index + 1}. ${_uploadedFiles.keys.toList()[index]}'),
+                            onTap: () => _openFile(_uploadedFiles.values.toList()[index]),
+                            trailing: IconButton(
+                              icon: Icon(Icons.close),
+                              onPressed: () {
+                                setState(() {
+                                  utils.deleteFileInCache(_uploadedFiles.values.toList()[index]);
+                                  _uploadedFiles.remove(_uploadedFiles.keys.toList()[index]);
+                                  totalFileCount = _uploadedFiles.length;
+                                });
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
+              SizedBox(height: 20),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Numbers of files for binding (default is no binding)',
+                  hintText: 'ex -1,3',
+                  border: OutlineInputBorder(),
                 ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Enter the numbers of files for binding (default is no binding)',
-                    border: InputBorder.none,
-                    labelStyle: TextStyle(fontSize: 15),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
+                keyboardType: TextInputType.number,
               ),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
+              SizedBox(height: 10),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Numbers of 2-side print files (default is 1-side print)',
+                  hintText: 'ex -2,4',
+                  border: OutlineInputBorder(),
                 ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Enter the numbers of 2-side print files (default is 1-side print)',
-                    border: InputBorder.none,
-                    labelStyle: TextStyle(fontSize: 15),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
+                keyboardType: TextInputType.number,
               ),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
+              SizedBox(height: 10),
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Specify any additional specifications (Extra cost applies)',
+                  hintText: 'spiralbinding,color xerox etc..',
+                  border: OutlineInputBorder(),
                 ),
-                child: TextField(
-                  controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: 'Specify any additional specifications (Extra cost applies)',
-                    border: InputBorder.none,
-                    labelStyle: TextStyle(fontSize: 15),
-                  ),
-                  keyboardType: TextInputType.multiline,
-                  maxLines: null, // Allows multiple lines of text input
-                ),
+                keyboardType: TextInputType.multiline,
+                maxLines: null, // Allows multiple lines of text input
               ),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -268,12 +245,12 @@ class _XeroxHomeState extends State<XeroxHome> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'no of pages',
-                        labelStyle: TextStyle(fontSize: 15),
+                        border: OutlineInputBorder(),
                       ),
                       onChanged: (value) {
                         setState(() {
                           pages = int.tryParse(value) ?? 0;
-                          pagesCost = pages * xeroxPrice;
+                          pagesCost = pages * printPrice;
                           _calculatedPrice = pagesCost + bindingsCost;
                         });
                       },
@@ -281,7 +258,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                   ),
                   SizedBox(width: 10),
                   Text(
-                    '* $xeroxPrice',
+                    '* $printPrice',
                     style: TextStyle(fontSize: 16),
                   ),
                   SizedBox(width: 10),
@@ -295,7 +272,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'no of bindings',
-                        labelStyle: TextStyle(fontSize: 15),
+                        border: OutlineInputBorder(),
                       ),
                       onChanged: (value) {
                         setState(() {
@@ -318,61 +295,51 @@ class _XeroxHomeState extends State<XeroxHome> {
                   ),
                 ],
               ),
-
-              SizedBox(height: 30),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
+              SizedBox(height: 20),
+              Text(
+                'paytm/gpay/phonepe: $paymentNumber',
+                style: TextStyle(
+                  fontSize: 15,
                 ),
-                child: Text(
-                  'paytm/gpay/phonepe: $paymentNumber',
-                  style: TextStyle(
-                    fontSize: 15,
+              ),
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _transactionidController,
+                      decoration: InputDecoration(
+                        labelText: 'Transaction Id*',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      print('Icon tapped');
+                      utils.showToastMessage("Youtube link for getting transaction ID", context);
+                    },
+                    child: Icon(Icons.help_outline), // Add icon here
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  onPressed: onSubmitClicked,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0), // Adjust horizontal padding as needed
+                    child: Text('Submit'),
                   ),
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _transactionidController,
-                        decoration: InputDecoration(
-                          labelText: 'Transaction Id*',
-                          border: InputBorder.none,
-                          labelStyle: TextStyle(fontSize: 15),
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        // Add your onTap action here
-                        print('Icon tapped');
-                        utils.showToastMessage("Youtube link for getting transaction ID", context);
-                      },
-                      child: Icon(Icons.help_outline), // Add icon here
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  // Add submit action here
-                  onSubmitClicked();
-                },
-                child: Text('Submit'),
-              ),
+
             ],
           ),
         ),
       ),
     );
   }
-
 
   Future<void> onSubmitClicked() async {
     // Check if any required field is empty
@@ -493,11 +460,8 @@ class _XeroxHomeState extends State<XeroxHome> {
 
   @override
   void dispose() {
-    // Dispose the controllers when the widget is disposed
     _bindingFileController.dispose();
     _singleSideFileController.dispose();
     super.dispose();
   }
-
-
 }
