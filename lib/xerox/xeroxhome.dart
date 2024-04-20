@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class XeroxHome extends StatefulWidget {
 
@@ -33,16 +34,17 @@ class _XeroxHomeState extends State<XeroxHome> {
   SharedPreferences sharedPreferences = new SharedPreferences();
   LoadingDialog loadingDialog = new LoadingDialog();
 
+  final Razorpay razorpay = Razorpay();
+
   TextEditingController _nameController = TextEditingController();
   TextEditingController _mobilenumberController = TextEditingController();
-  TextEditingController _transactionidController = TextEditingController();
   TextEditingController _descriptionController = TextEditingController();
   TextEditingController _bindingFileController = TextEditingController();
   TextEditingController _singleSideFileController = TextEditingController();
 
   Map<String, String> _uploadedFiles = {};
 
-  String email='';
+  String email='no email found';
   double _calculatedPrice=0;
   int pages=0,bindings =0;
   double progress=0,printPrice=1.5, bindingPrice = 1, pagesCost =0, bindingsCost =0;
@@ -55,6 +57,11 @@ class _XeroxHomeState extends State<XeroxHome> {
     super.initState();
     getData();
     totalFileCount = _uploadedFiles.length;
+
+    //Razorpay init
+    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
+    razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
+    razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWallet);
   }
 
   Future<void> getData() async {
@@ -67,9 +74,38 @@ class _XeroxHomeState extends State<XeroxHome> {
       paymentNumber = value['PaymentNumber'];
     });
 
+    email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
     setState(() {});
     EasyLoading.dismiss();
   }
+
+  void startPayment(int amount,String number,String email) async {
+    amount *= 100;
+    Map<String, dynamic> options = {
+      'key': 'rzp_live_kYGlb6Srm9dDRe',
+      'amount': amount,
+      'name': 'FindAny',
+      'description': 'Xerox',
+      'prefill': {'contact': number, 'email': email},
+      'options': {
+        'checkout': {
+          'method': {
+            'netbanking': 0,
+            'card': 0,
+            'upi': 1,
+            'wallet': 0,
+          },
+        },
+      },
+    };
+    try {
+      razorpay.open(options);
+      print('Success: Razorpay');
+    } catch (e) {
+      debugPrint('Razorpay Error: $e');
+    }
+  }
+
 
 
   @override
@@ -209,6 +245,7 @@ class _XeroxHomeState extends State<XeroxHome> {
               ),
               SizedBox(height: 20),
               TextField(
+                controller: _bindingFileController,
                 decoration: InputDecoration(
                   labelText: 'Numbers of files for binding (default is no binding)',
                   hintText: 'ex -1,3',
@@ -218,6 +255,7 @@ class _XeroxHomeState extends State<XeroxHome> {
               ),
               SizedBox(height: 10),
               TextField(
+                controller: _singleSideFileController,
                 decoration: InputDecoration(
                   labelText: 'Numbers of 2-side print files (default is 1-side print)',
                   hintText: 'ex -2,4',
@@ -296,44 +334,24 @@ class _XeroxHomeState extends State<XeroxHome> {
                 ],
               ),
               SizedBox(height: 20),
-              Text(
-                'paytm/gpay/phonepe: $paymentNumber',
-                style: TextStyle(
-                  fontSize: 15,
-                ),
-              ),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _transactionidController,
-                      decoration: InputDecoration(
-                        labelText: 'Transaction Id*',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      print('Icon tapped');
-                      utils.showToastMessage("Youtube link for getting transaction ID", context);
-                    },
-                    child: Icon(Icons.help_outline), // Add icon here
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
               Center(
                 child: ElevatedButton(
-                  onPressed: onSubmitClicked,
+                  onPressed: () {
+                    // Call the startPayment function when the button is pressed
+                    if(_calculatedPrice.toInt()<1){
+                      _calculatedPrice = 1.0;
+                    }
+                    //_calculatedPrice= 100.0;
+                    int price = _calculatedPrice.round(); // Or use .ceil() or .floor() depending on your rounding preference
+                    print('PayingCost: $price');
+                    onSubmitClicked(price);
+                  },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0), // Adjust horizontal padding as needed
-                    child: Text('Submit'),
+                    child: Text('Pay & Submit'),
                   ),
                 ),
               ),
-
             ],
           ),
         ),
@@ -341,22 +359,10 @@ class _XeroxHomeState extends State<XeroxHome> {
     );
   }
 
-  Future<void> onSubmitClicked() async {
-    // Check if any required field is empty
-    if (_nameController.text.isEmpty || _mobilenumberController.text.isEmpty || _transactionidController.text.isEmpty || _uploadedFiles.isEmpty) {
-      utils.showToastMessage('Missing required Fields', context);
-      return;
-    } else if (!utils.isValidMobileNumber(_mobilenumberController.text)) {
-      utils.showToastMessage('Enter a Valid Mobile Number', context);
-      return;
-    } else if (_nameController.text.length <= 5) {
-      utils.showToastMessage('Enter at least 5 letters in name', context);
-      return;
-    } else if (!(_transactionidController.text.length >= 10 && _transactionidController.text.length <= 30)) {
-      utils.showToastMessage('Enter a valid Transaction ID', context);
-      return;
-    }
 
+  Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
+    // Handle payment success
+    print('razorpay successful ${response.paymentId}');
     // Show progress loading bar
     loadingDialog.showProgressLoading(progress, 'Uploading files...');
 
@@ -393,10 +399,10 @@ class _XeroxHomeState extends State<XeroxHome> {
     DocumentReference userRef = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
 
     Map<String, dynamic> uploadData = {'ID': count,'Date': utils.getTodayDate(),'Name': _nameController.text, 'Mobile Number': _mobilenumberController.text, 'Email': email,
-      'No of Pages': pages, 'Calculated Price': _calculatedPrice, 'Transaction ID': _transactionidController.text,'Uploaded Files': uploadedUrls,
+      'No of Pages': pages, 'Calculated Price': _calculatedPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls,
       'Description':_descriptionController.text};
 
-    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email, pages.toString(), _calculatedPrice.toString(), _transactionidController.text,_descriptionController.text];
+    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, _calculatedPrice.toString(),_descriptionController.text,response.paymentId!];
     sheetData.addAll(uploadedUrls);
 
     await fireStoreService.uploadMapDataToFirestore(uploadData, userRef);
@@ -410,7 +416,33 @@ class _XeroxHomeState extends State<XeroxHome> {
     // Hide progress loading bar after updating Google Sheets
     utils.showToastMessage('Request submitted', context);
     Navigator.pop(context);
-    // Optionally, you can use the uploadedUrls list for further processing or display
+  }
+
+  void handlePaymentError(PaymentFailureResponse response) {
+    // Handle payment failure
+    print('razorpay unsuccessful: ${response.message}');
+    utils.showToastMessage('Payment unsuccessful', context);
+  }
+
+  void handleExternalWallet(ExternalWalletResponse response) {
+    // Handle external wallet
+    print('razorpay External wallet ${response.walletName}');
+  }
+
+  Future<void> onSubmitClicked(int price) async {
+    // Check if any required field is empty
+    if (_nameController.text.isEmpty || _mobilenumberController.text.isEmpty ||  _uploadedFiles.isEmpty) {
+      utils.showToastMessage('Missing required Fields', context);
+      return;
+    } else if (!utils.isValidMobileNumber(_mobilenumberController.text)) {
+      utils.showToastMessage('Enter a Valid Mobile Number', context);
+      return;
+    } else if (_nameController.text.length < 5) {
+      utils.showToastMessage('Enter at least 5 letters in name', context);
+      return;
+    }
+
+    startPayment(price,_mobilenumberController.text,email);
   }
 
   String getFileName(File file) {
@@ -462,6 +494,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   void dispose() {
     _bindingFileController.dispose();
     _singleSideFileController.dispose();
+    razorpay.clear();
     super.dispose();
   }
 }

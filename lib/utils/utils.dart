@@ -136,6 +136,7 @@ class Utils{
     return formattedDate;
   }
 
+
   Future<void> deleteFile(String filePath) async {
     try {
       // Check if the file exists
@@ -239,6 +240,39 @@ class Utils{
       print('Error while refreshing token');
     });
 
+  }
+
+  String getMimeType(String extension) {
+    switch (extension) {
+      case '.pdf':
+        return 'application/pdf';
+      case '.doc':
+      case '.docx':
+        return 'application/msword';
+      case '.xls':
+      case '.xlsx':
+        return 'application/vnd.ms-excel';
+      case '.ppt':
+      case '.pptx':
+        return 'application/vnd.ms-powerpoint';
+      case '.txt':
+        return 'text/plain';
+      case '.zip':
+        return 'application/zip';
+      case '.rar':
+        return 'application/x-rar-compressed';
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      case '.gif':
+        return 'image/gif';
+      case '.mp4':
+        return 'video/mp4';
+      default:
+        return '*/*';
+    }
   }
 
 

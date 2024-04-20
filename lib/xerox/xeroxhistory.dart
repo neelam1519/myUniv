@@ -26,13 +26,20 @@ class _XeroxHistoryState extends State<XeroxHistory> {
   Future<void> fetchHistoryData() async {
     loadingDialog.showDefaultLoading("Getting history...");
     try {
-      List<Map<String, dynamic>> data = [];
+
       QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/').get();
       for (QueryDocumentSnapshot doc in snapshot.docs) {
-        data.add(doc.data() as Map<String, dynamic>);
+        historyData.add(doc.data() as Map<String, dynamic>);
       }
+      // Sort the historyData list based on the 'ID' value in each map
+      historyData.sort((a, b) => a['ID'].compareTo(b['ID']));
+
+      // Reverse the sorted list
+      historyData = historyData.reversed.toList();
+      print('History: ${historyData}');
+
       setState(() {
-        historyData = data;
+        historyData;
       });
       EasyLoading.dismiss();
     } catch (e) {

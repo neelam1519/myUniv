@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:path/path.dart' as path;
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,6 +19,7 @@ class XeroxDetailView extends StatefulWidget {
 
 class _XeroxDetailViewState extends State<XeroxDetailView> {
   LoadingDialog loadingDialog = new LoadingDialog();
+  Utils utils = new Utils();
   List<String> order = ['ID', 'Name', 'Mobile Number', 'Email', 'Date', 'No of Pages', 'Transaction ID', 'Description', 'Uploaded Files'];
 
   @override
@@ -52,7 +55,7 @@ class _XeroxDetailViewState extends State<XeroxDetailView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: uploadFiles.map((url) => InkWell(
                         onTap: () {
-                          _downloadAndOpenFile(url,'historyfile');
+                          downloadAndOpenFile(url,'historyfile');
                           print('Selected Url: $url');
                         },
                         child: Padding(
@@ -82,7 +85,7 @@ class _XeroxDetailViewState extends State<XeroxDetailView> {
     return uri.pathSegments.last;
   }
 
-  Future<void> _downloadAndOpenFile(String url, String filename) async {
+  Future<void> downloadAndOpenFile(String url, String filename) async {
     try {
       loadingDialog.showDefaultLoading('Downloading...'); // Show progress indicator
       final dio = Dio();
@@ -93,17 +96,23 @@ class _XeroxDetailViewState extends State<XeroxDetailView> {
 
       await dio.download(url, filePath, onReceiveProgress: (received, total) {
         if (total != -1) {
-          EasyLoading.showProgress(received / total, status: 'Downloading...'); // Update progress
+          loadingDialog.showProgressLoading(received / total, 'Downloading...');
         }
       });
+      loadingDialog.dismiss();
+      setState(() {});
 
-      EasyLoading.dismiss(); // Dismiss progress indicator
-      setState(() {}); // Trigger rebuild to update UI
-      await OpenFile.open(filePath); // Open the downloaded file
+      String extension = path.extension(Uri.parse(url).path).toLowerCase();
+      print('Extension: $extension');
+      String mimeType = utils.getMimeType(extension);
+      print('Mime Type: $mimeType');
+      await OpenFile.open(
+        filePath,
+        type: mimeType,
+      );
     } catch (e) {
-      EasyLoading.dismiss(); // Dismiss progress indicator in case of error
+      loadingDialog.dismiss(); // Dismiss progress indicator in case of error
       print('Error downloading or opening file: $e');
     }
   }
-
 }
