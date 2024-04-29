@@ -52,7 +52,7 @@ class _LoginState extends State<Login> {
       ),
     );
   }
-  
+
   Future<void> _handleGoogleSignIn() async {
     print('Handle google sign');
     try {
@@ -97,6 +97,8 @@ class _LoginState extends State<Login> {
       }
     } catch (error) {
       loadingDialog.dismiss();
+      utils.showToastMessage('Error occurred while login', context);
+      utils.signOut();
       print('Error signing in with Google: $error');
     }
   }
@@ -115,9 +117,7 @@ class _LoginState extends State<Login> {
       'ProfileImageURL': imageUrl,
       'Registration Number': regNo,
     };
-    
     print('Login Details: $data');
-
     DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
 
     try {
@@ -141,14 +141,15 @@ class _LoginState extends State<Login> {
       } else {
         print('Document does not exist');
       }
-      
     } catch (error) {
       print('Error: $error');
+      utils.showToastMessage('Error occurred while login', context);
+      utils.signOut();
     }
-    DocumentReference tokenRef= FirebaseFirestore.instance.doc('Tokens/Tokens');
-    await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
-    DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
     try {
+      DocumentReference tokenRef= FirebaseFirestore.instance.doc('Tokens/Tokens');
+      await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
+      DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
       await sharedPreferences.storeMapValuesInSecureStorage(data);
       await fireStoreService.uploadMapDataToFirestore(data, userRef);
       loadingDialog.dismiss();
@@ -157,6 +158,8 @@ class _LoginState extends State<Login> {
       }
     } catch (error) {
       print('Error storing data: $error');
+      utils.showToastMessage('Error occurred while login', context);
+      utils.signOut();
     }
     return null;
   }
@@ -173,11 +176,6 @@ class _LoginState extends State<Login> {
       print('Error getting user profile image URL: $e');
       return null;
     }
-  }
-  
-  @override
-  void dispose() {
-    super.dispose();
   }
 
 }

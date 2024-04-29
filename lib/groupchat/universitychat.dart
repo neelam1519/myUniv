@@ -171,33 +171,55 @@ class _UniversityChatState extends State<UniversityChat> {
           child: DashChat(
             currentUser: user,
             onSend: (ChatMessage m) async {
-              if (selectedFiles.isNotEmpty) {
-                FocusScope.of(context).unfocus();
-                loadingDialog.showDefaultLoading('Upload Files to chat');
-                for (File file in selectedFiles) {
-                  String filepath = file.path;
-                  String filename = path.basename(filepath);
-                  String extension = utils.getFileExtension(File(filepath));
+              try {
+                if (selectedFiles.isNotEmpty) {
+                  loadingDialog.showDefaultLoading('Upload Files to chat');
+                  loadingDialog.showProgressLoading(0, 'Files are uploading');
 
-                  Reference ref = storage.ref().child('ChatMedia').child('${utils.getCurrentUserUID()}').child('$filename');
-                  final UploadTask uploadTask = ref.putFile(File(filepath));
-                  final TaskSnapshot snapshot = await uploadTask;
-                  final String downloadUrl = await snapshot.ref.getDownloadURL();
+                  for (File file in selectedFiles) {
+                    print('Uploading Files...');
+                    String filepath = file.path;
+                    String filename = path.basename(filepath);
+                    String extension = utils.getFileExtension(File(filepath));
 
-                  MediaType? mediaType = getMediaType(extension);
-                  chatMedia.add(ChatMedia(url: downloadUrl, fileName: filename, type: mediaType!));
+                    Reference ref = storage.ref().child('ChatMedia').child('${utils.getCurrentUserUID()}').child('$filename');
+                    final UploadTask uploadTask = ref.putFile(File(filepath));
+
+                    // Track the upload progress using stream
+                    final StreamSubscription<TaskSnapshot> streamSubscription = uploadTask.snapshotEvents.listen((event) {
+                      double progress = event.bytesTransferred / event.totalBytes;
+                      loadingDialog.showProgressLoading(progress, 'Uploading file $filename');
+                    });
+
+                    await uploadTask.whenComplete(() {
+                      streamSubscription.cancel(); // Cancel the subscription
+                    });
+
+                    final String downloadUrl = await ref.getDownloadURL();
+
+                    MediaType? mediaType = getMediaType(extension);
+                    chatMedia.add(ChatMedia(url: downloadUrl, fileName: filename, type: mediaType!));
+                  }
+
+                  loadingDialog.dismiss();
+                  utils.showToastMessage('Files uploaded', context);
                 }
-                utils.showToastMessage('Files uploaded', context).then((value) {});
-              }
 
-              ChatMessage chatMessage = ChatMessage(user: user, createdAt: DateTime.now(), text: m.text, medias: List.from(chatMedia));
-              DocumentReference documentReference = FirebaseFirestore.instance.doc('Chatting/${Timestamp.now().microsecondsSinceEpoch.toString()}');
-              fireStoreService.uploadMapDataToFirestore(chatMessage.toJson(), documentReference,);
-              setState(() {
-                selectedFiles.clear();
-                chatMedia.clear();
-              });
+                ChatMessage chatMessage = ChatMessage(user: user, createdAt: DateTime.now(), text: m.text, medias: List.from(chatMedia));
+                DocumentReference documentReference = FirebaseFirestore.instance.doc('Chatting/${Timestamp.now().microsecondsSinceEpoch.toString()}');
+                await fireStoreService.uploadMapDataToFirestore(chatMessage.toJson(), documentReference);
+                setState(() {
+                  selectedFiles.clear();
+                  chatMedia.clear();
+                });
+                utils.showToastMessage('Message sent', context);
+              } catch (e) {
+                loadingDialog.dismiss(); // Dismiss the loading dialog in case of an error
+                print('Error sending message: $e');
+                utils.showToastMessage('Error sending message', context);
+              }
             },
+            
             messages: messages,
             inputOptions: InputOptions(
               alwaysShowSend: true,
@@ -257,7 +279,6 @@ class _UniversityChatState extends State<UniversityChat> {
     );
   }
 
-
   Widget _buildSelectedFilesWidget() {
     hintText='write about the files to send in chat';
     return selectedFiles.isNotEmpty
@@ -268,6 +289,8 @@ class _UniversityChatState extends State<UniversityChat> {
         itemCount: selectedFiles.length,
         itemBuilder: (context, index) {
           String fileName = selectedFiles[index].path.split('/').last;
+          String filePath = selectedFiles[index].path;
+
           return Container(
             margin: EdgeInsets.symmetric(horizontal: 8),
             width: 100,
@@ -338,6 +361,9 @@ class _UniversityChatState extends State<UniversityChat> {
       children: medias.map((media) {
         String fileName = extractFileName(media.url);
         print('Media name: $fileName');
+        File file = File('/data/data/com.neelam.FindAny/cache/ChatDownload/$fileName');
+        bool fileExists = file.existsSync();
+
         if (media.type == MediaType.image) {
           return InkWell(
             onTap: () async {
@@ -355,11 +381,23 @@ class _UniversityChatState extends State<UniversityChat> {
                     fit: BoxFit.cover,
                   ),
                   SizedBox(height: 4), // Add some space between image and filename
-                  Text(
-                    fileName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      if (fileExists)
+                        Icon(
+                          Icons.download_done,
+                          color: Colors.green,
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -377,11 +415,23 @@ class _UniversityChatState extends State<UniversityChat> {
                 children: [
                   VideoPlayer(url: media.url),
                   SizedBox(height: 4), // Add some space between video and filename
-                  Text(
-                    fileName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      if (fileExists)
+                        Icon(
+                          Icons.download_done,
+                          color: Colors.green,
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -403,11 +453,23 @@ class _UniversityChatState extends State<UniversityChat> {
                     color: Colors.grey[600],
                   ),
                   SizedBox(height: 4), // Add some space between file icon and filename
-                  Text(
-                    fileName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      if (fileExists)
+                        Icon(
+                          Icons.download_done,
+                          color: Colors.green,
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -426,7 +488,6 @@ class _UniversityChatState extends State<UniversityChat> {
     Match? match = regExp.firstMatch(decodedUrl);
     return match?.group(0) ?? ''; // Return matched text or empty string if no match
   }
-
 
   Widget _buildFilePreview(File file) {
     String extension = path.extension(file.path).toLowerCase();
@@ -458,7 +519,6 @@ class _UniversityChatState extends State<UniversityChat> {
     }
   }
 
-
   Future<void> getDetails() async {
     name = (await sharedPreferences.getSecurePrefsValue('Name'))!;
     email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
@@ -466,7 +526,6 @@ class _UniversityChatState extends State<UniversityChat> {
     profileUrl = (await sharedPreferences.getSecurePrefsValue('ProfileImageURL'))!; // Retrieve profile URL
     print('Details $name  $email  $regNo  $profileUrl');
   }
-
 
   Future<void> sendNotification(String title,String message) async {
     Map<String,dynamic> additionalData = {'source':'UniversityChat'};
@@ -505,43 +564,57 @@ class _UniversityChatState extends State<UniversityChat> {
     await FirebaseMessaging.instance.subscribeToTopic('UniversityChat');
   }
 
+    Future<void> downloadAndOpenFile(String url, String filename) async {
+      try {
+        loadingDialog.showDefaultLoading('Getting File...'); // Show progress indicator
+        final dir = await getTemporaryDirectory(); // Get temporary directory
+        final filePath = '${dir.path}/ChatDownload/$filename'; // Create file path
 
+        print('Temp File Path: ${filePath}');
 
-  Future<void> downloadAndOpenFile(String url, String filename) async {
-    try {
-      loadingDialog.showDefaultLoading('Downloading...'); // Show progress indicator
-      final dio = Dio();
-      final dir = await getTemporaryDirectory(); // Get temporary directory
-      final filePath = '${dir.path}/FileSelection/$filename'; // Create file path
+        // Check if the file already exists
+        if (await File(filePath).exists()) {
+          print('File already exists, opening...');
+          loadingDialog.dismiss();
+          setState(() {});
 
-      print('Temp File Path: ${filePath}');
-
-      await dio.download(url, filePath, onReceiveProgress: (received, total) {
-        if (total != -1) {
-          loadingDialog.showProgressLoading(received / total, 'Downloading...');
+          String extension = path.extension(Uri.parse(url).path).toLowerCase();
+          print('Extension: $extension');
+          String mimeType = utils.getMimeType(extension);
+          print('Mime Type: $mimeType');
+          await OpenFile.open(
+            filePath,
+            type: mimeType,
+          );
+          return;
         }
-      });
-      loadingDialog.dismiss();
-      setState(() {});
 
-      String extension = path.extension(Uri.parse(url).path).toLowerCase();
-      print('Extension: $extension');
-      String mimeType = utils.getMimeType(extension);
-      print('Mime Type: $mimeType');
-      await OpenFile.open(
-        filePath,
-        type: mimeType,
-      );
-    } catch (e) {
-      loadingDialog.dismiss(); // Dismiss progress indicator in case of error
-      print('Error downloading or opening file: $e');
+        final dio = Dio();
+        await dio.download(url, filePath, onReceiveProgress: (received, total) {
+          if (total != -1) {
+            loadingDialog.showProgressLoading(received / total, 'Downloading...');
+          }
+        });
+        loadingDialog.dismiss();
+        setState(() {});
+
+        String extension = path.extension(Uri.parse(url).path).toLowerCase();
+        print('Extension: $extension');
+        String mimeType = utils.getMimeType(extension);
+        print('Mime Type: $mimeType');
+        await OpenFile.open(
+          filePath,
+          type: mimeType,
+        );
+      } catch (e) {
+        loadingDialog.dismiss(); // Dismiss progress indicator in case of error
+        print('Error downloading or opening file: $e');
+      }
     }
-  }
 
   @override
   void dispose() {
-    //Delete cache
-    utils.deleteFolder('/data/data/com.neelam.FindAny/cache/FileSelection');
+    print('University Chat Disposed');
     _focusNode.dispose();
     super.dispose();
   }

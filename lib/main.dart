@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
@@ -6,14 +8,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'package:path_provider/path_provider.dart';
 import 'firebase_options.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -21,7 +24,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   if(message.messageId != null ){
     print('testing ${message.data}');
-    //await showNotification(message);
   }else{
     print('MessageId is null');
   }
@@ -98,10 +100,11 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp>{
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(AppLifecycleListener());
     setupInteractedMessage();
   }
 
@@ -135,6 +138,13 @@ class _MyAppState extends State<MyApp> {
       home: AuthWrapper(),
     );
   }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    print('Main Disposed');
+  }
 }
 
 class AuthWrapper extends StatelessWidget {
@@ -143,7 +153,9 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<User?>(
-      future: FirebaseAuth.instance.authStateChanges().first,
+      future: FirebaseAuth.instance
+          .authStateChanges()
+          .first,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return CircularProgressIndicator();
@@ -179,4 +191,30 @@ class AuthWrapper extends StatelessWidget {
       print('No internet connection no update checked');
     }
   }
+}
+
+class AppLifecycleListener with WidgetsBindingObserver {
+  @override
+  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+    super.didChangeAppLifecycleState(state);
+    final isDetached = state == AppLifecycleState.detached;
+    print('State: $state');
+    if (isDetached) {
+      Utils utils = new Utils();
+      //utils.deleteFolder('/data/data/com.neelam.FindAny/cache');
+      //clearCache();
+      print('Detached');
+    }
+  }
+
+  Future<void> clearCache() async {
+    print('Clearing cache');
+    final cacheDir = await getApplicationSupportDirectory();
+    final cachePath = '${cacheDir.path}/cache';
+    final dir = Directory(cachePath);
+    await dir.delete(recursive: true);
+  }
+
+
+
 }

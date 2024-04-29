@@ -8,7 +8,6 @@ class LoadingDialog{
 
   void showDefaultLoading(String loadingText) {
     print(loadingText);
-    print(loadingText);
     EasyLoading.show(
       status: loadingText,
       maskType: EasyLoadingMaskType.black,

@@ -41,16 +41,17 @@ class _XeroxHomeState extends State<XeroxHome> {
   TextEditingController _descriptionController = TextEditingController();
   TextEditingController _bindingFileController = TextEditingController();
   TextEditingController _singleSideFileController = TextEditingController();
+  TextEditingController _totalAmountController = TextEditingController();
 
   Map<String, String> _uploadedFiles = {};
+  List<String> excludedItems = ['XeroxNote','XeroxHistory'];
 
   String email='no email found';
-  double _calculatedPrice=0;
-  int pages=0,bindings =0;
-  double progress=0,printPrice=1.5, bindingPrice = 1, pagesCost =0, bindingsCost =0;
-  String xeroxNote='We will let you know where to collect else contact 8501070702';
-  String paymentNumber = '';
+  double totalPrice=0;
+  double progress=0;
+  String xeroxNote='Contact 8501070702';
   int totalFileCount=0;
+  Map<String, dynamic>? xeroxDetails= {};
 
   @override
   void initState() {
@@ -67,12 +68,8 @@ class _XeroxHomeState extends State<XeroxHome> {
   Future<void> getData() async {
     loadingDialog.showDefaultLoading('Getting Details...');
     DocumentReference detailsRef = FirebaseFirestore.instance.doc('XeroxDetails/DisplayDetails');
-    await fireStoreService.getDocumentDetails(detailsRef).then((value) {
-      bindingPrice = value!['BindingPrice'] as double;
-      printPrice = value['PrintPrice'] as double;
-      xeroxNote = value['XeroxNote'];
-      paymentNumber = value['PaymentNumber'];
-    });
+    xeroxDetails = await fireStoreService.getDocumentDetails(detailsRef);
+    xeroxNote = xeroxDetails!['XeroxNote'];
 
     email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
     setState(() {});
@@ -87,16 +84,6 @@ class _XeroxHomeState extends State<XeroxHome> {
       'name': 'FindAny',
       'description': 'Xerox',
       'prefill': {'contact': number, 'email': email},
-      'options': {
-        'checkout': {
-          'method': {
-            'netbanking': 0,
-            'card': 0,
-            'upi': 1,
-            'wallet': 0,
-          },
-        },
-      },
     };
     try {
       razorpay.open(options);
@@ -105,8 +92,6 @@ class _XeroxHomeState extends State<XeroxHome> {
       debugPrint('Razorpay Error: $e');
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -125,240 +110,205 @@ class _XeroxHomeState extends State<XeroxHome> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                margin: EdgeInsets.only(bottom: 20),
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black, // Default text color
-                    ),
-                    children: <TextSpan>[
-                      TextSpan(
-                        text: 'Note: ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              margin: EdgeInsets.only(bottom: 20),
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black, // Default text color
+                  ),
+                  children: <TextSpan>[
+                    TextSpan(
+                      text: 'Note: ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
                       ),
-                      TextSpan(
-                        text: xeroxNote, // Rest of the text
+                    ),
+                    TextSpan(
+                      text: xeroxNote, // Rest of the text
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Text(
+              email,
+              style: TextStyle(
+                fontSize: 15,
+              ),
+            ),
+            SizedBox(height: 20),
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Name*',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10),
+            TextFormField(
+              controller: _mobilenumberController,
+              decoration: InputDecoration(
+                labelText: 'Mobile Number*',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.phone,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+            ),
+            SizedBox(height: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  margin: EdgeInsets.only(bottom: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      ElevatedButton(
+                        onPressed: pickFile,
+                        child: Text('Upload File'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ShowFiles(),
+                            ),
+                          ).then((value) {
+                            if (value != null) {
+                              setState(() {
+                                _uploadedFiles.addAll(value);
+                                totalFileCount = _uploadedFiles.length;
+                              });
+                            }
+                          });
+                        },
+                        child: Text('Select Files'),
                       ),
                     ],
                   ),
                 ),
-              ),
-              Text(
-                email,
-                style: TextStyle(
-                  fontSize: 15,
-                ),
-              ),
-              SizedBox(height: 20),
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Name*',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: _mobilenumberController,
-                decoration: InputDecoration(
-                  labelText: 'Mobile Number*',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-              ),
-
-              SizedBox(height: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    margin: EdgeInsets.only(bottom: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        ElevatedButton(
-                          onPressed: pickFile,
-                          child: Text('Upload File'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ShowFiles(),
-                              ),
-                            ).then((value) {
-                              if (value != null) {
-                                setState(() {
-                                  _uploadedFiles.addAll(value);
-                                  totalFileCount = _uploadedFiles.length;
-                                });
-                              }
-                            });
-                          },
-                          child: Text('Select Files'),
-                        ),
-                      ],
-                    ),
+                Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (int index = 0; index < _uploadedFiles.length; index++)
-                          ListTile(
-                            title: Text('${index + 1}. ${_uploadedFiles.keys.toList()[index]}'),
-                            onTap: () => _openFile(_uploadedFiles.values.toList()[index]),
-                            trailing: IconButton(
-                              icon: Icon(Icons.close),
-                              onPressed: () {
-                                setState(() {
-                                  utils.deleteFileInCache(_uploadedFiles.values.toList()[index]);
-                                  _uploadedFiles.remove(_uploadedFiles.keys.toList()[index]);
-                                  totalFileCount = _uploadedFiles.length;
-                                });
-                              },
-                            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (int index = 0; index < _uploadedFiles.length; index++)
+                        ListTile(
+                          title: Text('${index + 1}. ${_uploadedFiles.keys.toList()[index]}'),
+                          onTap: () => _openFile(_uploadedFiles.values.toList()[index]),
+                          trailing: IconButton(
+                            icon: Icon(Icons.close),
+                            onPressed: () {
+                              setState(() {
+                                utils.deleteFileInCache(_uploadedFiles.values.toList()[index]);
+                                _uploadedFiles.remove(_uploadedFiles.keys.toList()[index]);
+                                totalFileCount = _uploadedFiles.length;
+                              });
+                            },
                           ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              TextField(
-                controller: _bindingFileController,
-                decoration: InputDecoration(
-                  labelText: 'Numbers of files for binding (default is no binding)',
-                  hintText: 'ex -1,3',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _singleSideFileController,
-                decoration: InputDecoration(
-                  labelText: 'Numbers of 2-side print files (default is 1-side print)',
-                  hintText: 'ex -2,4',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Specify any additional specifications (Extra cost applies)',
-                  hintText: 'spiralbinding,color xerox etc..',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.multiline,
-                maxLines: null, // Allows multiple lines of text input
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'no of pages',
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          pages = int.tryParse(value) ?? 0;
-                          pagesCost = pages * printPrice;
-                          _calculatedPrice = pagesCost + bindingsCost;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    '* $printPrice',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    '+',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: TextFormField(
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'no of bindings',
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          bindings = int.tryParse(value) ?? 0;
-                          bindingsCost = bindings * bindingPrice;
-                          _calculatedPrice = pagesCost + bindingsCost;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    '* $bindingPrice',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    '= $_calculatedPrice',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Call the startPayment function when the button is pressed
-                    if(_calculatedPrice.toInt()<1){
-                      _calculatedPrice = 1.0;
-                    }
-                    //_calculatedPrice= 100.0;
-                    int price = _calculatedPrice.round(); // Or use .ceil() or .floor() depending on your rounding preference
-                    print('PayingCost: $price');
-                    onSubmitClicked(price);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0), // Adjust horizontal padding as needed
-                    child: Text('Pay & Submit'),
+                        ),
+                    ],
                   ),
                 ),
+              ],
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _bindingFileController,
+              decoration: InputDecoration(
+                labelText: 'File numbers for binding (default is no binding)',
+                hintText: 'ex -1,3',
+                border: OutlineInputBorder(),
               ),
-            ],
-          ),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: _singleSideFileController,
+              decoration: InputDecoration(
+                labelText: '2-side print file numbers (default is 1-side print)',
+                hintText: 'ex -2,4',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: _descriptionController,
+              decoration: InputDecoration(
+                labelText: 'Specify any other requirements with file numbers (Extra cost applies)',
+                hintText: 'spiral binding, color xerox, etc..',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.multiline,
+              maxLines: null, // Allows multiple lines of text input
+            ),
+            SizedBox(height: 20),
+            DataTable(
+              columns: [
+                DataColumn(label: Text('Item')),
+                DataColumn(label: Text('Price')),
+              ],
+              rows: [
+                for (var entry in xeroxDetails!.entries)
+                  if (!excludedItems.contains(entry.key))
+                    DataRow(cells: [
+                      DataCell(Text(entry.key)),
+                      DataCell(Text(entry.value.toString())),
+                    ]),
+              ],
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _totalAmountController,
+              decoration: InputDecoration(
+                labelText: 'Total Amount',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                setState(() {
+                  totalPrice = double.tryParse(value) ?? 0.0;
+                });
+              },
+            ),
+            SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  // Call the startPayment function when the button is pressed
+                  if (totalPrice.toInt() < 1) {
+                    totalPrice = 2;
+                  }
+                  int price = totalPrice.round();
+                  print('PayingCost: $price');
+                  onSubmitClicked(price);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0), // Adjust horizontal padding as needed
+                  child: Text('Pay & Submit'),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-
 
   Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
     // Handle payment success
@@ -399,10 +349,9 @@ class _XeroxHomeState extends State<XeroxHome> {
     DocumentReference userRef = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
 
     Map<String, dynamic> uploadData = {'ID': count,'Date': utils.getTodayDate(),'Name': _nameController.text, 'Mobile Number': _mobilenumberController.text, 'Email': email,
-      'No of Pages': pages, 'Calculated Price': _calculatedPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls,
-      'Description':_descriptionController.text};
+      'Total Price': totalPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls, 'Description':_descriptionController.text};
 
-    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, _calculatedPrice.toString(),_descriptionController.text,response.paymentId!];
+    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, totalPrice.toString(),_descriptionController.text,response.paymentId!];
     sheetData.addAll(uploadedUrls);
 
     await fireStoreService.uploadMapDataToFirestore(uploadData, userRef);

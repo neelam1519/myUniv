@@ -106,6 +106,7 @@ class Utils{
   }
 
     Future<void> deleteFolder(String folderPath) async {
+    print('Deleting Cache Folder');
       try {
         Directory folder = Directory(folderPath);
         if (await folder.exists()) {

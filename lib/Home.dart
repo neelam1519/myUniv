@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
@@ -11,14 +13,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-class Home extends StatefulWidget {
+class Home extends StatefulWidget{
   @override
   _HomeState createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with WidgetsBindingObserver{
   Utils utils = new Utils();
   LoadingDialog loadingDialog = new LoadingDialog();
   SharedPreferences sharedPreferences = new SharedPreferences();
@@ -183,8 +184,8 @@ class _HomeState extends State<Home> {
   Future<void> signOut() async {
     if (mounted) {
       loadingDialog.showDefaultLoading('Signing Out...');
-      try {
 
+      try {
         await FirebaseAuth.instance.signOut();
         await GoogleSignIn().disconnect();
         utils.deleteFile('/data/data/com.neelam.FindAny/shared_prefs/FlutterSecureStorage.xml');
@@ -200,9 +201,10 @@ class _HomeState extends State<Home> {
     }
   }
 
-
   @override
-  void dispose() {
+  void dispose(){
     super.dispose();
+    utils.deleteFolder("/data/data/com.neelam.FindAny/cache");
+    print('Home Disposed');
   }
 }
