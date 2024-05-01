@@ -380,13 +380,13 @@ class _XeroxHomeState extends State<XeroxHome> {
 
   Future<void> onSubmitClicked(int price) async {
     // Check if any required field is empty
-    if (_nameController.text.isEmpty || _mobilenumberController.text.isEmpty ||  _uploadedFiles.isEmpty) {
-      utils.showToastMessage('Missing required Fields', context);
+    if (_uploadedFiles.isEmpty) {
+      utils.showToastMessage('Files are missing', context);
       return;
-    } else if (!utils.isValidMobileNumber(_mobilenumberController.text)) {
+    } else if (!utils.isValidMobileNumber(_mobilenumberController.text) || _mobilenumberController.text.isEmpty) {
       utils.showToastMessage('Enter a Valid Mobile Number', context);
       return;
-    } else if (_nameController.text.length < 5) {
+    } else if (_nameController.text.length < 5  || _nameController.text.isEmpty) {
       utils.showToastMessage('Enter at least 5 letters in name', context);
       return;
     }

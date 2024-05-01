@@ -70,7 +70,7 @@ class _XeroxHistoryState extends State<XeroxHistory> {
               child: Card(
                 child: ListTile(
                   title: Text(data['Name'] ?? ''),
-                  subtitle: Text('Date: ${data['Date']} | Pages: ${data['No of Pages']}'),
+                  subtitle: Text('Date: ${data['Date']}'),
                   onTap: () {
                     // Handle onTap event
                     try {

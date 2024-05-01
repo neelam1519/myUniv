@@ -219,7 +219,9 @@ class _UniversityChatState extends State<UniversityChat> {
                 utils.showToastMessage('Error sending message', context);
               }
             },
-            
+            messageListOptions: MessageListOptions(
+              onLoadEarlier:
+            ),
             messages: messages,
             inputOptions: InputOptions(
               alwaysShowSend: true,
@@ -270,7 +272,6 @@ class _UniversityChatState extends State<UniversityChat> {
                 print('Media tapped: ${media.url}');
               },
             ),
-
             typingUsers: typingUsers,
           ),
         ),
