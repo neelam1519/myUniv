@@ -47,14 +47,20 @@ class _UniversityChatState extends State<UniversityChat> {
 
   late ChatUser user = ChatUser(id: '', firstName: '', profileImage: '');
   late List<ChatUser> typingUsers = [];
-  List<ChatMessage> messages=[];
+  List<ChatMessage> messagesList=[];
   List<ChatMedia> chatMedia = [];
   List<String?> filePaths = [];
   List<File> selectedFiles = [];
   String name = '', email = '', regNo = '', profileUrl = '';
 
-  String hintText = 'Type your message';
+  int _messageBatchSize = 10;
+  DocumentSnapshot? _lastDocument;
+  bool _isLoading = false;
 
+  List<dynamic> allMessages= [];
+
+  String hintText = 'Type your message';
+  bool allMessagesLoaded = false;
 
   late List<QuerySnapshot> snapshots = [];
 
@@ -64,9 +70,26 @@ class _UniversityChatState extends State<UniversityChat> {
     loadingDialog.showDefaultLoading('Getting Messages...');
     subscribeToUniversityChat();
 
-    chattingStream = FirebaseFirestore.instance.collection('Chatting').orderBy('createdAt', descending: true).snapshots();
+
+    if (_lastDocument != null) {
+      print('Last Document is not null : ${_lastDocument!.data()}');
+      chattingStream = FirebaseFirestore.instance
+          .collection('Chatting')
+          .orderBy('createdAt', descending: true)
+          .startAfterDocument(_lastDocument!)
+          .limit(_messageBatchSize)
+          .snapshots();
+    } else {
+      print('Last Document is null');
+      chattingStream = FirebaseFirestore.instance
+          .collection('Chatting')
+          .orderBy('createdAt', descending: true)
+          .limit(_messageBatchSize)
+          .snapshots();
+    }
+
     typingStream = FirebaseFirestore.instance.collection('TypingDetails').snapshots();
-    //mergedStream = StreamGroup<QuerySnapshot<Object?>>.broadcast([chattingStream, typingStream]);
+
     loadingDialog.showDefaultLoading('Getting Messages');
     getDetails().then((_) {
       setState(() {
@@ -80,6 +103,7 @@ class _UniversityChatState extends State<UniversityChat> {
   }
 
   Widget build(BuildContext context) {
+    print('Build is running');
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -94,7 +118,7 @@ class _UniversityChatState extends State<UniversityChat> {
                 return StreamBuilder<QuerySnapshot>(
                   stream: typingStream,
                   builder: (context, typingSnapshot) {
-                    // Handle error states
+                    print('Entered StreamBuilder');
                     if (chattingSnapshot.hasError) {
                       return Text('Error: ${chattingSnapshot.error}');
                     }
@@ -102,58 +126,71 @@ class _UniversityChatState extends State<UniversityChat> {
                       return Text('Error: ${typingSnapshot.error}');
                     }
 
-                    if (chattingSnapshot.hasData && typingSnapshot.hasData) {
-                      snapshots = [chattingSnapshot.data!, typingSnapshot.data!];
-                      final data1 = chattingSnapshot.data!.size;
-                      final data2 = typingSnapshot.data!.size;
-                      print('Received Data from Chatting: $data1');
-                      print('Received Data from Typing: $data2');
-                      loadingDialog.dismiss();
-                    }
+                    if(!_isLoading) {
+                      if (chattingSnapshot.hasData && typingSnapshot.hasData) {
+                        snapshots =
+                        [chattingSnapshot.data!, typingSnapshot.data!];
+                        final data1 = chattingSnapshot.data!.size;
+                        final data2 = typingSnapshot.data!.size;
+                        print('Received Data from Chatting: $data1');
+                        print('Received Data from Typing: $data2');
+                      }
 
-                    if (chattingSnapshot.hasData) {
-                      messages = chattingSnapshot.data!.docs.map((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        String dateTimeString = data['createdAt'];
-                        DateTime dateTime = DateTime.parse(dateTimeString);
+                      List<ChatMessage> newMessages = [];
+                      if (chattingSnapshot.hasData) {
+                        print('Chatting Snapshot is running');
+                        newMessages = chattingSnapshot.data!.docs.map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          String dateTimeString = data['createdAt'];
+                          DateTime dateTime = DateTime.parse(dateTimeString);
+                          Map<String, dynamic> mapData = data['user'];
+                          ChatUser user = ChatUser.fromJson(mapData);
 
-                        print('getting chat');
-                        Map<String, dynamic> mapData = data['user'];
-                        ChatUser user = ChatUser.fromJson(mapData);
-
-                        List<ChatMedia> listMedia = [];
-                        List<dynamic>? mediaData = data['medias'];
-                        if (mediaData != null && mediaData.isNotEmpty) {
-                          for (Map<String, dynamic> mapMedia in mediaData) {
-                            listMedia.add(ChatMedia.fromJson(mapMedia));
+                          List<ChatMedia> listMedia = [];
+                          List<dynamic>? mediaData = data['medias'];
+                          if (mediaData != null && mediaData.isNotEmpty) {
+                            for (Map<String, dynamic> mapMedia in mediaData) {
+                              listMedia.add(ChatMedia.fromJson(mapMedia));
+                            }
                           }
-                          print('MapMedia: ${listMedia}');
+                          return ChatMessage(
+                            user: user,
+                            text: data['text'],
+                            medias: listMedia,
+                            createdAt: dateTime,
+                          );
+                        }).toList();
+
+                        if (chattingSnapshot.data!.docs.isNotEmpty) {
+                          _lastDocument = chattingSnapshot.data!.docs.last;
                         }
-                        return ChatMessage(
-                          text: data['text'],
-                          user: user,
-                          medias: listMedia,
-                          createdAt: dateTime,
-                        );
-                      }).toList();
+                        if (!chattingSnapshot.hasData ||
+                            chattingSnapshot.data!.docs.isEmpty) {
+                          print('All messages loaded');
+                          allMessagesLoaded = true;
+                        }
+                      }
+                      messagesList.addAll(newMessages);
+                      if (typingSnapshot.hasData) {
+                        print('Typing Snapshot is running');
+                        typingUsers = typingSnapshot.data!.docs
+                            .map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return ChatUser(
+                            id: data['id'],
+                            firstName: data['Name'],
+                          );
+                        }).where((user) => user.id != user.id)
+                            .toList();
+                      }
+                      loadingDialog.dismiss();
+                      messagesList.forEach((element) {
+                        print('All Messages: ${element.text}');
+                      });
+                    }else{
+                      print("isLoading: ${_isLoading}");
                     }
-
-                    if (typingSnapshot.hasData) {
-                      typingUsers = typingSnapshot.data!.docs
-                          .map((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        return ChatUser(
-                          id: data['id'],
-                          firstName: data['Name'],
-                        );
-                      }).where((user) => user.id != user.id) // Exclude current user
-                          .toList();
-                    }
-                    print('Messages: ${messages}');
-                    print('Typing Users: ${typingUsers}');
-
-                    // Return your widget here
-                    return buildDashChat(messages, typingUsers);
+                    return buildDashChat(messagesList, typingUsers);
                   },
                 );
               },
@@ -165,6 +202,7 @@ class _UniversityChatState extends State<UniversityChat> {
   }
 
   Widget buildDashChat(List<ChatMessage> messages, List<ChatUser> typingUsers) {
+    print('Building dash chat : ${messagesList.length}');
     return Column(
       children: [
         Expanded(
@@ -212,15 +250,14 @@ class _UniversityChatState extends State<UniversityChat> {
                   selectedFiles.clear();
                   chatMedia.clear();
                 });
-                utils.showToastMessage('Message sent', context);
               } catch (e) {
-                loadingDialog.dismiss(); // Dismiss the loading dialog in case of an error
+                loadingDialog.dismiss();
                 print('Error sending message: $e');
                 utils.showToastMessage('Error sending message', context);
               }
             },
             messageListOptions: MessageListOptions(
-              onLoadEarlier:
+              onLoadEarlier:_loadEarlierMessages
             ),
             messages: messages,
             inputOptions: InputOptions(
@@ -280,84 +317,77 @@ class _UniversityChatState extends State<UniversityChat> {
     );
   }
 
-  Widget _buildSelectedFilesWidget() {
-    hintText='write about the files to send in chat';
-    return selectedFiles.isNotEmpty
-        ? Container(
-      height: 120, // Increased height to accommodate filename
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: selectedFiles.length,
-        itemBuilder: (context, index) {
-          String fileName = selectedFiles[index].path.split('/').last;
-          String filePath = selectedFiles[index].path;
+  Future<void> _loadEarlierMessages() async {
+    print('LoadEarlier Messages');
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
 
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 8),
-            width: 100,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.end, // Align items to the bottom
-              children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey[300],
-                      ),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                          });
-                        },
-                        child: _buildFilePreview(selectedFiles[index]),
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: Icon(
-                            Icons.cancel,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8), // Increased height to add more space between media and filename
-                Text(
-                  fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    )
-        : SizedBox.shrink(); // Return an empty SizedBox if selectedFiles is empty
+    Query query = FirebaseFirestore.instance
+        .collection('Chatting')
+        .orderBy('createdAt', descending: true)
+        .limit(10);
+    if (_lastDocument != null) {
+      query = query.startAfterDocument(_lastDocument!);
+    }
+    try {
+      QuerySnapshot querySnapshot = await query.get();
+
+      List<ChatMessage> newMessages = querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        String dateTimeString = data['createdAt'];
+        DateTime dateTime = DateTime.parse(dateTimeString);
+
+        Map<String, dynamic> mapData = data['user'];
+        ChatUser user = ChatUser.fromJson(mapData);
+
+        List<ChatMedia> listMedia = [];
+        List<dynamic>? mediaData = data['medias'];
+        if (mediaData != null && mediaData.isNotEmpty) {
+          for (Map<String, dynamic> mapMedia in mediaData) {
+            listMedia.add(ChatMedia.fromJson(mapMedia));
+          }
+        }
+
+        return ChatMessage(
+          text: data['text'],
+          user: user,
+          medias: listMedia,
+          createdAt: dateTime,
+        );
+      }).toList();
+
+
+      if(newMessages.isEmpty){
+        utils.showToastMessage('All Messages Loaded', context);
+      }else{
+        setState(() {
+          messagesList.addAll(newMessages);
+          if (querySnapshot.docs.isNotEmpty) {
+            _lastDocument = querySnapshot.docs.last;
+          }
+          _isLoading = false;
+        });
+        buildDashChat(messagesList, typingUsers);
+      }
+
+      newMessages.forEach((element) {
+        print('AllMessages: ${element.text}');
+      });
+      print('LoadEarlier Messages length: ${messagesList.length}');
+
+    } catch (error) {
+      print("Error loading earlier messages: $error");
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Widget buildMediaMessage(List<ChatMedia> medias) {
+    print('Medias: ${medias.length}');
+    print('All Messages: ${messagesList.length}');
     return Wrap(
       children: medias.map((media) {
         String fileName = extractFileName(media.url);
@@ -481,6 +511,82 @@ class _UniversityChatState extends State<UniversityChat> {
         }
       }).toList(),
     );
+  }
+
+  Widget _buildSelectedFilesWidget() {
+    hintText='write about the files to send in chat';
+    return selectedFiles.isNotEmpty
+        ? Container(
+      height: 120, // Increased height to accommodate filename
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: selectedFiles.length,
+        itemBuilder: (context, index) {
+          String fileName = selectedFiles[index].path.split('/').last;
+          String filePath = selectedFiles[index].path;
+
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 8),
+            width: 100,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.end, // Align items to the bottom
+              children: [
+                Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[300],
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                          });
+                        },
+                        child: _buildFilePreview(selectedFiles[index]),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: Icon(
+                            Icons.cancel,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8), // Increased height to add more space between media and filename
+                Text(
+                  fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ) : SizedBox.shrink(); // Return an empty SizedBox if selectedFiles is empty
   }
 
   String extractFileName(String url) {
