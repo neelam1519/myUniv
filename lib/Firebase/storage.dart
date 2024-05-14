@@ -43,4 +43,7 @@ class FirebaseStorageHelper {
       return '';
     }
   }
+
+  Future<void> getFiles(String filepath) async{}
+
 }

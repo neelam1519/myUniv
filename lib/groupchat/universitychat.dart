@@ -53,7 +53,7 @@ class _UniversityChatState extends State<UniversityChat> {
   List<File> selectedFiles = [];
   String name = '', email = '', regNo = '', profileUrl = '';
 
-  int _messageBatchSize = 10;
+  int _messageBatchSize = 15;
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
 
@@ -70,23 +70,12 @@ class _UniversityChatState extends State<UniversityChat> {
     loadingDialog.showDefaultLoading('Getting Messages...');
     subscribeToUniversityChat();
 
-
-    if (_lastDocument != null) {
-      print('Last Document is not null : ${_lastDocument!.data()}');
-      chattingStream = FirebaseFirestore.instance
-          .collection('Chatting')
-          .orderBy('createdAt', descending: true)
-          .startAfterDocument(_lastDocument!)
-          .limit(_messageBatchSize)
-          .snapshots();
-    } else {
       print('Last Document is null');
       chattingStream = FirebaseFirestore.instance
           .collection('Chatting')
           .orderBy('createdAt', descending: true)
           .limit(_messageBatchSize)
           .snapshots();
-    }
 
     typingStream = FirebaseFirestore.instance.collection('TypingDetails').snapshots();
 
@@ -115,28 +104,13 @@ class _UniversityChatState extends State<UniversityChat> {
             child: StreamBuilder<QuerySnapshot>(
               stream: chattingStream,
               builder: (context, chattingSnapshot) {
-                return StreamBuilder<QuerySnapshot>(
-                  stream: typingStream,
-                  builder: (context, typingSnapshot) {
-                    print('Entered StreamBuilder');
                     if (chattingSnapshot.hasError) {
                       return Text('Error: ${chattingSnapshot.error}');
                     }
-                    if (typingSnapshot.hasError) {
-                      return Text('Error: ${typingSnapshot.error}');
-                    }
+                    print('isLoading: ${_isLoading}');
+                    List<ChatMessage> newMessages = [];
 
                     if(!_isLoading) {
-                      if (chattingSnapshot.hasData && typingSnapshot.hasData) {
-                        snapshots =
-                        [chattingSnapshot.data!, typingSnapshot.data!];
-                        final data1 = chattingSnapshot.data!.size;
-                        final data2 = typingSnapshot.data!.size;
-                        print('Received Data from Chatting: $data1');
-                        print('Received Data from Typing: $data2');
-                      }
-
-                      List<ChatMessage> newMessages = [];
                       if (chattingSnapshot.hasData) {
                         print('Chatting Snapshot is running');
                         newMessages = chattingSnapshot.data!.docs.map((doc) {
@@ -170,29 +144,16 @@ class _UniversityChatState extends State<UniversityChat> {
                           allMessagesLoaded = true;
                         }
                       }
-                      messagesList.addAll(newMessages);
-                      if (typingSnapshot.hasData) {
-                        print('Typing Snapshot is running');
-                        typingUsers = typingSnapshot.data!.docs
-                            .map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          return ChatUser(
-                            id: data['id'],
-                            firstName: data['Name'],
-                          );
-                        }).where((user) => user.id != user.id)
-                            .toList();
-                      }
+                      print("All Messages: ${messagesList.length}");
+
+                      messagesList.insertAll(0,newMessages);
+
                       loadingDialog.dismiss();
-                      messagesList.forEach((element) {
-                        print('All Messages: ${element.text}');
-                      });
+                      print('New Messages in build: ${newMessages.length}');
                     }else{
-                      print("isLoading: ${_isLoading}");
+                      print('Build is not running');
                     }
                     return buildDashChat(messagesList, typingUsers);
-                  },
-                );
               },
             ),
           ),
@@ -202,7 +163,7 @@ class _UniversityChatState extends State<UniversityChat> {
   }
 
   Widget buildDashChat(List<ChatMessage> messages, List<ChatUser> typingUsers) {
-    print('Building dash chat : ${messagesList.length}');
+    print('Building dash chat : ${messages.length}');
     return Column(
       children: [
         Expanded(
@@ -210,12 +171,12 @@ class _UniversityChatState extends State<UniversityChat> {
             currentUser: user,
             onSend: (ChatMessage m) async {
               try {
+                _isLoading = false;
                 if (selectedFiles.isNotEmpty) {
                   loadingDialog.showDefaultLoading('Upload Files to chat');
                   loadingDialog.showProgressLoading(0, 'Files are uploading');
 
                   for (File file in selectedFiles) {
-                    print('Uploading Files...');
                     String filepath = file.path;
                     String filename = path.basename(filepath);
                     String extension = utils.getFileExtension(File(filepath));
@@ -250,6 +211,7 @@ class _UniversityChatState extends State<UniversityChat> {
                   selectedFiles.clear();
                   chatMedia.clear();
                 });
+
               } catch (e) {
                 loadingDialog.dismiss();
                 print('Error sending message: $e');
@@ -319,18 +281,17 @@ class _UniversityChatState extends State<UniversityChat> {
 
   Future<void> _loadEarlierMessages() async {
     print('LoadEarlier Messages');
-    if (_isLoading) return;
-    setState(() {
-      _isLoading = true;
-    });
 
     Query query = FirebaseFirestore.instance
         .collection('Chatting')
         .orderBy('createdAt', descending: true)
-        .limit(10);
+        .limit(_messageBatchSize);
+
     if (_lastDocument != null) {
+      print('LastDocument: ${_lastDocument!.id}');
       query = query.startAfterDocument(_lastDocument!);
     }
+    print('Load Earlier messages: ${query.parameters}');
     try {
       QuerySnapshot querySnapshot = await query.get();
 
@@ -358,25 +319,23 @@ class _UniversityChatState extends State<UniversityChat> {
         );
       }).toList();
 
-
-      if(newMessages.isEmpty){
-        utils.showToastMessage('All Messages Loaded', context);
-      }else{
+      if (newMessages.isEmpty) {
+        if (_lastDocument == null) {
+          utils.showToastMessage('All Messages Loaded', context);
+        }
+      } else {
         setState(() {
+          _isLoading = true;
           messagesList.addAll(newMessages);
           if (querySnapshot.docs.isNotEmpty) {
             _lastDocument = querySnapshot.docs.last;
           }
-          _isLoading = false;
+          print('All Messages length: ${messagesList.length}');
+          print("MessageList: ${messagesList.map((element) => element.text).join(', ')}");
+          print('New messages Messages length: ${newMessages.length}');
+          print("New Messages: ${newMessages.map((element) => element.text).join(', ')}");
         });
-        buildDashChat(messagesList, typingUsers);
       }
-
-      newMessages.forEach((element) {
-        print('AllMessages: ${element.text}');
-      });
-      print('LoadEarlier Messages length: ${messagesList.length}');
-
     } catch (error) {
       print("Error loading earlier messages: $error");
       setState(() {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
+import 'package:findany_flutter/materials/materialshome.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
@@ -53,7 +54,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text('Home')
+        title: Text('Home'),
       ),
       drawer: Drawer(
         child: FutureBuilder<void>(
@@ -81,7 +82,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                     ),
                     otherAccountsPictures: [],
                   ),
-
                   ListTile(
                     leading: Icon(Icons.person),
                     title: Text('Profile'),
@@ -96,9 +96,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                     leading: Icon(Icons.exit_to_app),
                     title: Text('Sign Out'),
                     onTap: () async {
-                      if(await utils.checkInternetConnection()){
+                      if (await utils.checkInternetConnection()) {
                         signOut();
-                      }else{
+                      } else {
                         utils.showToastMessage('Check your internet connections', context);
                       }
                     },
@@ -109,62 +109,118 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
           },
         ),
       ),
-      body: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => UniversityChat()),
-                );
-              },
-              child: Container(
-                padding: EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    Image.asset(
-                      'assets/images/groupchat.jpg',
-                      width: 100,
-                      height: 100,
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Lets Talk',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => UniversityChat()),
+                  );
+                },
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/groupchat.jpg',
+                        width: 100,
+                        height: 100,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Lets Talk',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => XeroxHome()),
-                );
-              },
-              child: Container(
-                padding: EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    Image.asset(
-                      'assets/images/xerox.png',
-                      width: 100,
-                      height: 100,
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Get Xerox',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ],
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => XeroxHome()),
+                  );
+                },
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/xerox.png',
+                        width: 100,
+                        height: 100,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Get Xerox',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          SizedBox(height: 20), // Add some space between the rows
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  // Add your functionality here
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MaterialsHome()),
+                  );
+                },
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/materials.png', // Add your image path
+                        width: 100,
+                        height: 100,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Materials',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Add your functionality here
+                },
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  child: Column(
+                    children: [
+                      Container( // White container
+                        width: 100,
+                        height: 100,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        '',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -184,7 +240,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   Future<void> signOut() async {
     if (mounted) {
       loadingDialog.showDefaultLoading('Signing Out...');
-
       try {
         await FirebaseAuth.instance.signOut();
         await GoogleSignIn().disconnect();

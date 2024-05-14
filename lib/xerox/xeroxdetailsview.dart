@@ -20,7 +20,7 @@ class XeroxDetailView extends StatefulWidget {
 class _XeroxDetailViewState extends State<XeroxDetailView> {
   LoadingDialog loadingDialog = new LoadingDialog();
   Utils utils = new Utils();
-  List<String> order = ['ID', 'Name', 'Mobile Number', 'Email', 'Date', 'No of Pages', 'Transaction ID', 'Description', 'Uploaded Files'];
+  List<String> order = ['ID', 'Name', 'Mobile Number', 'Email', 'Date', 'Transaction ID', 'Description', 'Uploaded Files'];
 
   @override
   Widget build(BuildContext context) {

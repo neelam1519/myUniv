@@ -147,7 +147,7 @@ class _XeroxHomeState extends State<XeroxHome> {
             TextFormField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: 'Name*',
+                labelText: 'Xerox Name*',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -333,7 +333,6 @@ class _XeroxHomeState extends State<XeroxHome> {
         uploadedUrl = await firebaseStorageHelper.uploadFile(file, 'XeroList/${utils.getTodayDate().replaceAll('/', ',')}', '${getFileName(file)}',);
       }
       print("Url: $uploadedUrl");
-      // Add the uploaded URL to the list
       if (uploadedUrl != null) {
         uploadedUrls.add(uploadedUrl);
         progress+=totalprogress;
@@ -351,7 +350,8 @@ class _XeroxHomeState extends State<XeroxHome> {
     Map<String, dynamic> uploadData = {'ID': count,'Date': utils.getTodayDate(),'Name': _nameController.text, 'Mobile Number': _mobilenumberController.text, 'Email': email,
       'Total Price': totalPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls, 'Description':_descriptionController.text};
 
-    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, totalPrice.toString(),_descriptionController.text,response.paymentId!];
+    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, totalPrice.toString(),_descriptionController.text,response.paymentId!,
+      'Xerox Details: ${xeroxDetails.toString()}'];
     sheetData.addAll(uploadedUrls);
 
     await fireStoreService.uploadMapDataToFirestore(uploadData, userRef);
