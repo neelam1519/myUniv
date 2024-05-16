@@ -39,6 +39,32 @@ class SharedPreferences{
     }
   }
 
+  Future<List<String>> getListFromSecureStorage(String key) async {
+    try {
+      // Get JSON string from secure storage
+      String? jsonString = await storage.read(key: key);
+
+      // If the stored value is null, return an empty list
+      if (jsonString == null) {
+        return [];
+      }
+
+      // Convert the JSON string to a list
+      List<dynamic> jsonList = jsonDecode(jsonString);
+
+      // Map the dynamic list to a list of strings
+      List<String> yourList = jsonList.cast<String>();
+
+      print('List retrieved from secure storage successfully!');
+      return yourList;
+    } catch (error) {
+      print('Error retrieving list: $error');
+      // Handle the error as needed
+      return [];
+    }
+  }
+
+
   Future<String?> getSecurePrefsValue(String key) async {
     try {
       return await storage.read(key: key);

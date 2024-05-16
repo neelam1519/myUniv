@@ -4,7 +4,6 @@ import 'package:findany_flutter/materials/units.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 
 class MaterialsHome extends StatefulWidget {
   @override
@@ -20,11 +19,21 @@ class _MaterialsHomeState extends State<MaterialsHome> {
   List<String?> branchList = ['CSE', 'ECE'];
 
   List<String?> specializations = [];
-  List<String?> cse_specialization = ['CYBER SECURITY','ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING','DATA SCIENCE','INTERNET OF THINGS'];
-  List<String?> ece_specialization = ['ARTIFICIAL INTELLIGENCE FOR CYBER SECURITY','EMBEDDED AND INTERNET OF THINGS','MICROCHIP PHYSICAL DESIGN',
-    'INTEGRATED CIRCUITS DESIGN AND VERIFICATION'];
+  List<String?> cse_specialization = [
+    'CYBER SECURITY',
+    'ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING',
+    'DATA SCIENCE',
+    'INTERNET OF THINGS'
+  ];
+  List<String?> ece_specialization = [
+    'ARTIFICIAL INTELLIGENCE FOR CYBER SECURITY',
+    'EMBEDDED AND INTERNET OF THINGS',
+    'MICROCHIP PHYSICAL DESIGN',
+    'INTEGRATED CIRCUITS DESIGN AND VERIFICATION'
+  ];
 
   List<dynamic> subjects = [];
+  List<String> selectedSubjects = [];
 
   String? yearSelectedOption = '1';
   String? branchSelectedOption = 'CSE';
@@ -36,29 +45,37 @@ class _MaterialsHomeState extends State<MaterialsHome> {
     intialize();
   }
 
-  Future<void> intialize() async{
+  Future<void> intialize() async {
     await getSharedPrefsValues().then((value) {
       getSpecialization();
       getSubjects();
     });
   }
 
-  Future<void> getSharedPrefsValues() async{
-    yearSelectedOption = await sharedPreferences.getSecurePrefsValue('yearSelectedOption') ?? yearsList.first;
-    branchSelectedOption = await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ?? branchList.first;
-    streamSelectedOption = await sharedPreferences.getSecurePrefsValue('streamSelectedOption') ?? specializations.first;
+  Future<void> getSharedPrefsValues() async {
+    yearSelectedOption =
+        await sharedPreferences.getSecurePrefsValue('yearSelectedOption') ?? yearsList.first;
+    branchSelectedOption =
+        await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ?? branchList.first;
+    if(specializations.isNotEmpty) {
+      streamSelectedOption =
+          await sharedPreferences.getSecurePrefsValue('streamSelectedOption') ??
+              specializations.first;
+    }
+    selectedSubjects = await sharedPreferences.getListFromSecureStorage('selectedSubjects');
+
+    print('Selected Subjects: $selectedSubjects');
   }
 
-  void getSpecialization(){
-
-    if(branchSelectedOption == 'CSE'){
+  void getSpecialization() {
+    if (branchSelectedOption == 'CSE') {
       specializations = cse_specialization;
-    }else if(branchSelectedOption == 'ECE'){
+    } else if (branchSelectedOption == 'ECE') {
       specializations = ece_specialization;
     }
 
-    if(specializations.isNotEmpty) {
-      if(streamSelectedOption == null || !specializations.contains(streamSelectedOption)) {
+    if (specializations.isNotEmpty) {
+      if (streamSelectedOption == null || !specializations.contains(streamSelectedOption)) {
         streamSelectedOption = specializations.first;
       }
     }
@@ -106,13 +123,12 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                                 },
                                 isDense: true,
                                 items: yearsList
-                                    .map<DropdownMenuItem<String>>(
-                                        (String? value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value!,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
+                                    .map<DropdownMenuItem<String>>((String? value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value!,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
                               ),
                               SizedBox(height: 20.0),
                               Text(
@@ -131,12 +147,13 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                                   getSpecialization();
                                 },
                                 isDense: true,
-                                items: branchList.map<DropdownMenuItem<String>>((String? value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value!,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
+                                items: branchList
+                                    .map<DropdownMenuItem<String>>((String? value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value!,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
                               ),
                               SizedBox(height: 20.0),
                               Text(
@@ -154,14 +171,15 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                                   });
                                 },
                                 isDense: true,
-                                items: specializations.map<DropdownMenuItem<String>>((String? value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value!,
-                                        child: Container(
-                                          child: Text(value),
-                                        ),
-                                      );
-                                    }).toList(),
+                                items: specializations
+                                    .map<DropdownMenuItem<String>>((String? value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value!,
+                                    child: Container(
+                                      child: Text(value),
+                                    ),
+                                  );
+                                }).toList(),
                               ),
                               SizedBox(height: 20.0),
                               ElevatedButton(
@@ -197,16 +215,38 @@ class _MaterialsHomeState extends State<MaterialsHome> {
               child: ListTile(
                 title: Text(subjects[index]),
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => Units()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => Units(path: 'materials/$yearSelectedOption/${subjects[index]}')));
+                  setState(() {
+                    if (selectedSubjects.contains(subjects[index])) {
+                      selectedSubjects.remove(subjects[index]);
+                      selectedSubjects.insert(0, subjects[index]);
+                    } else {
+                      selectedSubjects.insert(0, subjects[index]);
+                      print('Added to the first');
+                    }
+                    // Sort the subjects list based on the index of each subject in the selectedSubjects list
+                    subjects.sort((a, b) {
+                      int indexA = selectedSubjects.indexOf(a);
+                      int indexB = selectedSubjects.indexOf(b);
+                      if (indexA == -1 && indexB == -1) {
+                        return 0;
+                      } else if (indexA == -1) {
+                        return 1;
+                      } else if (indexB == -1) {
+                        return -1;
+                      }
+                      return indexA.compareTo(indexB);
+                    });
+                    print('onTap Selected Subjects: $selectedSubjects');
+                    print('Subjects: $subjects');
+                  });
                 },
               ),
             );
           },
         ),
       ),
+
     );
   }
 
@@ -214,8 +254,10 @@ class _MaterialsHomeState extends State<MaterialsHome> {
     loadingDialog.showDefaultLoading('Getting subjects');
 
     subjects.clear();
-    DocumentReference branchRef = FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/COMMON');
-    DocumentReference streamRef = FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/$streamSelectedOption');
+    DocumentReference branchRef =
+    FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/COMMON');
+    DocumentReference streamRef = FirebaseFirestore.instance
+        .doc('subjects/$yearSelectedOption/$branchSelectedOption/$streamSelectedOption');
 
     Map<String, dynamic>? branchDetails = await fireStoreService.getDocumentDetails(branchRef);
     Map<String, dynamic>? streamDetails = await fireStoreService.getDocumentDetails(streamRef);
@@ -234,16 +276,41 @@ class _MaterialsHomeState extends State<MaterialsHome> {
     print('Document Ref: $branchRef  $streamRef');
     print('Subjects values ${branchValues}   $streamValues');
 
+    subjects.addAll(branchValues);
+    subjects.addAll(streamValues);
+
+    // Sort the subjects list based on the index of each subject in the selectedSubjects list
+    subjects.sort((a, b) {
+      int indexA = selectedSubjects.indexOf(a);
+      int indexB = selectedSubjects.indexOf(b);
+      if (indexA == -1 && indexB == -1) {
+        return 0;
+      } else if (indexA == -1) {
+        return 1;
+      } else if (indexB == -1) {
+        return -1;
+      }
+      return indexA.compareTo(indexB);
+    });
     setState(() {
-      subjects.addAll(branchValues);
-      subjects.addAll(streamValues);
+
     });
     loadingDialog.dismiss();
   }
 
-  Future<void> updateSharedPrefsValues() async{
-
-    Map<String,String> values = {'streamSelectedOption': streamSelectedOption!, 'branchSelectedOption' : branchSelectedOption!, 'yearSelectedOption' : yearSelectedOption!};
+  Future<void> updateSharedPrefsValues() async {
+    Map<String, String> values = {
+      'streamSelectedOption': streamSelectedOption!,
+      'branchSelectedOption': branchSelectedOption!,
+      'yearSelectedOption': yearSelectedOption!
+    };
     sharedPreferences.storeMapValuesInSecureStorage(values);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    print('Storing Selected Subjects: $selectedSubjects');
+    sharedPreferences.storeListInSecureStorage(selectedSubjects, 'selectedSubjects');
   }
 }

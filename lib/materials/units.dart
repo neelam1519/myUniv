@@ -2,6 +2,10 @@ import 'package:findany_flutter/materials/displaymaterials.dart';
 import 'package:flutter/material.dart';
 
 class Units extends StatefulWidget {
+  final String path;
+
+  Units({required this.path});
+
   @override
   _UnitsState createState() => _UnitsState();
 }
@@ -18,10 +22,9 @@ class _UnitsState extends State<Units> {
         itemBuilder: (context, index) {
           return Card(
             child: ListTile(
-              title: Text('Unit ${index + 1}'),
+              title: Text('UNIT ${index + 1}'),
               onTap: () {
-                // Navigate to unit details page or perform any action here
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DisplayMaterials()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => DisplayMaterials(path: '${widget.path}', unit: 'UNIT ${index+1}',)));
               },
             ),
           );

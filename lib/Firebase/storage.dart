@@ -1,8 +1,36 @@
 import 'dart:io';
+
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 class FirebaseStorageHelper {
   FirebaseStorage storage = FirebaseStorage.instance;
+
+  Future<int> getFileCount(String folderPath) async {
+    int fileCount = 0;
+    try {
+      ListResult listResult = await storage.ref(folderPath).listAll();
+      fileCount = listResult.items.length;
+      return fileCount;
+    } catch (e) {
+      print('Error getting file count: $e');
+      return 0;
+    }
+  }
+
+  Future<List<String>> getFileNames(String folderPath) async {
+    List<String> fileNames = [];
+    try {
+      ListResult listResult = await storage.ref(folderPath).listAll();
+      listResult.items.forEach((Reference ref) {
+        fileNames.add(ref.name);
+      });
+      return fileNames;
+    } catch (e) {
+      print('Error getting file names: $e');
+      return [];
+    }
+  }
 
   Future<String> uploadFile(File file, String folderName, String fileName) async {
     try {
@@ -44,6 +72,31 @@ class FirebaseStorageHelper {
     }
   }
 
-  Future<void> getFiles(String filepath) async{}
+  Future<File?> downloadFile(String fullPath) async {
+    try {
+      Reference ref = storage.ref(fullPath);
+      String fileName = ref.name;
+      print('Downloading file: $fileName');
+
+      Directory cacheDir = await getTemporaryDirectory();
+      String cachePath = '${cacheDir.path}/${fullPath.replaceAll(' ', '')}';
+      print('Download Cache1: $cachePath');
+      String cacheDirPath = cachePath.substring(0, cachePath.lastIndexOf('/'));
+
+      await Directory(cacheDirPath).create(recursive: true);
+
+      File tempFile = File(cachePath);
+      await ref.writeToFile(tempFile);
+
+      print('File downloaded to: ${tempFile.path}');
+      return tempFile;
+    } on FirebaseException catch (e) {
+      print('Error downloading file: $e');
+      return null;
+    } catch (e) {
+      print('Error downloading file: $e');
+      return null;
+    }
+  }
 
 }

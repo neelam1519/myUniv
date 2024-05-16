@@ -215,6 +215,7 @@ class _UniversityChatState extends State<UniversityChat> {
               } catch (e) {
                 loadingDialog.dismiss();
                 print('Error sending message: $e');
+                hintText = 'Enter the message';
                 utils.showToastMessage('Error sending message', context);
               }
             },
@@ -274,10 +275,86 @@ class _UniversityChatState extends State<UniversityChat> {
             typingUsers: typingUsers,
           ),
         ),
-        _buildSelectedFilesWidget(),
+        buildSelectedFilesWidget(),
       ],
     );
   }
+
+  Widget buildSelectedFilesWidget() {
+    return selectedFiles.isNotEmpty
+        ? Container(
+      height: 120, // Increased height to accommodate filename
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: selectedFiles.length,
+        itemBuilder: (context, index) {
+          String fileName = selectedFiles[index].path.split('/').last;
+          String filePath = selectedFiles[index].path;
+          hintText='write about the files to send in chat';
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 8),
+            width: 100,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.end, // Align items to the bottom
+              children: [
+                Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[300],
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                          });
+                        },
+                        child: _buildFilePreview(selectedFiles[index]),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: Icon(
+                            Icons.cancel,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8), // Increased height to add more space between media and filename
+                Text(
+                  fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ) : SizedBox.shrink(); // Return an empty SizedBox if selectedFiles is empty
+  }
+
 
   Future<void> _loadEarlierMessages() async {
     print('LoadEarlier Messages');
@@ -472,81 +549,6 @@ class _UniversityChatState extends State<UniversityChat> {
     );
   }
 
-  Widget _buildSelectedFilesWidget() {
-    hintText='write about the files to send in chat';
-    return selectedFiles.isNotEmpty
-        ? Container(
-      height: 120, // Increased height to accommodate filename
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: selectedFiles.length,
-        itemBuilder: (context, index) {
-          String fileName = selectedFiles[index].path.split('/').last;
-          String filePath = selectedFiles[index].path;
-
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 8),
-            width: 100,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.end, // Align items to the bottom
-              children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey[300],
-                      ),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                          });
-                        },
-                        child: _buildFilePreview(selectedFiles[index]),
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFiles.removeAt(index);
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: Icon(
-                            Icons.cancel,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8), // Increased height to add more space between media and filename
-                Text(
-                  fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    ) : SizedBox.shrink(); // Return an empty SizedBox if selectedFiles is empty
-  }
 
   String extractFileName(String url) {
     String decodedUrl = Uri.decodeFull(url); // Decode the URL

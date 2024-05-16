@@ -52,8 +52,6 @@ class RealTimeDatabase {
   }
 
 
-
-
   Future<void> removeTypingStatus(String userId) async {
     try {
       String path = 'UniversityChat/$userId/';

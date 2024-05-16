@@ -326,7 +326,6 @@ class _XeroxHomeState extends State<XeroxHome> {
       File file = File(value);
       print('Value: ${file.path}');
       String? uploadedUrl = '';
-      // Upload the file to Firebase Storage
       if(utils.isURL(value)){
         uploadedUrl = value;
       }else{
