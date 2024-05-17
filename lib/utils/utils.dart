@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -225,6 +227,30 @@ class Utils{
       return 'no Token';
     }
   }
+
+  Future<void> openFile(String filePath) async {
+    try {
+      await OpenFile.open(filePath);
+    } catch (error) {
+      print('Error opening file: $error');
+    }
+  }
+
+  Future<List<PlatformFile>?> pickMultipleFiles() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'docx'],
+      );
+      return result?.files;
+    } catch (e) {
+      print('Error picking file: $e');
+      return null;
+    }
+  }
+
+
 
 
   Future<void> updateToken() async{

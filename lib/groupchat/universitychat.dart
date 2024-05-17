@@ -171,6 +171,7 @@ class _UniversityChatState extends State<UniversityChat> {
             currentUser: user,
             onSend: (ChatMessage m) async {
               try {
+
                 _isLoading = false;
                 if (selectedFiles.isNotEmpty) {
                   loadingDialog.showDefaultLoading('Upload Files to chat');
@@ -207,6 +208,9 @@ class _UniversityChatState extends State<UniversityChat> {
                 ChatMessage chatMessage = ChatMessage(user: user, createdAt: DateTime.now(), text: m.text, medias: List.from(chatMedia));
                 DocumentReference documentReference = FirebaseFirestore.instance.doc('Chatting/${Timestamp.now().microsecondsSinceEpoch.toString()}');
                 await fireStoreService.uploadMapDataToFirestore(chatMessage.toJson(), documentReference);
+
+                sendNotification('GroupChat', m.text);
+
                 setState(() {
                   selectedFiles.clear();
                   chatMedia.clear();
@@ -603,7 +607,7 @@ class _UniversityChatState extends State<UniversityChat> {
     if(tokens != null) {
       tokens.removeWhere((key, value) => key == regNo);
       List<dynamic> tokenValues = tokens.values.toList();
-      print('Chat Tokens: $tokenValues');
+      print('Notification Tokens: $tokenValues');
       notificationService.sendNotification(tokenValues,title,message,additionalData);
     }
   }

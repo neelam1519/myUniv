@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
@@ -11,12 +12,12 @@ import 'package:findany_flutter/xerox/showfiles.dart';
 import 'package:findany_flutter/xerox/xeroxhistory.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:path/path.dart' as path;
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:path/path.dart' as path;
 
 class XeroxHome extends StatefulWidget {
 
@@ -34,7 +35,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   SharedPreferences sharedPreferences = new SharedPreferences();
   LoadingDialog loadingDialog = new LoadingDialog();
 
-  final Razorpay razorpay = Razorpay();
+  Razorpay razorpay = new Razorpay();
 
   TextEditingController _nameController = TextEditingController();
   TextEditingController _mobilenumberController = TextEditingController();
@@ -53,16 +54,26 @@ class _XeroxHomeState extends State<XeroxHome> {
   int totalFileCount=0;
   Map<String, dynamic>? xeroxDetails= {};
 
+  //Razorpay
+  String apiUrl = 'https://api.razorpay.com/v1/orders';
+  static const _razorpayKey = 'rzp_live_kYGlb6Srm9dDRe';
+  static const _apiSecret = 'GPRg9ri7zy4r7QeRe9lT2xUx';
+
   @override
   void initState() {
     super.initState();
     getData();
     totalFileCount = _uploadedFiles.length;
+    initializeRazorpay();
+  }
 
-    //Razorpay init
+
+  initializeRazorpay() async {
+
     razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
     razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
     razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWallet);
+
   }
 
   Future<void> getData() async {
@@ -74,23 +85,6 @@ class _XeroxHomeState extends State<XeroxHome> {
     email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
     setState(() {});
     EasyLoading.dismiss();
-  }
-
-  void startPayment(int amount,String number,String email) async {
-    amount *= 100;
-    Map<String, dynamic> options = {
-      'key': 'rzp_live_kYGlb6Srm9dDRe',
-      'amount': amount,
-      'name': 'FindAny',
-      'description': 'Xerox',
-      'prefill': {'contact': number, 'email': email},
-    };
-    try {
-      razorpay.open(options);
-      print('Success: Razorpay');
-    } catch (e) {
-      debugPrint('Razorpay Error: $e');
-    }
   }
 
   @override
@@ -209,7 +203,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                       for (int index = 0; index < _uploadedFiles.length; index++)
                         ListTile(
                           title: Text('${index + 1}. ${_uploadedFiles.keys.toList()[index]}'),
-                          onTap: () => _openFile(_uploadedFiles.values.toList()[index]),
+                          onTap: () => utils.openFile(_uploadedFiles.values.toList()[index]),
                           trailing: IconButton(
                             icon: Icon(Icons.close),
                             onPressed: () {
@@ -310,61 +304,65 @@ class _XeroxHomeState extends State<XeroxHome> {
     );
   }
 
-  Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
-    // Handle payment success
-    print('razorpay successful ${response.paymentId}');
-    // Show progress loading bar
-    loadingDialog.showProgressLoading(progress, 'Uploading files...');
+  Future<String?> createOrder(int amount) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.razorpay.com/v1/orders'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ${base64Encode(utf8.encode("$_razorpayKey:$_apiSecret"))}',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'amount': amount *100,
+          'currency': 'INR',
+          'receipt': 'order_receipt_${DateTime.now().millisecondsSinceEpoch}',
+          'payment_capture': 1, // Auto capture payment
+        }),
+      );
 
-    // List to store uploaded file URLs
-    List<String> uploadedUrls = [];
-    int fileLength = _uploadedFiles.length;
-    double totalprogress=0.9/fileLength;
-
-    // Iterate through the uploaded files
-    for (String value in _uploadedFiles.values) {
-      File file = File(value);
-      print('Value: ${file.path}');
-      String? uploadedUrl = '';
-      if(utils.isURL(value)){
-        uploadedUrl = value;
-      }else{
-        uploadedUrl = await firebaseStorageHelper.uploadFile(file, 'XeroList/${utils.getTodayDate().replaceAll('/', ',')}', '${getFileName(file)}',);
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return responseData['id']; // Return the order ID
+      } else {
+        print('Failed to create order: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return null;
       }
-      print("Url: $uploadedUrl");
-      if (uploadedUrl != null) {
-        uploadedUrls.add(uploadedUrl);
-        progress+=totalprogress;
-        loadingDialog.showProgressLoading(progress, 'Uploading Files...');
-      }
+    } catch (e) {
+      print('Error creating order: $e');
+      return null;
     }
-    // Hide progress loading bar after uploading files
-    print('Uploaded Urls: ${uploadedUrls}');
-
-    int? count = await realTimeDatabase.incrementValue('Xerox/XeroxHistory');
-    print("Count: $count");
-
-    DocumentReference userRef = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
-
-    Map<String, dynamic> uploadData = {'ID': count,'Date': utils.getTodayDate(),'Name': _nameController.text, 'Mobile Number': _mobilenumberController.text, 'Email': email,
-      'Total Price': totalPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls, 'Description':_descriptionController.text};
-
-    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, totalPrice.toString(),_descriptionController.text,response.paymentId!,
-      'Xerox Details: ${xeroxDetails.toString()}'];
-    sheetData.addAll(uploadedUrls);
-
-    await fireStoreService.uploadMapDataToFirestore(uploadData, userRef);
-
-    // Once all files are uploaded, update the Google Sheets
-    userSheetsApi.updateCell(sheetData);
-    loadingDialog.showProgressLoading(progress+0.05, 'Uploading Files...');
-    utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/uploadedFiles/');
-    EasyLoading.dismiss();
-
-    // Hide progress loading bar after updating Google Sheets
-    utils.showToastMessage('Request submitted', context);
-    Navigator.pop(context);
   }
+
+  void startPayment(int amount, String number, String email) async {
+    final orderId = await createOrder(amount); // Call to createOrder
+    print('Order ID: $orderId');
+    if (orderId != null) {
+      var options = {
+        'key': _razorpayKey,
+        'amount': amount * 100,
+        'currency': 'INR',
+        'name': 'FindAny',
+        'description': 'Xerox',
+        'prefill': {'contact': number, 'email': email},
+        'order_id': orderId,
+      };
+      try {
+        razorpay.open(options);
+      } catch (e) {
+        debugPrint('Razorpay Error: $e');
+      }
+    } else {
+      // Handle error in creating order
+    }
+  }
+
+  Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
+    print('razorpay successful ${response.paymentId}');
+    uploadData(response);
+
+  }
+
 
   void handlePaymentError(PaymentFailureResponse response) {
     // Handle payment failure
@@ -373,12 +371,63 @@ class _XeroxHomeState extends State<XeroxHome> {
   }
 
   void handleExternalWallet(ExternalWalletResponse response) {
-    // Handle external wallet
     print('razorpay External wallet ${response.walletName}');
   }
 
+  Future<void> uploadData(PaymentSuccessResponse response) async{
+    loadingDialog.showProgressLoading(progress, 'Uploading files...');
+
+    List<String> uploadedUrls = [];
+    int fileLength = _uploadedFiles.length;
+    double totalProgress=0.9/fileLength;
+
+    for (String value in _uploadedFiles.values) {
+      File file = File(value);
+      String? uploadedUrl = '';
+      if(utils.isURL(value)){
+        uploadedUrl = value;
+      }else{
+        uploadedUrl = await firebaseStorageHelper.uploadFile(file, 'XeroList/${utils.getTodayDate().replaceAll('/', ',')}', '${getFileName(file)}',);
+      }
+      print('Uploading url: $uploadedUrl');
+
+      if (uploadedUrl != null) {
+        uploadedUrls.add(uploadedUrl);
+        progress+=totalProgress;
+        loadingDialog.showProgressLoading(progress, 'Uploading Files...');
+      }
+    }
+
+
+    int? count = await realTimeDatabase.incrementValue('Xerox/XeroxHistory');
+
+    DocumentReference userRef = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
+
+    Map<String, dynamic> uploadData = {'ID': count,'Date': utils.getTodayDate(),'Name': _nameController.text, 'Mobile Number': _mobilenumberController.text, 'Email': email,
+      'Total Price': totalPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls, 'Description':_descriptionController.text};
+
+    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, totalPrice.toString(),_descriptionController.text,response.paymentId!,
+      'Xerox Details: ${xeroxDetails.toString()}', '${uploadedUrls.length}'];
+    sheetData.addAll(uploadedUrls);
+
+    await fireStoreService.uploadMapDataToFirestore(uploadData, userRef);
+
+    userSheetsApi.updateCell(sheetData);
+    utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/uploadedFiles/');
+    loadingDialog.showProgressLoading(progress+0.05, 'Uploading Files...');
+    EasyLoading.dismiss();
+
+    utils.showToastMessage('Request submitted', context);
+    Navigator.pop(context);
+
+  }
+
+  String getFileName(File file) {
+    return path.basename(file.path);
+  }
+
+
   Future<void> onSubmitClicked(int price) async {
-    // Check if any required field is empty
     if (_uploadedFiles.isEmpty) {
       utils.showToastMessage('Files are missing', context);
       return;
@@ -386,63 +435,47 @@ class _XeroxHomeState extends State<XeroxHome> {
       utils.showToastMessage('Enter a Valid Mobile Number', context);
       return;
     } else if (_nameController.text.length < 5  || _nameController.text.isEmpty) {
-      utils.showToastMessage('Enter at least 5 letters in name', context);
+      utils.showToastMessage('Enter at least 5 letter name', context);
       return;
     }
 
     startPayment(price,_mobilenumberController.text,email);
   }
 
-  String getFileName(File file) {
-    return path.basename(file.path);
-  }
 
   Future<void> pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: true,
-        type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'docx'],
-      );
-      print('Result: $result');
-      if (result != null) {
-        Directory cacheDir = await getTemporaryDirectory();
-        Directory uploadDir = Directory('${cacheDir.path}/uploadedFiles');
-        if (!await uploadDir.exists()) {
-          await uploadDir.create(recursive: true);
-        }
-        print('uploadDir: ${uploadDir.path}');
-        for (var file in result.files) {
-          String fileName = file.name;
-          File pickedFile = File(file.path!);
-          File newFile = File('${uploadDir.path}/$fileName');
-          await pickedFile.copy(newFile.path);
-          String filePath = newFile.path;
-          print('File uploaded: $fileName at $filePath');
-          setState(() {
-            _uploadedFiles[fileName] = filePath;
-          });
-        }
-        utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/file_picker/');
-      }
-    } catch (e) {
-      print('Error uploading file: $e');
-    }
-  }
+    List<PlatformFile>? files = await utils.pickMultipleFiles();
 
-  Future<void> _openFile(String filePath) async {
-    try {
-      await OpenFile.open(filePath);
-    } catch (error) {
-      print('Error opening file: $error');
+    if(files!.isNotEmpty){
+      Directory cacheDir = await getTemporaryDirectory();
+      Directory uploadDir = Directory('${cacheDir.path}/uploadedFiles');
+      if (!await uploadDir.exists()) {
+        await uploadDir.create(recursive: true);
+      }
+      print('uploadDir: ${uploadDir.path}');
+      for (var file in files) {
+        String fileName = file.name;
+        File pickedFile = File(file.path!);
+        File newFile = File('${uploadDir.path}/$fileName');
+        await pickedFile.copy(newFile.path);
+        String filePath = newFile.path;
+        print('File uploaded: $fileName at $filePath');
+        setState(() {
+          _uploadedFiles[fileName] = filePath;
+        });
+      }
+      utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/file_picker/');
+    }else{
+
+      utils.showToastMessage('No Files selected', context);
     }
+
   }
 
   @override
   void dispose() {
     _bindingFileController.dispose();
     _singleSideFileController.dispose();
-    razorpay.clear();
     super.dispose();
   }
 }

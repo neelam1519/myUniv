@@ -117,7 +117,10 @@ class _ShowFilesState extends State<ShowFiles> {
                           _selectedFiles[filename] = url;
                           utils.showToastMessage('$filename added in your xerox list', context);
                         }
+
                       });
+
+                      print("Selected Files: ${_selectedFiles.toString()}");
                     },
                   ),
                 ],

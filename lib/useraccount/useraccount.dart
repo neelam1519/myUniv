@@ -1,5 +1,6 @@
-import 'dart:io';
+// File path: lib/useraccount/user_account.dart
 
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Home.dart';
@@ -33,8 +34,8 @@ class _UserAccountState extends State<UserAccount> {
   @override
   void initState() {
     super.initState();
+    getUserDetails();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -56,115 +57,117 @@ class _UserAccountState extends State<UserAccount> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
             } else {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    margin: EdgeInsets.only(top: kToolbarHeight - 40),
-                    alignment: Alignment.center,
-                    child: GestureDetector(
-                      onTap: () async {
-                        print('Edit Profile');
-                        if(await utils.checkInternetConnection()){
-                          pickFile();
-                        }else{
-                          utils.showToastMessage('Check your internet connection', context);
-                        }
-                      },
-                      child: Stack(
-                        children: [
-                          ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: imageUrl ?? '',
-                              placeholder: (context, url) => CircularProgressIndicator(),
-                              errorWidget: (context, url, error) => Icon(Icons.error),
-                              width: 150,
-                              height: 150,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.image,
-                                color: Colors.white,
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      margin: EdgeInsets.only(top: kToolbarHeight - 40),
+                      alignment: Alignment.center,
+                      child: GestureDetector(
+                        onTap: () async {
+                          print('Edit Profile');
+                          if (await utils.checkInternetConnection()) {
+                            pickFile();
+                          } else {
+                            utils.showToastMessage('Check your internet connection', context);
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: imageUrl ?? '',
+                                placeholder: (context, url) => CircularProgressIndicator(),
+                                errorWidget: (context, url, error) => Icon(Icons.error),
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.cover,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    '${name ?? ''}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '${regNo ?? ''}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  // Add more Text widgets for other details like email if needed
-                  SizedBox(height: 20),
-                  Divider(height: 1, color: Colors.black),
-                  SizedBox(height: 20),
-                  Column(
-                    children: [
-                      Visibility(
-                        visible: showAcademicDetails,
-                        child: ListTile(
-                          title: Text('Personal details'),
-                          trailing: Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => PersonalDetails()),
-                            );
-                          },
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.image,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      // Visibility(
-                      //   visible: showPersonalDetails,
-                      //   child: ListTile(
-                      //     title: Text('Academic details'),
-                      //     trailing: Icon(Icons.arrow_forward_ios),
-                      //     onTap: () {
-                      //       utils.showToastMessage('Under Development', context);
-                      //     },
-                      //   ),
-                      // ),
-                      // Visibility(
-                      //   visible: showFacultyDetails,
-                      //   child: ListTile(
-                      //     title: Text('Faculty details'),
-                      //     trailing: Icon(Icons.arrow_forward_ios),
-                      //     onTap: () {
-                      //       utils.showToastMessage('Under Development', context);
-                      //     },
-                      //   ),
-                      // ),
-                      // Visibility(
-                      //   visible: showHostelDetails,
-                      //   child: ListTile(
-                      //     title: Text('Hostel details'),
-                      //     trailing: Icon(Icons.arrow_forward_ios),
-                      //     onTap: () {
-                      //       utils.showToastMessage('Under Development', context);
-                      //     },
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                ],
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      '${name ?? ''}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${regNo ?? ''}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                    ),
+                    SizedBox(height: 20),
+                    Divider(height: 1, color: Colors.grey),
+                    SizedBox(height: 20),
+                    Column(
+                      children: [
+                        Visibility(
+                          visible: showAcademicDetails,
+                          child: ListTile(
+                            title: Text('Personal details', style: TextStyle(fontSize: 16)),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => PersonalDetails()),
+                              );
+                            },
+                          ),
+                        ),
+                        // Uncomment the following ListTiles for additional sections
+                        // Visibility(
+                        //   visible: showPersonalDetails,
+                        //   child: ListTile(
+                        //     title: Text('Academic details', style: TextStyle(fontSize: 16)),
+                        //     trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                        //     onTap: () {
+                        //       utils.showToastMessage('Under Development', context);
+                        //     },
+                        //   ),
+                        // ),
+                        // Visibility(
+                        //   visible: showFacultyDetails,
+                        //   child: ListTile(
+                        //     title: Text('Faculty details', style: TextStyle(fontSize: 16)),
+                        //     trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                        //     onTap: () {
+                        //       utils.showToastMessage('Under Development', context);
+                        //     },
+                        //   ),
+                        // ),
+                        // Visibility(
+                        //   visible: showHostelDetails,
+                        //   child: ListTile(
+                        //     title: Text('Hostel details', style: TextStyle(fontSize: 16)),
+                        //     trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                        //     onTap: () {
+                        //       utils.showToastMessage('Under Development', context);
+                        //     },
+                        //   ),
+                        // ),
+                      ],
+                    ),
+                  ],
+                ),
               );
             }
           },
@@ -172,8 +175,6 @@ class _UserAccountState extends State<UserAccount> {
       ),
     );
   }
-
-
 
   FirebaseStorage _storage = FirebaseStorage.instance;
 
@@ -203,8 +204,8 @@ class _UserAccountState extends State<UserAccount> {
     loadingDialog.showDefaultLoading('Updating profile');
     try {
       if (imagePath != null) {
-        String extention = utils.getFileExtension(File(imagePath));
-        Reference ref = _storage.ref().child('ProfileImages').child('${utils.getCurrentUserUID()}.$extention');
+        String extension = utils.getFileExtension(File(imagePath));
+        Reference ref = _storage.ref().child('ProfileImages').child('${utils.getCurrentUserUID()}.$extension');
         final UploadTask uploadTask = ref.putFile(File(imagePath));
         final TaskSnapshot snapshot = await uploadTask.whenComplete(() {});
         final String downloadUrl = await snapshot.ref.getDownloadURL();
@@ -215,8 +216,7 @@ class _UserAccountState extends State<UserAccount> {
 
         DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
         firebaseService.uploadMapDataToFirestore(image, userRef);
-        setState(() {
-        });
+        setState(() {});
       }
       loadingDialog.dismiss();
     } catch (e) {
@@ -224,7 +224,6 @@ class _UserAccountState extends State<UserAccount> {
       loadingDialog.dismiss();
     }
   }
-
 
   Future<void> getUserDetails() async {
     name = await sharedPreferences.getSecurePrefsValue('Name');

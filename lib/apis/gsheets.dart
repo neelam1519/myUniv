@@ -32,10 +32,8 @@ class UserSheetsApi {
     // If the sheet doesn't exist, create it
     if (existingSheet == null) {
       existingSheet = await ss.addWorksheet(todayDate);
-      await existingSheet.values.insertRow(1, ['NAME', 'MOBILE NUMBER', 'EMAIL','BINDING','DOUBLE SIDE','TOTAL PRICE','DESCRIPTION','PAYMENT ID','DATA','FILES']);
+      await existingSheet.values.insertRow(1, ['NAME', 'MOBILE NUMBER', 'EMAIL','BINDING','DOUBLE SIDE','TOTAL PRICE','DESCRIPTION','PAYMENT ID','DATA','NO OF FILES','FILES']);
     }
-
-    // Assign the sheet to the class variable
     sheet = existingSheet;
   }
 

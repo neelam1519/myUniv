@@ -55,7 +55,6 @@ void main() async {
       }
     }
   });
-  // Run the app
   runApp(MyApp());
 }
 

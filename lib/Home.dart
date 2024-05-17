@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/review.dart';
+import 'package:findany_flutter/Other/support.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:findany_flutter/materials/materialshome.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
@@ -100,6 +101,16 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => Review()),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.contact_support),
+                    title: Text('Contact us'),
+                    onTap: () async {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Support()),
                       );
                     },
                   ),
@@ -271,6 +282,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   void dispose(){
     super.dispose();
     utils.deleteFolder("/data/data/com.neelam.FindAny/cache");
+
     print('Home Disposed');
   }
 }

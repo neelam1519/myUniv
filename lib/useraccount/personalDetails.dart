@@ -1,3 +1,5 @@
+// File path: lib/pages/personal_details.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
@@ -81,20 +83,42 @@ class _PersonalDetailsState extends State<PersonalDetails> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
-            SizedBox(height: 10),
-            Text('Name: $name'),
-            SizedBox(height: 10),
-            Text('Registration Number: $regNo'),
-            SizedBox(height: 10),
-            Text('Email: $email'),
-            SizedBox(height: 10),
-            Row(
-              children: [
-                Text('Gender: '),
-                DropdownButton<String>(
+            Card(
+              elevation: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              child: ListTile(
+                leading: Icon(Icons.person),
+                title: Text('Name'),
+                subtitle: Text(name.isEmpty ? 'Loading...' : name),
+              ),
+            ),
+            Card(
+              elevation: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              child: ListTile(
+                leading: Icon(Icons.assignment_ind),
+                title: Text('Registration Number'),
+                subtitle: Text(regNo.isEmpty ? 'Loading...' : regNo),
+              ),
+            ),
+            Card(
+              elevation: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              child: ListTile(
+                leading: Icon(Icons.email),
+                title: Text('Email'),
+                subtitle: Text(email.isEmpty ? 'Loading...' : email),
+              ),
+            ),
+            Card(
+              elevation: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              child: ListTile(
+                leading: Icon(Icons.wc),
+                title: Text('Gender'),
+                trailing: DropdownButton<String>(
                   value: selectedGender,
                   onChanged: (String? newValue) {
                     if (newValue != null) {
@@ -103,7 +127,7 @@ class _PersonalDetailsState extends State<PersonalDetails> {
                       });
                     }
                   },
-                  items: <String>['Male', 'Female', 'Other']
+                  items: <String>['Male', 'Female']
                       .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -111,13 +135,15 @@ class _PersonalDetailsState extends State<PersonalDetails> {
                     );
                   }).toList(),
                 ),
-              ],
+              ),
             ),
-            SizedBox(height: 10),
-            Row(
-              children: [
-                Text('Date of Birth: '),
-                ElevatedButton(
+            Card(
+              elevation: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              child: ListTile(
+                leading: Icon(Icons.calendar_today),
+                title: Text('Date of Birth'),
+                trailing: ElevatedButton(
                   onPressed: () => _selectDate(context),
                   child: Text(
                     selectedDate != null
@@ -125,18 +151,20 @@ class _PersonalDetailsState extends State<PersonalDetails> {
                         : 'Select Date',
                   ),
                 ),
-              ],
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                await _updateDetails();
+              },
+              child: Text('Update'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 15),
+                textStyle: TextStyle(fontSize: 18),
+              ),
             ),
           ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () async {
-            await _updateDetails();
-          },
-          child: Text('Update'),
         ),
       ),
     );
