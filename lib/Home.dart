@@ -6,6 +6,7 @@ import 'package:findany_flutter/Other/review.dart';
 import 'package:findany_flutter/Other/support.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:findany_flutter/materials/materialshome.dart';
+import 'package:findany_flutter/navigation/navigationhome.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
@@ -221,19 +222,23 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
               GestureDetector(
                 onTap: () {
                   // Add your functionality here
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => NavigationHome()),
+                  );
                 },
                 child: Container(
                   padding: EdgeInsets.all(10),
                   child: Column(
                     children: [
-                      Container( // White container
+                      Image.asset(
+                        'assets/images/navigation.jpeg',
                         width: 100,
                         height: 100,
-                        color: Colors.white,
                       ),
                       SizedBox(height: 10),
                       Text(
-                        '',
+                        'Navigation',
                         style: TextStyle(fontSize: 20),
                       ),
                     ],
