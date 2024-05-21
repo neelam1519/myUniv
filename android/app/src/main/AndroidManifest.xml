@@ -1,17 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.neelam.FindAny">
 
-
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
-
     <application
         android:label="FindAny"
         android:name="${applicationName}"
         android:icon="@mipmap/laucher_icon">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -20,10 +19,12 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"
+                />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -42,21 +43,13 @@
             android:value="false" />
 
         <meta-data
-            android:name="co,google.firebase.messaging.default_notification_channel_id"
+            android:name="co.google.firebase.messaging.default_notification_channel_id"
             android:value="high_importance_channel" />
 
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher"/>
-
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@color/notification_color"/>
-
+        <!-- Correct meta-data for Google Maps API key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAGw-jc9Pl-qyAvuIm-9LjH6_jXBf88tTI"/>
-
+            android:value="AIzaSyDYSzTKbzcOTjRQffYl9PX_uXCIHCbzHVU"/>
 
     </application>
 
@@ -66,6 +59,5 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
-
 
 </manifest>

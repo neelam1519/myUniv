@@ -4,13 +4,12 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Utils{
@@ -47,16 +46,14 @@ class Utils{
   }
 
   Future<void> showToastMessage(String message, BuildContext context) async {
-    showToast(
-      message,
-      context: context,
-      animation: StyledToastAnimation.slideFromBottom,
-      reverseAnimation: StyledToastAnimation.slideToBottom,
-      position: StyledToastPosition.bottom,
-      animDuration: Duration(milliseconds: 400),
-      duration: Duration(seconds: 2),
-      curve: Curves.elasticOut,
-      reverseCurve: Curves.elasticIn,
+    Fluttertoast.showToast(
+        msg: message,
+        toastLength: Toast.LENGTH_SHORT,  // or Toast.LENGTH_LONG
+        gravity: ToastGravity.BOTTOM,     // or ToastGravity.CENTER, ToastGravity.TOP
+        timeInSecForIosWeb: 1,            // duration in seconds for iOS and Web
+        backgroundColor: Colors.black54,  // background color of the toast
+        textColor: Colors.white,          // text color of the toast
+        fontSize: 16.0                    // text size
     );
   }
 

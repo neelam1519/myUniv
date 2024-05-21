@@ -2,11 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:path/path.dart' as path;
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class XeroxDetailView extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -106,10 +103,7 @@ class _XeroxDetailViewState extends State<XeroxDetailView> {
       print('Extension: $extension');
       String mimeType = utils.getMimeType(extension);
       print('Mime Type: $mimeType');
-      await OpenFile.open(
-        filePath,
-        type: mimeType,
-      );
+      utils.openFile(filePath);
     } catch (e) {
       loadingDialog.dismiss(); // Dismiss progress indicator in case of error
       print('Error downloading or opening file: $e');

@@ -6,7 +6,6 @@ import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ShowFiles extends StatefulWidget {
@@ -170,7 +169,7 @@ class _ShowFilesState extends State<ShowFiles> {
 
       EasyLoading.dismiss();
       setState(() {});
-      await OpenFile.open(filePath);
+      utils.openFile(filePath);
     } catch (e) {
       EasyLoading.dismiss(); // Dismiss progress indicator in case of error
       print('Error downloading or opening file: $e');

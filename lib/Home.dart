@@ -179,8 +179,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                         height: 100,
                       ),
                       SizedBox(height: 10),
-                      Text(
-                        'Get Xerox',
+                      Text('Get Xerox',
                         style: TextStyle(fontSize: 20),
                       ),
                     ],
@@ -189,13 +188,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
               ),
             ],
           ),
-          SizedBox(height: 20), // Add some space between the rows
+          SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               GestureDetector(
                 onTap: () {
-                  // Add your functionality here
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => MaterialsHome()),
@@ -224,7 +222,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                   // Add your functionality here
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => NavigationHome()),
+                    MaterialPageRoute(builder: (context) => MapScreen()),
                   );
                 },
                 child: Container(

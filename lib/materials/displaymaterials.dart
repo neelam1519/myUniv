@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:findany_flutter/Firebase/storage.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
 
 class DisplayMaterials extends StatefulWidget {
   final String path;
@@ -19,6 +19,7 @@ class DisplayMaterials extends StatefulWidget {
 class _DisplayMaterialsState extends State<DisplayMaterials> {
   FirebaseStorageHelper firebaseStorageHelper = FirebaseStorageHelper();
   LoadingDialog loadingDialog = new LoadingDialog();
+  Utils utils = new Utils();
   int _currentIndex = 0;
   String storagePath = '';
   List<String> pdfFileNames = [];
@@ -90,13 +91,6 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
     });
   }
 
-  Future<void> openFile(String filePath) async {
-    try {
-      await OpenFile.open(filePath);
-    } catch (error) {
-      print('Error opening file: $error');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +129,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
                 return ListTile(
                   title: Text(snapshot.data![index].path.split('/').last),
                   onTap: () {
-                    openFile(snapshot.data![index].path);
+                    utils.openFile(snapshot.data![index].path);
                   },
                 );
               },

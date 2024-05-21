@@ -17,7 +17,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -654,10 +653,7 @@ class _UniversityChatState extends State<UniversityChat> {
           print('Extension: $extension');
           String mimeType = utils.getMimeType(extension);
           print('Mime Type: $mimeType');
-          await OpenFile.open(
-            filePath,
-            type: mimeType,
-          );
+          utils.openFile(filePath);
           return;
         }
 
@@ -674,10 +670,7 @@ class _UniversityChatState extends State<UniversityChat> {
         print('Extension: $extension');
         String mimeType = utils.getMimeType(extension);
         print('Mime Type: $mimeType');
-        await OpenFile.open(
-          filePath,
-          type: mimeType,
-        );
+        utils.openFile(filePath);
       } catch (e) {
         loadingDialog.dismiss(); // Dismiss progress indicator in case of error
         print('Error downloading or opening file: $e');
