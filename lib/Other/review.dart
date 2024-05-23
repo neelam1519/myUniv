@@ -53,8 +53,8 @@ class _ReviewState extends State<Review> {
 
                 int? id = await realTimeDatabase.incrementValue('Reviews');
 
-                Map<String,dynamic> reviewMap = {id.toString():reviewText};
-                DocumentReference reviewRef = FirebaseFirestore.instance.doc('/Reviews/${utils.getTodayDate()}');
+                Map<String,dynamic> reviewMap = {'${id.toString()}(${await utils.getCurrentUserEmail()})':reviewText};
+                DocumentReference reviewRef = FirebaseFirestore.instance.doc('/Reviews/${utils.getTodayDate().replaceAll('/', '-')}');
                 fireStoreService.uploadMapDataToFirestore(reviewMap, reviewRef);
 
                 loadingDialog.dismiss();

@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import '../utils/utils.dart';
 import 'clicked.dart';
 
 class MapScreen extends StatefulWidget {
@@ -14,6 +14,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  Utils utils = Utils();
   final Completer<GoogleMapController> _controller = Completer();
   static const LatLng _center = LatLng(9.574610, 77.679771);
   List<Marker> _markers = [];
@@ -31,9 +32,10 @@ class _MapScreenState extends State<MapScreen> {
     _loadCustomMarkerIcon().then((_) {
       _loadMarkers();
     });
+    _searchController.addListener(_filterLocations);
   }
 
-  @override
+  @override 
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -54,21 +56,31 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadMarkers() async {
     try {
-      final String data = await rootBundle.loadString('assets/locations.json');
-      final List<dynamic> jsonResult = json.decode(data);
-      _locations = jsonResult.cast<Map<String, dynamic>>();
+      CollectionReference markersCollection = FirebaseFirestore.instance.collection('navigation');
+      QuerySnapshot querySnapshot = await markersCollection.get();
 
-      List<Marker> markers = _locations.map((location) {
+      List<Marker> markers = querySnapshot.docs.map((doc) {
+        GeoPoint geoPoint = doc['geopoint'];
+        List<dynamic> alternativeNames = doc['alternative names'];
+        String name = doc.id;
+
+        final location = {
+          'name': name,
+          'lat': geoPoint.latitude,
+          'lng': geoPoint.longitude,
+          'alternativeNames': alternativeNames,
+        };
+        _locations.add(location);
         return Marker(
-          markerId: MarkerId(location['name']),
-          position: LatLng(location['lat'], location['lng']),
-          infoWindow: InfoWindow(title: location['name']),
+          markerId: MarkerId(name),
+          position: LatLng(geoPoint.latitude, geoPoint.longitude),
+          infoWindow: InfoWindow(title: name),
           icon: _customMarkerIcon ?? BitmapDescriptor.defaultMarker,
           onTap: () {
             setState(() {
-              _selectedMarkerName = location['name'];
+              _selectedMarkerName = name;
             });
-            print("Marker selected: ${location['name']}");
+            print("Marker selected: $name");
           },
         );
       }).toList();
@@ -78,7 +90,7 @@ class _MapScreenState extends State<MapScreen> {
         _filteredLocations = _locations;
       });
 
-      print("Markers loaded successfully");
+      print("Markers loaded successfully: $markers");
     } catch (e) {
       print("Error loading markers: $e");
     }
@@ -86,12 +98,6 @@ class _MapScreenState extends State<MapScreen> {
 
   void _onMapCreated(GoogleMapController controller) {
     _controller.complete(controller);
-  }
-
-  void _onMapTypeButtonPressed() {
-    setState(() {
-      _currentMapType = _currentMapType == MapType.satellite ? MapType.normal : MapType.satellite;
-    });
   }
 
   void onInternalViewButtonClicked() {
@@ -105,52 +111,7 @@ class _MapScreenState extends State<MapScreen> {
       );
     } else {
       print("No marker selected");
-    }
-  }
-
-  void _startSearch() {
-    ModalRoute.of(context)!.addLocalHistoryEntry(LocalHistoryEntry(onRemove: _stopSearching));
-    setState(() {
-      _isSearching = true;
-      _filteredLocations = _locations;
-    });
-  }
-
-  void _stopSearching() {
-    setState(() {
-      _isSearching = false;
-      _searchController.clear();
-      _filteredLocations = _locations;
-    });
-  }
-
-  void _searchOperation(String searchText) {
-    if (_isSearching) {
-      setState(() {
-        _filteredLocations = _locations.where((location) {
-          final nameMatches = location['name'].toString().toLowerCase().contains(searchText.toLowerCase());
-          final alternativeNames = location['alternativeNames'];
-          bool alternativeNameMatches = false;
-          String? matchedAlternativeName;
-
-          if (alternativeNames is List) {
-            for (var altName in alternativeNames) {
-              if (altName.toString().toLowerCase().contains(searchText.toLowerCase())) {
-                alternativeNameMatches = true;
-                matchedAlternativeName = altName;
-                break;
-              }
-            }
-          }
-
-          if (nameMatches || alternativeNameMatches) {
-            location['matchedAlternativeName'] = matchedAlternativeName;
-            return true;
-          } else {
-            return false;
-          }
-        }).toList();
-      });
+      utils.showToastMessage('Select any KLU buildings', context);
     }
   }
 
@@ -159,14 +120,66 @@ class _MapScreenState extends State<MapScreen> {
     controller.showMarkerInfoWindow(MarkerId(markerId));
   }
 
+  void _filterLocations() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isNotEmpty) {
+        _filteredLocations = _locations.map((location) {
+          final name = location['name'].toLowerCase();
+          final alternativeNames = (location['alternativeNames'] as List<dynamic>)
+              .map((e) => e.toLowerCase())
+              .where((altName) => altName.contains(query))
+              .toList();
+
+          if (name.contains(query) || alternativeNames.isNotEmpty) {
+            return {
+              'name': location['name'],
+              'lat': location['lat'],
+              'lng': location['lng'],
+              'alternativeNames': alternativeNames,
+            };
+          }
+          return null;
+        }).where((location) => location != null).cast<Map<String, dynamic>>().toList();
+      } else {
+        _filteredLocations = _locations;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    print('Build is running');
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-          title: _isSearching ? _buildSearchField() : Text('University Navigation'),
+          title: _isSearching
+              ? TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Search locations...',
+              border: InputBorder.none,
+              hintStyle: TextStyle(color: Colors.white70),
+            ),
+            style: TextStyle(color: Colors.white, fontSize: 16.0),
+          )
+              : Text('University Navigation'),
           backgroundColor: Colors.green[700],
-          actions: _buildActions(),
+          actions: [
+            IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = !_isSearching;
+                  if (!_isSearching) {
+                    _searchController.clear();
+                  }
+                });
+              },
+            ),
+          ],
         ),
         body: Stack(
           children: <Widget>[
@@ -179,6 +192,55 @@ class _MapScreenState extends State<MapScreen> {
               ),
               markers: Set<Marker>.of(_markers),
             ),
+            if (_isSearching)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Column(
+                    children: [
+                      Container(
+                        color: Colors.white,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: _filteredLocations.length,
+                          itemBuilder: (context, index) {
+                            final location = _filteredLocations[index];
+                            final name = location['name'];
+                            final alternativeNames = (location['alternativeNames'] as List<dynamic>).join(', ');
+
+                            return ListTile(
+                              title: Text(name),
+                              subtitle: alternativeNames.isNotEmpty
+                                  ? Text(
+                                alternativeNames,
+                                style: TextStyle(fontSize: 12.0),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              )
+                                  : null,
+                              onTap: () async {
+                                _searchController.clear();
+                                final controller = await _controller.future;
+                                controller.animateCamera(
+                                  CameraUpdate.newLatLng(
+                                    LatLng(location['lat'], location['lng']),
+                                  ),
+                                );
+                                setState(() {
+                                  _isSearching = false;
+                                  _selectedMarkerName = location['name'];
+                                  showMarkerInfoWindow(location['name']);
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Align(
@@ -197,97 +259,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-            _isSearching ? _buildSearchResults() : Container(),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchField() {
-    return TextField(
-      controller: _searchController,
-      autofocus: true,
-      decoration: InputDecoration(
-        hintText: 'Search for locations...',
-        border: InputBorder.none,
-        hintStyle: TextStyle(color: Colors.white30),
-      ),
-      style: TextStyle(color: Colors.white, fontSize: 16.0),
-      onChanged: _searchOperation,
-    );
-  }
-
-  List<Widget> _buildActions() {
-    if (_isSearching) {
-      return <Widget>[
-        IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () {
-            if (_searchController.text.isEmpty) {
-              Navigator.pop(context);
-              return;
-            }
-            _searchController.clear();
-            _searchOperation('');
-          },
-        ),
-      ];
-    }
-
-    return <Widget>[
-      IconButton(
-        icon: const Icon(Icons.search),
-        onPressed: _startSearch,
-      ),
-    ];
-  }
-
-  Widget _buildSearchResults() {
-    Navigator.pop(context);
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        color: Colors.white,
-        child: ListView.builder(
-          itemCount: _filteredLocations.length,
-          itemBuilder: (context, index) {
-            return ListTile(
-              title: Text(_filteredLocations[index]['name']),
-              onTap: () async {
-                final location = _filteredLocations[index];
-                final matchedAlternativeName = location['matchedAlternativeName'];
-                final infoWindowTitle = matchedAlternativeName != null
-                    ? '${location['name']} ($matchedAlternativeName)'
-                    : location['name'];
-
-                final GoogleMapController controller = await _controller.future;
-                controller.animateCamera(CameraUpdate.newLatLngZoom(
-                  LatLng(location['lat'], location['lng']),
-                  18.0,
-                ));
-
-                setState(() {
-                  _markers = _markers.map((marker) {
-                    if (marker.markerId.value == location['name']) {
-                      return marker.copyWith(
-                        infoWindowParam: InfoWindow(title: infoWindowTitle),
-                      );
-                    }
-                    return marker;
-                  }).toList();
-                });
-
-                await showMarkerInfoWindow(location['name']);
-
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                  _selectedMarkerName = location['name'];
-                });
-              },
-            );
-          },
         ),
       ),
     );

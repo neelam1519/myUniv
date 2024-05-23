@@ -61,10 +61,9 @@ flutter:
     - assets/images/google-signin-button.png
     - assets/images/xerox.png
     - assets/images/defaultimage.png
-    - assets/images/groupchat.jpg
+    - assets/images/groupchat.png
     - assets/images/logo.png
     - assets/images/materials.png
     - assets/images/navigation.jpeg
     - assets/images/marker.png
-    - assets/locations.json
 

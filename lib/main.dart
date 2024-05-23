@@ -30,19 +30,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // Set auto initialization for Firebase Messaging
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
-
-  // Set background message handler for Firebase Messaging
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  // Listen for messages received while the app is in the foreground
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     if (message.messageId != null) {
       print('Got a message whilst in the foreground!');
@@ -58,7 +50,6 @@ void main() async {
 }
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
-
 
 Future<void> showNotification(RemoteMessage message) async {
 

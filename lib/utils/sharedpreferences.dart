@@ -5,12 +5,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SharedPreferences{
   final storage = FlutterSecureStorage();
 
-  Future<void> storeMapValuesInSecureStorage(Map<String, String> mapValues) async {
-
+  Future<void> storeMapValuesInSecureStorage(Map<String, dynamic> mapValues) async {
     try {
-      for (MapEntry<String, String> entry in mapValues.entries) {
+      for (MapEntry<String, dynamic> entry in mapValues.entries) {
         String key = entry.key;
-        String value = entry.value;
+        String value = entry.value.toString(); // Convert dynamic value to string
 
         // Store each key-value pair in secure storage
         await storage.write(key: key, value: value);

@@ -1,5 +1,3 @@
-// File path: lib/useraccount/user_account.dart
-
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
@@ -105,16 +103,13 @@ class _UserAccountState extends State<UserAccount> {
                       ),
                     ),
                     SizedBox(height: 20),
-                    Text(
-                      '${name ?? ''}',
+                    Text('${name ?? ''}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     Text(
                       '${regNo ?? ''}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                    ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700])),
                     SizedBox(height: 20),
                     Divider(height: 1, color: Colors.grey),
                     SizedBox(height: 20),

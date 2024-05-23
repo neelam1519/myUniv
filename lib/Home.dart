@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/review.dart';
 import 'package:findany_flutter/Other/support.dart';
@@ -28,6 +29,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   LoadingDialog loadingDialog = new LoadingDialog();
   SharedPreferences sharedPreferences = new SharedPreferences();
   NotificationService notificationService = new NotificationService();
+  FireStoreService fireStoreService = new FireStoreService();
   FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   String? email='',name='',imageUrl='';
@@ -149,7 +151,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                   child: Column(
                     children: [
                       Image.asset(
-                        'assets/images/groupchat.jpg',
+                        'assets/images/groupchat.png',
                         width: 100,
                         height: 100,
                       ),
@@ -251,7 +253,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   }
 
   Future<void> loadData() async {
-    loadingDialog.showDefaultLoading("Getting Details...");
+    loadingDialog.showDefaultLoading("Getting Details...") ;
+
     email = await sharedPreferences.getSecurePrefsValue('Email')?? '';
     name = await sharedPreferences.getSecurePrefsValue("Name") ??  '';
     imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL')?? '';

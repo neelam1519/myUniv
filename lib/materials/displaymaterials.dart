@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:findany_flutter/Firebase/storage.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
@@ -10,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 class DisplayMaterials extends StatefulWidget {
   final String path;
   final String unit;
+
   DisplayMaterials({required this.path, required this.unit});
 
   @override
@@ -18,8 +18,9 @@ class DisplayMaterials extends StatefulWidget {
 
 class _DisplayMaterialsState extends State<DisplayMaterials> {
   FirebaseStorageHelper firebaseStorageHelper = FirebaseStorageHelper();
-  LoadingDialog loadingDialog = new LoadingDialog();
-  Utils utils = new Utils();
+  LoadingDialog loadingDialog = LoadingDialog();
+
+  Utils utils = Utils();
   int _currentIndex = 0;
   String storagePath = '';
   List<String> pdfFileNames = [];
@@ -35,6 +36,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
     super.initState();
     _streamController = StreamController<List<File>>();
     storagePath = '${widget.path}/${widget.unit}';
+    loadingDialog.showDefaultLoading('Loading files...');
     initialize().then((_) {
       downloadFiles();
     });
@@ -73,24 +75,26 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
         await firebaseStorageHelper.downloadFile('$storagePath/$fileName').then((downloadedFile) {
           if (downloadedFile != null) {
             setState(() {
+              loadingDialog.dismiss();
               downloadedFiles.add(downloadedFile);
               _streamController.add(downloadedFiles.toList());
             });
           }
         });
       } else {
-        print('File already exists');
         setState(() {
+          loadingDialog.dismiss();
           downloadedFiles.add(file);
           _streamController.add(downloadedFiles.toList());
         });
       }
     }
+
     setState(() {
       isDownloading = false;
     });
+    loadingDialog.dismiss();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -103,12 +107,12 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
         builder: (context, snapshot) {
           print("Entered Stream");
           if (pdfFileNames.isEmpty) {
-            print('Snapshot is empty');
+            print('No files available.');
             return Center(
               child: Text('No files available.'),
             );
           }
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && isDownloading) {
             print('Connection is waiting');
             return Center(
               child: CircularProgressIndicator(),
@@ -118,7 +122,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
               child: Text('Error: ${snapshot.error}'),
             );
           } else if (snapshot.data == null || snapshot.data!.isEmpty) {
-            print('Snapshot is empty');
+            print('No files available.');
             return Center(
               child: Text('No files available.'),
             );
@@ -129,6 +133,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
                 return ListTile(
                   title: Text(snapshot.data![index].path.split('/').last),
                   onTap: () {
+                    print('Opening File: ${snapshot.data![index].path}');
                     utils.openFile(snapshot.data![index].path);
                   },
                 );
@@ -140,7 +145,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (int index) async {
-          loadingDialog.showDefaultLoading('');
+          loadingDialog.showDefaultLoading('Loading files...');
           setState(() {
             _currentIndex = index;
           });
@@ -148,12 +153,10 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
             appBarText = 'PDFs';
             storagePath = '${widget.path}/${widget.unit}';
             print('Storage Path: $storagePath');
-            loadingDialog.dismiss();
           } else if (index == 1) {
             appBarText = 'QUESTION PAPERS';
             storagePath = '${widget.path}/QUESTION PAPERS';
             print('Storage Path: $storagePath');
-            loadingDialog.dismiss();
           }
           stopDownload = true;
 
