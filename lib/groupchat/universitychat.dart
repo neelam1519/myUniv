@@ -595,10 +595,12 @@ class _UniversityChatState extends State<UniversityChat> {
   }
 
   Future<void> getDetails() async {
-    name = (await sharedPreferences.getSecurePrefsValue('Username')) ?? (await sharedPreferences.getSecurePrefsValue('Name')) ?? '';
-    email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
-    regNo = (await sharedPreferences.getSecurePrefsValue('Registration Number'))!;
-    profileUrl = (await sharedPreferences.getSecurePrefsValue('ProfileImageURL'))!;
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
+
+    name = await sharedPreferences.getDataFromReference(documentReference,'Username') ?? (await sharedPreferences.getDataFromReference(documentReference,'Name')) ?? '';
+    email = await sharedPreferences.getDataFromReference(documentReference,'Email') ?? '';
+    regNo = await sharedPreferences.getDataFromReference(documentReference,'Registration Number') ?? '';
+    profileUrl = await sharedPreferences.getDataFromReference(documentReference,'ProfileImageURL') ?? '';
     print('User Details $name  $email  $regNo  $profileUrl');
   }
 

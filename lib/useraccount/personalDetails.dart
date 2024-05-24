@@ -11,7 +11,7 @@ class PersonalDetails extends StatefulWidget {
 }
 
 class _PersonalDetailsState extends State<PersonalDetails> {
-  DateTime? selectedDate;
+  DateTime? dob;
   String selectedGender = 'Male';
   String name = '', regNo = '', email = '', username = '';
 
@@ -35,41 +35,40 @@ class _PersonalDetailsState extends State<PersonalDetails> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked != selectedDate) {
+    if (picked != null && picked != dob) {
       setState(() {
-        selectedDate = picked;
+        dob = picked;
       });
     }
   }
 
   Future<void> getUserDetails() async {
-    loadingDialog.showDefaultLoading('Getting Details...');
-    name = (await sharedPreferences.getSecurePrefsValue('Name'))!;
-    regNo = (await sharedPreferences.getSecurePrefsValue('Registration Number'))!;
-    email = (await utils.getCurrentUserEmail())!;
-
     DocumentReference documentReference = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
-    Map<String, dynamic>? userData = await fireStoreService.getDocumentDetails(documentReference);
 
-    if (userData!.containsKey('Gender')) {
-      selectedGender = userData['Gender'];
-      print('Gender: $selectedGender');
-    }
-    if (userData.containsKey('DOB')) {
-      Timestamp timestamp = userData['DOB'];
-      selectedDate = timestamp.toDate();
-      print('DOB: $selectedDate');
-    }
-    if (userData.containsKey('Username')) {
-      username = userData['Username'];
-      _usernameController.text = username;
-      print('Username: $username');
-    }
+    DateTime currentTime = DateTime.now();
+    loadingDialog.showDefaultLoading('Getting Details...');
+    name = await sharedPreferences.getDataFromReference(documentReference, 'Name') ?? '';
+    regNo = await sharedPreferences.getDataFromReference(documentReference, 'Registration Number') ?? '';
+    email = await sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
+    selectedGender = await sharedPreferences.getDataFromReference(documentReference, 'Gender') ?? '';
+    username = await sharedPreferences.getDataFromReference(documentReference, 'Username') ?? '';
 
+    _usernameController.text = username;
+
+    var dobData = await sharedPreferences.getDataFromReference(documentReference, 'DOB');
+    if (dobData is String) {
+      dob = DateTime.tryParse(dobData);
+    } else if (dobData is Timestamp) {
+      dob = dobData.toDate();
+    }
+    dob = dob ?? currentTime; // Assign default value if dob is null
     loadingDialog.dismiss();
 
     setState(() {});
+
   }
+
+
 
   Future<void> _updateDetails() async {
     username = _usernameController.text;
@@ -80,11 +79,14 @@ class _PersonalDetailsState extends State<PersonalDetails> {
     loadingDialog.showDefaultLoading('Updating Data');
     Map<String, dynamic> userData = {
       'Gender': selectedGender,
-      'DOB': selectedDate,
+      'DOB': dob,
       'Username': username,
     };
     DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
     fireStoreService.uploadMapDataToFirestore(userData, documentReference);
+
+    userData['DOB'] = dob!.toIso8601String();
+
     sharedPreferences.storeMapValuesInSecureStorage(userData);
     loadingDialog.dismiss();
     utils.showToastMessage('Details updated', context);
@@ -179,8 +181,8 @@ class _PersonalDetailsState extends State<PersonalDetails> {
                       trailing: ElevatedButton(
                         onPressed: () => _selectDate(context),
                         child: Text(
-                          selectedDate != null
-                              ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                          dob != null
+                              ? '${dob!.day}/${dob!.month}/${dob!.year}'
                               : 'Select Date',
                         ),
                       ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/review.dart';
@@ -254,15 +255,16 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
 
   Future<void> loadData() async {
     loadingDialog.showDefaultLoading("Getting Details...") ;
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
+    email = await sharedPreferences.getDataFromReference(documentReference,'Email')?? '';
+    name = await sharedPreferences.getDataFromReference(documentReference,"Name") ??  '';
+    imageUrl = await sharedPreferences.getDataFromReference(documentReference,'ProfileImageURL')?? '';
 
-    email = await sharedPreferences.getSecurePrefsValue('Email')?? '';
-    name = await sharedPreferences.getSecurePrefsValue("Name") ??  '';
-    imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL')?? '';
-
-    print('Home Page Loaded data: $email  $name  $imageUrl');
     utils.updateToken().then((value) {
       loadingDialog.dismiss();
     });
+    print('Home Page Loaded data: $email  $name  $imageUrl');
+
   }
 
   Future<void> signOut() async {

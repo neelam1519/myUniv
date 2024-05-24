@@ -252,15 +252,13 @@ class Utils{
 
   Future<void> updateToken() async{
     // Listen for token refresh event
-    FirebaseMessaging.instance.onTokenRefresh
-        .listen((fcmToken) async {
+    FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
       print('Updated Token: $fcmToken');
       String? email = await getCurrentUserEmail();
       String regNo = removeEmailDomain(email!);
       DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
       fireStoreService.uploadMapDataToFirestore({regNo:fcmToken}, tokenRef);
     }).onError((err) {
-      // Error getting token.
       print('Error while refreshing token');
     });
 

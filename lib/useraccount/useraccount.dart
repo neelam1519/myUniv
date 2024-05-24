@@ -116,7 +116,7 @@ class _UserAccountState extends State<UserAccount> {
                     Column(
                       children: [
                         Visibility(
-                          visible: showAcademicDetails,
+                          visible: showPersonalDetails,
                           child: ListTile(
                             title: Text('Personal details', style: TextStyle(fontSize: 16)),
                             trailing: Icon(Icons.arrow_forward_ios, size: 16),
@@ -128,17 +128,16 @@ class _UserAccountState extends State<UserAccount> {
                             },
                           ),
                         ),
-                        // Uncomment the following ListTiles for additional sections
-                        // Visibility(
-                        //   visible: showPersonalDetails,
-                        //   child: ListTile(
-                        //     title: Text('Academic details', style: TextStyle(fontSize: 16)),
-                        //     trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                        //     onTap: () {
-                        //       utils.showToastMessage('Under Development', context);
-                        //     },
-                        //   ),
-                        // ),
+                        Visibility(
+                          visible: showAcademicDetails,
+                          child: ListTile(
+                            title: Text('Academic details', style: TextStyle(fontSize: 16)),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              utils.showToastMessage('Under Development', context);
+                            },
+                          ),
+                        ),
                         // Visibility(
                         //   visible: showFacultyDetails,
                         //   child: ListTile(

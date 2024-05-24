@@ -11,10 +11,10 @@ class NotificationService {
       'notification': {
         'title': title,
         'body': message,
-        'click_action': 'FLUTTER_NOTIFICATION_CLICK', // Optional
+        'click_action': 'FLUTTER_NOTIFICATION_CLICK',
       },
-      'data': additionalData, // Additional data
-      'registration_ids': tokens, // List of FCM tokens
+      'data': additionalData,
+      'registration_ids': tokens,
     };
 
     final Map<String, String> headers = {

@@ -91,7 +91,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Xerox Home'),
+        title: Text('Xerox'),
         actions: [
           IconButton(
             icon: Icon(Icons.history),

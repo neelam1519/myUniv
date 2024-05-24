@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
@@ -21,9 +20,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
   print("Handling a background message: ${message.messageId}");
 
-  if(message.messageId != null ){
-    print('testing ${message.data}');
-  }else{
+  if (message.messageId != null) {
+    print('Background message data: ${message.data}');
+  } else {
     print('MessageId is null');
   }
 }
@@ -33,30 +32,18 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await FirebaseMessaging.instance.setAutoInitEnabled(true);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    if (message.messageId != null) {
-      print('Got a message whilst in the foreground!');
-      print('Message data: ${message.from}');
-      showNotification(message);
 
-      if (message.notification != null) {
-        print('Message also contained a notification: ${message.notification}');
-      }
-    }
-  });
   runApp(MyApp());
 }
 
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 Future<void> showNotification(RemoteMessage message) async {
-
   if (message.data['from'] == 'firebase') {
     return;
   }
-  // Notification details
+
   print('Showing notification');
   final String? title = message.notification?.title;
   final String? body = message.notification?.body;
@@ -71,9 +58,9 @@ Future<void> showNotification(RemoteMessage message) async {
     icon: '@mipmap/ic_launcher',
   );
 
-  final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+  final NotificationDetails platformChannelSpecifics =
+  NotificationDetails(android: androidPlatformChannelSpecifics);
 
-  // Show the notification
   await flutterLocalNotificationsPlugin.show(
     0, // Notification ID
     title,
@@ -83,38 +70,83 @@ Future<void> showNotification(RemoteMessage message) async {
   );
 }
 
-
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp>{
+class _MyAppState extends State<MyApp> {
+  Utils utils = Utils();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(AppLifecycleListener());
     setupInteractedMessage();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.messageId != null) {
+        print('Got a message whilst in the foreground!');
+        print('Message data: ${message.data}');
+        showNotification(message);
+
+        if (message.notification != null) {
+          print('Message also contained a notification: ${message.notification}');
+        }
+      }
+    });
+
+    checkForUpdate();
   }
 
   Future<void> setupInteractedMessage() async {
     print('On Notification Clicked');
-    RemoteMessage? initialMessage =
-    await FirebaseMessaging.instance.getInitialMessage();
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
 
     if (initialMessage != null) {
       _handleMessage(context, initialMessage);
     }
+
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _handleMessage(context, message);
     });
   }
 
   void _handleMessage(BuildContext context, RemoteMessage message) {
-    print('On Notification clicked');
+    print('On Notification clicked: ${message.data}');
     if (message.data['source'] == 'UniversityChat') {
       print('Notification navigation to UniversityChat');
-      Navigator.push(context, MaterialPageRoute(builder: (context) => UniversityChat()),);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => UniversityChat()),
+      );
+    } else {
+      print('Notification navigation to Home');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Home()),
+      );
+    }
+  }
+
+  Future<void> checkForUpdate() async {
+    if (await utils.checkInternetConnection()) {
+      try {
+        final info = await InAppUpdate.checkForUpdate();
+        if (info.updateAvailability == UpdateAvailability.updateAvailable) {
+          final appUpdateResult = await InAppUpdate.performImmediateUpdate();
+          if (appUpdateResult == AppUpdateResult.success) {
+            print('Updated successfully');
+          } else {
+            print('Unable to update');
+          }
+        } else {
+          print('No update available');
+        }
+      } catch (e) {
+        print('Error checking for update: $e');
+      }
+    } else {
+      print('No internet connection, no update checked');
     }
   }
 
@@ -130,21 +162,19 @@ class _MyAppState extends State<MyApp>{
 
   @override
   void dispose() {
-    // TODO: implement dispose
+    WidgetsBinding.instance.removeObserver(AppLifecycleListener());
     super.dispose();
     print('Main Disposed');
   }
 }
 
 class AuthWrapper extends StatelessWidget {
-  Utils utils = new Utils();
+  Utils utils = Utils();
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<User?>(
-      future: FirebaseAuth.instance
-          .authStateChanges()
-          .first,
+      future: FirebaseAuth.instance.authStateChanges().first,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return CircularProgressIndicator();
@@ -158,28 +188,6 @@ class AuthWrapper extends StatelessWidget {
       },
     );
   }
-
-  Future<void> checkForUpdate() async {
-    if (await utils.checkInternetConnection()) {
-      try {
-        final info = await InAppUpdate.checkForUpdate();
-        if (info.updateAvailability == UpdateAvailability.updateAvailable) {
-          final appUpdateResult = await InAppUpdate.performImmediateUpdate();
-          if (appUpdateResult == AppUpdateResult.success) {
-            print('Updated successfully');
-          } else {
-            print('Unable to updated');
-          }
-        } else {
-          print('No update available');
-        }
-      } catch (e) {
-        print('Error checking for update: $e');
-      }
-    } else {
-      print('No internet connection no update checked');
-    }
-  }
 }
 
 class AppLifecycleListener with WidgetsBindingObserver {
@@ -189,7 +197,7 @@ class AppLifecycleListener with WidgetsBindingObserver {
     final isDetached = state == AppLifecycleState.detached;
     print('State: $state');
     if (isDetached) {
-      Utils utils = new Utils();
+      Utils utils = Utils();
       //utils.deleteFolder('/data/data/com.neelam.FindAny/cache');
       //clearCache();
       print('Detached');
@@ -203,7 +211,4 @@ class AppLifecycleListener with WidgetsBindingObserver {
     final dir = Directory(cachePath);
     await dir.delete(recursive: true);
   }
-
-
-
 }

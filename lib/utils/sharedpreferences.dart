@@ -1,24 +1,53 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SharedPreferences{
   final storage = FlutterSecureStorage();
 
+  Future<dynamic> getDataFromReference(DocumentReference documentReference, String key) async {
+    String? data = await getSecurePrefsValue(key);
+    if (data != null) {
+      print('Data found in SharedPreferences for key: $key');
+      return data;
+    } else {
+      print('Data not found in SharedPreferences for key: $key, fetching from Firestore...');
+      try {
+        DocumentSnapshot snapshot = await documentReference.get();
+        if (snapshot.exists) {
+          Map<String, dynamic>? firestoreData = snapshot.data() as Map<String, dynamic>?;
+          if (firestoreData != null && firestoreData.containsKey(key)) {
+            dynamic value = firestoreData[key]; // Value is dynamic
+            if (value != null) {
+              await storeValueInSecurePrefs(key, value.toString()); // Store as string
+              print('Data stored in SharedPreferences for key: $key');
+              return value;
+            }
+          }
+        }
+        print('Data not found in Firestore for key: $key');
+        return null;
+      } catch (e) {
+        print('Error fetching data from Firestore: $e');
+        return null;
+      }
+    }
+  }
+
+
   Future<void> storeMapValuesInSecureStorage(Map<String, dynamic> mapValues) async {
     try {
       for (MapEntry<String, dynamic> entry in mapValues.entries) {
         String key = entry.key;
-        String value = entry.value.toString(); // Convert dynamic value to string
+        String value = entry.value.toString();
 
-        // Store each key-value pair in secure storage
         await storage.write(key: key, value: value);
         print('$key :  $value');
       }
       print('Map values stored in secure storage successfully!');
     } catch (error) {
       print('Error storing map values: $error');
-      // Handle the error as needed
     }
   }
 
