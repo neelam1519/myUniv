@@ -19,6 +19,7 @@ class _MaterialsHomeState extends State<MaterialsHome> {
   List<String?> branchList = ['CSE', 'ECE'];
 
   List<String?> specializations = [];
+
   List<String?> cse_specialization = [
     'CYBER SECURITY',
     'ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING',

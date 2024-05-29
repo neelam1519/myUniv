@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +6,7 @@ import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Firebase/realtimedatabase.dart';
 import 'package:findany_flutter/Firebase/storage.dart';
 import 'package:findany_flutter/apis/gsheets.dart';
+import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
@@ -34,6 +36,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   UserSheetsApi userSheetsApi = new UserSheetsApi();
   SharedPreferences sharedPreferences = new SharedPreferences();
   LoadingDialog loadingDialog = new LoadingDialog();
+  NotificationService notificationService = new NotificationService();
 
   Razorpay razorpay = new Razorpay();
 
@@ -414,13 +417,53 @@ class _XeroxHomeState extends State<XeroxHome> {
 
     userSheetsApi.updateCell(sheetData);
     utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/uploadedFiles/');
+    List<String> tokens = await getTokens();
+
+    notificationService.sendNotification(tokens, 'Xerox Submitted', _nameController.text, {});
+
+    utils.showToastMessage('Request submitted', context);
     loadingDialog.showProgressLoading(progress+0.05, 'Uploading Files...');
     EasyLoading.dismiss();
 
-    utils.showToastMessage('Request submitted', context);
+    //notificationService.sendNotification(tokens, title, message, {});
     Navigator.pop(context);
 
   }
+
+  Future<List<String>> getTokens() async {
+    DocumentReference xeroxRef = FirebaseFirestore.instance.doc('AdminDetails/Xerox');
+    DocumentReference adminRef = FirebaseFirestore.instance.doc('AdminDetails/All');
+
+    Map<String, dynamic>? xeroxAdmins = await fireStoreService.getDocumentDetails(xeroxRef);
+    Map<String, dynamic>? adminAll = await fireStoreService.getDocumentDetails(adminRef);
+
+    List<String> admins = [];
+    List<String> tokens = [];
+
+    if (xeroxAdmins != null && xeroxAdmins['admins'] is List) {
+      admins.addAll(List<String>.from(xeroxAdmins['admins']));
+    }
+    if (adminAll != null && adminAll['admins'] is List) {
+      admins.addAll(List<String>.from(adminAll['admins']));
+    }
+
+    if (admins.isNotEmpty) {
+      DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
+      Map<String, dynamic>? tokenValues = await fireStoreService.getDocumentDetails(tokenRef);
+      if (tokenValues != null) {
+        for (String admin in admins) {
+          if (tokenValues.containsKey(admin)) {
+            tokens.add(tokenValues[admin]);
+          }
+        }
+      }
+    }
+    print('Admin Names: $admins');
+    print('Admin Tokens: $tokens');
+
+    return tokens;
+  }
+
 
   String getFileName(File file) {
     return path.basename(file.path);

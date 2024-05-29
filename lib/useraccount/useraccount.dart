@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Home.dart';
+import 'package:findany_flutter/useraccount/academicdetails.dart';
 import 'package:findany_flutter/useraccount/personalDetails.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -134,8 +135,10 @@ class _UserAccountState extends State<UserAccount> {
                             title: Text('Academic details', style: TextStyle(fontSize: 16)),
                             trailing: Icon(Icons.arrow_forward_ios, size: 16),
                             onTap: () {
-                              utils.showToastMessage('Under Development', context);
-                            },
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => AcademicDetails()),
+                              );                            },
                           ),
                         ),
                         // Visibility(

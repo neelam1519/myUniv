@@ -68,8 +68,6 @@ class _PersonalDetailsState extends State<PersonalDetails> {
 
   }
 
-
-
   Future<void> _updateDetails() async {
     username = _usernameController.text;
     if(username.isEmpty){
