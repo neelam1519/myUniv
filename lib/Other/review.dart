@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Firebase/realtimedatabase.dart';
+import 'package:findany_flutter/main.dart';
+import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
@@ -11,11 +13,11 @@ class Review extends StatefulWidget {
 }
 
 class _ReviewState extends State<Review> {
-
-  Utils utils = new Utils();
-  RealTimeDatabase realTimeDatabase = new RealTimeDatabase();
-  FireStoreService fireStoreService = new FireStoreService();
-  LoadingDialog loadingDialog = new LoadingDialog();
+  Utils utils = Utils();
+  RealTimeDatabase realTimeDatabase = RealTimeDatabase();
+  FireStoreService fireStoreService = FireStoreService();
+  LoadingDialog loadingDialog = LoadingDialog();
+  NotificationService notificationService = new NotificationService();
 
   TextEditingController _controller = TextEditingController();
 
@@ -47,21 +49,38 @@ class _ReviewState extends State<Review> {
             ),
             SizedBox(height: 20.0),
             ElevatedButton(
-              onPressed: () async{
+              onPressed: () async {
+
+                if(_controller.text.isEmpty){
+                  utils.showToastMessage('Enter the text in the box', context);
+                  return;
+                }
                 loadingDialog.showDefaultLoading('Submitting Review');
                 String reviewText = _controller.text;
 
                 int? id = await realTimeDatabase.incrementValue('Reviews');
 
-                Map<String,dynamic> reviewMap = {'${id.toString()}(${await utils.getCurrentUserEmail()})':reviewText};
+                Map<String, dynamic> reviewMap = {
+                  '${id.toString()}(${await utils.getCurrentUserEmail()})': reviewText
+                };
                 DocumentReference reviewRef = FirebaseFirestore.instance.doc('/Reviews/${utils.getTodayDate().replaceAll('/', '-')}');
                 fireStoreService.uploadMapDataToFirestore(reviewMap, reviewRef);
+
+                DocumentReference reviewAdminRef = FirebaseFirestore.instance.doc('AdminDetails/Reviews');
+                List<String> tokens = await utils.getSpecificTokens(reviewAdminRef);
+                notificationService.sendNotification(tokens, 'Review', reviewText, {});
 
                 loadingDialog.dismiss();
                 utils.showToastMessage('Review submitted', context);
                 Navigator.pop(context);
               },
               child: Text('Submit'),
+            ),
+            SizedBox(height: 20.0),
+            Text(
+              'Contact Us: neelammsr@gmail.com',
+              style: TextStyle(fontSize: 16.0),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

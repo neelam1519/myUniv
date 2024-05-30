@@ -35,7 +35,7 @@ class _MapScreenState extends State<MapScreen> {
     _searchController.addListener(_filterLocations);
   }
 
-  @override 
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -89,7 +89,6 @@ class _MapScreenState extends State<MapScreen> {
         _markers = markers;
         _filteredLocations = _locations;
       });
-
       print("Markers loaded successfully: $markers");
     } catch (e) {
       print("Error loading markers: $e");
@@ -193,51 +192,48 @@ class _MapScreenState extends State<MapScreen> {
               markers: Set<Marker>.of(_markers),
             ),
             if (_isSearching)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Column(
-                    children: [
-                      Container(
-                        color: Colors.white,
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _filteredLocations.length,
-                          itemBuilder: (context, index) {
-                            final location = _filteredLocations[index];
-                            final name = location['name'];
-                            final alternativeNames = (location['alternativeNames'] as List<dynamic>).join(', ');
+              Positioned(
+                top: kToolbarHeight,
+                left: 0,
+                right: 0,
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  color: Colors.white,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: _filteredLocations.map((location) {
+                        final name = location['name'];
+                        final alternativeNames = (location['alternativeNames'] as List<dynamic>).join(', ');
 
-                            return ListTile(
-                              title: Text(name),
-                              subtitle: alternativeNames.isNotEmpty
-                                  ? Text(
-                                alternativeNames,
-                                style: TextStyle(fontSize: 12.0),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              )
-                                  : null,
-                              onTap: () async {
-                                _searchController.clear();
-                                final controller = await _controller.future;
-                                controller.animateCamera(
-                                  CameraUpdate.newLatLng(
-                                    LatLng(location['lat'], location['lng']),
-                                  ),
-                                );
-                                setState(() {
-                                  _isSearching = false;
-                                  _selectedMarkerName = location['name'];
-                                  showMarkerInfoWindow(location['name']);
-                                });
-                              },
+                        return ListTile(
+                          title: Text(name),
+                          subtitle: alternativeNames.isNotEmpty
+                              ? Text(
+                            alternativeNames,
+                            style: TextStyle(fontSize: 12.0),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          )
+                              : null,
+                          onTap: () async {
+                            _searchController.clear();
+                            final controller = await _controller.future;
+                            controller.animateCamera(
+                              CameraUpdate.newLatLng(
+                                LatLng(location['lat'], location['lng']),
+                              ),
                             );
+                            setState(() {
+                              _isSearching = false;
+                              _selectedMarkerName = location['name'];
+                              showMarkerInfoWindow(location['name']);
+                            });
                           },
-                        ),
-                      ),
-                    ],
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
               ),

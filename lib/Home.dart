@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
+import 'package:findany_flutter/Other/NewsList.dart';
+import 'package:findany_flutter/Other/QandA.dart';
 import 'package:findany_flutter/Other/review.dart';
-import 'package:findany_flutter/Other/support.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:findany_flutter/materials/materialshome.dart';
 import 'package:findany_flutter/navigation/navigationhome.dart';
@@ -20,12 +19,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-class Home extends StatefulWidget{
+class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with WidgetsBindingObserver{
+class _HomeState extends State<Home> with WidgetsBindingObserver {
   Utils utils = new Utils();
   LoadingDialog loadingDialog = new LoadingDialog();
   SharedPreferences sharedPreferences = new SharedPreferences();
@@ -33,7 +32,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   FireStoreService fireStoreService = new FireStoreService();
   FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseMessaging messaging = FirebaseMessaging.instance;
-  String? email='',name='',imageUrl='';
+  String? email = '', name = '', imageUrl = '';
 
   @override
   void initState() {
@@ -61,6 +60,18 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
+        backgroundColor: Colors.greenAccent[700],
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications_active),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NewsListScreen()),
+              );
+            },
+          ),
+        ],
       ),
       drawer: Drawer(
         child: FutureBuilder<void>(
@@ -69,24 +80,21 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
             } else {
-              print('ON drawer opened $imageUrl');
               return ListView(
                 padding: EdgeInsets.zero,
                 children: <Widget>[
                   UserAccountsDrawerHeader(
                     accountName: Text(name!),
-                    accountEmail: null,
+                    accountEmail: Text(email!),
                     decoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: Colors.blue[700],
                     ),
                     currentAccountPicture: CircleAvatar(
-                      radius: 100,
                       backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
                           ? CachedNetworkImageProvider(imageUrl!) as ImageProvider<Object>?
                           : AssetImage('assets/images/defaultimage.png'),
-                      backgroundColor: Colors.white, // Add a background color if needed
+                      backgroundColor: Colors.white,
                     ),
-                    otherAccountsPictures: [],
                   ),
                   ListTile(
                     leading: Icon(Icons.person),
@@ -101,7 +109,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                   ListTile(
                     leading: Icon(Icons.reviews),
                     title: Text('Reviews'),
-                    onTap: () async {
+                    onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => Review()),
@@ -109,12 +117,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                     },
                   ),
                   ListTile(
-                    leading: Icon(Icons.contact_support),
-                    title: Text('Contact us'),
-                    onTap: () async {
+                    leading: Icon(Icons.question_answer),
+                    title: Text('Q & A'),
+                    onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => Support()),
+                        MaterialPageRoute(builder: (context) => QuestionAndAnswer()),
                       );
                     },
                   ),
@@ -135,136 +143,86 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
           },
         ),
       ),
-      body: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => UniversityChat()),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/groupchat.png',
-                        width: 100,
-                        height: 100,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Lets Talk',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => XeroxHome()),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/xerox.png',
-                        width: 100,
-                        height: 100,
-                      ),
-                      SizedBox(height: 10),
-                      Text('Get Xerox',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MaterialsHome()),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/materials.png', // Add your image path
-                        width: 100,
-                        height: 100,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Materials',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // Add your functionality here
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MapScreen()),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/navigation.jpeg',
-                        width: 100,
-                        height: 100,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Navigation',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16.0,
+          mainAxisSpacing: 16.0,
+          children: [
+            _buildGridItem(
+              context,
+              'assets/images/groupchat.png',
+              'Let\'s Talk',
+              UniversityChat(),
+            ),
+            _buildGridItem(
+              context,
+              'assets/images/xerox.png',
+              'Get Xerox',
+              XeroxHome(),
+            ),
+            _buildGridItem(
+              context,
+              'assets/images/materials.png',
+              'Materials',
+              MaterialsHome(),
+            ),
+            _buildGridItem(
+              context,
+              'assets/images/navigation.jpeg',
+              'Navigation',
+              MapScreen(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridItem(BuildContext context, String imagePath, String title, Widget destination) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => destination),
+        );
+      },
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              imagePath,
+              width: 80,
+              height: 80,
+            ),
+            SizedBox(height: 10),
+            Text(
+              title,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> loadData() async {
-    loadingDialog.showDefaultLoading("Getting Details...") ;
+    loadingDialog.showDefaultLoading("Getting Details...");
     DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
-    email = await sharedPreferences.getDataFromReference(documentReference,'Email')?? '';
-    name = await sharedPreferences.getDataFromReference(documentReference,"Name") ??  '';
-    imageUrl = await sharedPreferences.getDataFromReference(documentReference,'ProfileImageURL')?? '';
+    email = await sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
+    name = await sharedPreferences.getDataFromReference(documentReference, "Name") ?? '';
+    imageUrl = await sharedPreferences.getDataFromReference(documentReference, 'ProfileImageURL') ?? '';
 
     utils.updateToken().then((value) {
       loadingDialog.dismiss();
     });
     print('Home Page Loaded data: $email  $name  $imageUrl');
-
   }
 
   Future<void> signOut() async {
@@ -287,10 +245,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   }
 
   @override
-  void dispose(){
+  void dispose() {
     super.dispose();
     utils.deleteFolder("/data/data/com.neelam.FindAny/cache");
-
     print('Home Disposed');
   }
 }

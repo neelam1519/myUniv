@@ -43,30 +43,26 @@ Future<void> showNotification(RemoteMessage message) async {
   if (message.data['from'] == 'firebase') {
     return;
   }
-
-  print('Showing notification');
   final String? title = message.notification?.title;
   final String? body = message.notification?.body;
 
-  final AndroidNotificationDetails androidPlatformChannelSpecifics =
-  AndroidNotificationDetails(
-    'channel_id',
-    'channel_name',
+  final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+    'Neelam',
+    'FindAny',
     importance: Importance.max,
     priority: Priority.high,
-    ticker: 'ticker',
-    icon: '@mipmap/ic_launcher',
+    ticker: 'ticker', // Ticker
+    icon: '@mipmap/transperentlogo',
   );
 
-  final NotificationDetails platformChannelSpecifics =
-  NotificationDetails(android: androidPlatformChannelSpecifics);
+  final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
 
   await flutterLocalNotificationsPlugin.show(
     0, // Notification ID
-    title,
-    body,
-    platformChannelSpecifics,
-    payload: 'notification_payload',
+    title, // Notification title
+    body, // Notification body
+    platformChannelSpecifics, // Notification details
+    payload: 'notification_payload', // Payload
   );
 }
 

@@ -7,6 +7,8 @@ class NotificationService {
     final String serverKey = 'AAAAFHHAFOw:APA91bGXjNz0n9hlTXJ7DvqZfvWdPUA4niCrjyk5aFtVD6RbY5IUKIF_e1NlTQ3Z3tj9N0Q4mFENnU-K4BRFwmh6_Ht7iz6Qic6WjOMOehLDYPqXDOURoguGB19-WcQSBvATpK0YQScV';
     final String fcmEndpoint = 'https://fcm.googleapis.com/fcm/send';
 
+    print('Notification Service Tokens: $tokens}');
+
     final Map<String, dynamic> payload = {
       'notification': {
         'title': title,

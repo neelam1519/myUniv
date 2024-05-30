@@ -394,18 +394,14 @@ class _XeroxHomeState extends State<XeroxHome> {
       }
       print('Uploading url: $uploadedUrl');
 
-      if (uploadedUrl != null) {
-        uploadedUrls.add(uploadedUrl);
-        progress+=totalProgress;
-        loadingDialog.showProgressLoading(progress, 'Uploading Files...');
-      }
+      uploadedUrls.add(uploadedUrl);
+      progress+=totalProgress;
+      loadingDialog.showProgressLoading(progress, 'Uploading Files...');
+
     }
 
-
     int? count = await realTimeDatabase.incrementValue('Xerox/XeroxHistory');
-
     DocumentReference userRef = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
-
     Map<String, dynamic> uploadData = {'ID': count,'Date': utils.getTodayDate(),'Name': _nameController.text, 'Mobile Number': _mobilenumberController.text, 'Email': email,
       'Total Price': totalPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls, 'Description':_descriptionController.text};
 
@@ -417,53 +413,18 @@ class _XeroxHomeState extends State<XeroxHome> {
 
     userSheetsApi.updateCell(sheetData);
     utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/uploadedFiles/');
-    List<String> tokens = await getTokens();
+    DocumentReference xeroxRef = FirebaseFirestore.instance.doc('AdminDetails/Xerox');
+    List<String> tokens = await utils.getSpecificTokens(xeroxRef);
 
     notificationService.sendNotification(tokens, 'Xerox Submitted', _nameController.text, {});
 
-    utils.showToastMessage('Request submitted', context);
     loadingDialog.showProgressLoading(progress+0.05, 'Uploading Files...');
-    EasyLoading.dismiss();
 
-    //notificationService.sendNotification(tokens, title, message, {});
+    utils.showToastMessage('Request submitted', context);
+    EasyLoading.dismiss();
     Navigator.pop(context);
 
   }
-
-  Future<List<String>> getTokens() async {
-    DocumentReference xeroxRef = FirebaseFirestore.instance.doc('AdminDetails/Xerox');
-    DocumentReference adminRef = FirebaseFirestore.instance.doc('AdminDetails/All');
-
-    Map<String, dynamic>? xeroxAdmins = await fireStoreService.getDocumentDetails(xeroxRef);
-    Map<String, dynamic>? adminAll = await fireStoreService.getDocumentDetails(adminRef);
-
-    List<String> admins = [];
-    List<String> tokens = [];
-
-    if (xeroxAdmins != null && xeroxAdmins['admins'] is List) {
-      admins.addAll(List<String>.from(xeroxAdmins['admins']));
-    }
-    if (adminAll != null && adminAll['admins'] is List) {
-      admins.addAll(List<String>.from(adminAll['admins']));
-    }
-
-    if (admins.isNotEmpty) {
-      DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
-      Map<String, dynamic>? tokenValues = await fireStoreService.getDocumentDetails(tokenRef);
-      if (tokenValues != null) {
-        for (String admin in admins) {
-          if (tokenValues.containsKey(admin)) {
-            tokens.add(tokenValues[admin]);
-          }
-        }
-      }
-    }
-    print('Admin Names: $admins');
-    print('Admin Tokens: $tokens');
-
-    return tokens;
-  }
-
 
   String getFileName(File file) {
     return path.basename(file.path);

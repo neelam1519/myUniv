@@ -50,7 +50,7 @@ class _PersonalDetailsState extends State<PersonalDetails> {
     name = await sharedPreferences.getDataFromReference(documentReference, 'Name') ?? '';
     regNo = await sharedPreferences.getDataFromReference(documentReference, 'Registration Number') ?? '';
     email = await sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
-    selectedGender = await sharedPreferences.getDataFromReference(documentReference, 'Gender') ?? '';
+    selectedGender = await sharedPreferences.getDataFromReference(documentReference, 'Gender') ?? 'Male';
     username = await sharedPreferences.getDataFromReference(documentReference, 'Username') ?? '';
 
     _usernameController.text = username;
@@ -61,11 +61,10 @@ class _PersonalDetailsState extends State<PersonalDetails> {
     } else if (dobData is Timestamp) {
       dob = dobData.toDate();
     }
-    dob = dob ?? currentTime; // Assign default value if dob is null
+    dob = dob ?? currentTime;
     loadingDialog.dismiss();
 
     setState(() {});
-
   }
 
   Future<void> _updateDetails() async {
@@ -77,13 +76,11 @@ class _PersonalDetailsState extends State<PersonalDetails> {
     loadingDialog.showDefaultLoading('Updating Data');
     Map<String, dynamic> userData = {
       'Gender': selectedGender,
-      'DOB': dob,
+      'DOB': dob!.toIso8601String(),
       'Username': username,
     };
     DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
     fireStoreService.uploadMapDataToFirestore(userData, documentReference);
-
-    userData['DOB'] = dob!.toIso8601String();
 
     sharedPreferences.storeMapValuesInSecureStorage(userData);
     loadingDialog.dismiss();

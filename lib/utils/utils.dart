@@ -297,5 +297,40 @@ class Utils{
     }
   }
 
+  Future<List<String>> getSpecificTokens(DocumentReference specificRef) async {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    DocumentReference adminRef = firestore.doc('AdminDetails/All');
+    DocumentReference tokenRef = firestore.doc('Tokens/Tokens');
+
+    Map<String, dynamic>? xeroxAdmins = await fireStoreService.getDocumentDetails(specificRef);
+    Map<String, dynamic>? adminAll = await fireStoreService.getDocumentDetails(adminRef);
+
+    List<String> admins = [];
+    List<String> tokens = [];
+
+    if (xeroxAdmins != null) {
+      admins.addAll(xeroxAdmins.values.cast<String>());
+    }
+    if (adminAll != null) {
+      admins.addAll(adminAll.values.cast<String>());
+    }
+    print('Admin Names: $admins');
+
+    if (admins.isNotEmpty) {
+      Map<String, dynamic>? tokenValues = await fireStoreService.getDocumentDetails(tokenRef);
+      if (tokenValues != null) {
+        for (String admin in admins) {
+          if (tokenValues.containsKey(admin)) {
+            tokens.add(tokenValues[admin]);
+          }
+        }
+      }
+    }
+
+    print('Admin Names: $admins');
+    print('Admin Tokens: $tokens');
+
+    return tokens;
+  }
 
 }

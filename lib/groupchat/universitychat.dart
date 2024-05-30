@@ -602,6 +602,7 @@ class _UniversityChatState extends State<UniversityChat> {
     regNo = await sharedPreferences.getDataFromReference(documentReference,'Registration Number') ?? '';
     profileUrl = await sharedPreferences.getDataFromReference(documentReference,'ProfileImageURL') ?? '';
     print('User Details $name  $email  $regNo  $profileUrl');
+
   }
 
   Future<void> sendNotification(String title, String message) async {
