@@ -10,10 +10,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
+import 'package:flutter_signin_button/flutter_signin_button.dart';
 
 class Login extends StatefulWidget {
-
   @override
   _LoginState createState() => _LoginState();
 }
@@ -32,21 +31,41 @@ class _LoginState extends State<Login> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Login'),
+        backgroundColor: Colors.green[700],
       ),
       body: Center(
-        child: GestureDetector(
-          onTap: () async {
-            bool internet = await utils.checkInternetConnection();
-            print('Internet Connection: $internet');
-            if(internet){
-              await _handleGoogleSignIn();
-            }else{
-              utils.showToastMessage('Check your internet connection', context);
-            }
-          },
-          child: Image.asset(
-            'assets/images/google-signin-button.png',
-            height: 48.0,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Image.asset(
+                'assets/images/logo.png', // Add the path to your app logo here
+                height: 120.0,
+              ),
+              SizedBox(height: 40.0),
+              Text(
+                'Welcome to FindAny',
+                style: TextStyle(
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 20.0),
+              SignInButton(
+                Buttons.Google,
+                text: "Sign in with Google",
+                onPressed: () async {
+                  bool internet = await utils.checkInternetConnection();
+                  print('Internet Connection: $internet');
+                  if (internet) {
+                    await _handleGoogleSignIn();
+                  } else {
+                    utils.showToastMessage('Check your internet connection', context);
+                  }
+                },
+              ),
+            ],
           ),
         ),
       ),
@@ -74,16 +93,14 @@ class _LoginState extends State<Login> {
 
         if (user != null && mounted) {
           if (user.email != null && user.email!.endsWith('@klu.ac.in')) {
-
             await storeRequiredData().then((value) {
               print('Login Value: $value');
-              if(value!=null){
+              if (value != null) {
                 Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-              }else{
+              } else {
                 utils.showToastMessage('Error occurred unable to login', context);
               }
             });
-
           } else {
             await FirebaseAuth.instance.signOut();
             await _googleSignIn.disconnect();
@@ -147,7 +164,7 @@ class _LoginState extends State<Login> {
       utils.signOut();
     }
     try {
-      DocumentReference tokenRef= FirebaseFirestore.instance.doc('Tokens/Tokens');
+      DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
       await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
       DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
       await sharedPreferences.storeMapValuesInSecureStorage(data);
@@ -177,6 +194,4 @@ class _LoginState extends State<Login> {
       return null;
     }
   }
-
 }
-

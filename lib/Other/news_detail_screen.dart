@@ -92,45 +92,46 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.details,
-              style: TextStyle(fontSize: 16.0, height: 1.5),
-            ),
-            SizedBox(height: 16.0),
-            if (_isLoading)
-              Center(child: CircularProgressIndicator())
-            else if (_error != null)
-              Text(_error!, style: TextStyle(color: Colors.red))
-            else if (localPdfPath != null)
-                Column(
-                  children: [
-                    Container(
-                      height: 500,
-                      child: PDFView(
-                        filePath: localPdfPath,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.details,
+                style: TextStyle(fontSize: 16.0, height: 1.5),
+              ),
+              SizedBox(height: 16.0),
+              if (_isLoading)
+                Center(child: CircularProgressIndicator())
+              else if (_error != null)
+                Text(_error!, style: TextStyle(color: Colors.red))
+              else if (localPdfPath != null)
+                  Column(
+                    children: [
+                      Container(
+                        height: 500,
+                        child: PDFView(
+                          filePath: localPdfPath,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 16.0),
-                    ElevatedButton.icon(
-                      onPressed: _viewPdfFullScreen,
-                      icon: Icon(Icons.fullscreen),
-                      label: Text('View PDF Full Screen'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700],
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                        textStyle: TextStyle(fontSize: 16.0),
+                      SizedBox(height: 16.0),
+                      ElevatedButton.icon(
+                        onPressed: _viewPdfFullScreen,
+                        icon: Icon(Icons.fullscreen),
+                        label: Text('View PDF Full Screen'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                          textStyle: TextStyle(fontSize: 16.0),
+                        ),
                       ),
-                    ),
-                  ],
-                )
-              else
-                Text(''),
-                //Text('No PDF available for this news item', style: TextStyle(fontSize: 16.0, fontStyle: FontStyle.italic)),
-          ],
+                    ],
+                  )
+                else
+                  Text(''),
+            ],
+          ),
         ),
       ),
     );

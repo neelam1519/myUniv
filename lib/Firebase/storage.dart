@@ -17,19 +17,9 @@ class FirebaseStorageHelper {
       return 0;
     }
   }
-
-  Future<List<String>> getFileNames(String folderPath) async {
-    List<String> fileNames = [];
-    try {
-      ListResult listResult = await storage.ref(folderPath).listAll();
-      listResult.items.forEach((Reference ref) {
-        fileNames.add(ref.name);
-      });
-      return fileNames;
-    } catch (e) {
-      print('Error getting file names: $e');
-      return [];
-    }
+  Future<List<String>> getFileNames(String storagePath) async {
+    final result = await storage.ref(storagePath).listAll();
+    return result.items.map((ref) => ref.name).toList();
   }
 
   Future<String> uploadFile(File file, String folderName, String fileName) async {

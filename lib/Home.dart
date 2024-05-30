@@ -65,10 +65,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           IconButton(
             icon: Icon(Icons.notifications_active),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => NewsListScreen()),
-              );
+
             },
           ),
         ],
@@ -173,6 +170,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               'assets/images/navigation.jpeg',
               'Navigation',
               MapScreen(),
+            ),
+            _buildGridItem(
+              context,
+              'assets/images/universitynews.jpeg',
+              'University News',
+              NewsListScreen(),
             ),
           ],
         ),
