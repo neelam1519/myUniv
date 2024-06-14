@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -103,10 +104,38 @@ class _XeroxDetailViewState extends State<XeroxDetailView> {
       print('Extension: $extension');
       String mimeType = utils.getMimeType(extension);
       print('Mime Type: $mimeType');
-      utils.openFile(filePath);
+      viewPdfFullScreen(filePath,filePath.split('/').last);
     } catch (e) {
       loadingDialog.dismiss(); // Dismiss progress indicator in case of error
       print('Error downloading or opening file: $e');
+    }
+  }
+
+  void viewPdfFullScreen(String? filePath, String title) {
+    if (filePath != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(
+              title: Text(title),
+            ),
+            body: PDFView(
+              filePath: filePath,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: false,
+              pageFling: false,
+              onRender: (pages) {
+                setState(() {});
+              },
+              onError: (error) {
+                print(error.toString());
+              },
+            ),
+          ),
+        ),
+      );
     }
   }
 }

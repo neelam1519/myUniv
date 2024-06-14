@@ -14,6 +14,7 @@ import 'package:findany_flutter/xerox/showfiles.dart';
 import 'package:findany_flutter/xerox/xeroxhistory.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -206,7 +207,11 @@ class _XeroxHomeState extends State<XeroxHome> {
                       for (int index = 0; index < _uploadedFiles.length; index++)
                         ListTile(
                           title: Text('${index + 1}. ${_uploadedFiles.keys.toList()[index]}'),
-                          onTap: () => utils.openFile(_uploadedFiles.values.toList()[index]),
+                          onTap: () => (){
+                           // utils.openFile(_uploadedFiles.values.toList()[index]);
+                            viewPdfFullScreen(_uploadedFiles.values.toList()[index],_uploadedFiles.values.toList()[index].split('/').last);
+
+                          },
                           trailing: IconButton(
                             icon: Icon(Icons.close),
                             onPressed: () {
@@ -474,6 +479,34 @@ class _XeroxHomeState extends State<XeroxHome> {
       utils.showToastMessage('No Files selected', context);
     }
 
+  }
+
+  void viewPdfFullScreen(String? filePath, String title) {
+    if (filePath != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(
+              title: Text(title),
+            ),
+            body: PDFView(
+              filePath: filePath,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: false,
+              pageFling: false,
+              onRender: (pages) {
+                setState(() {});
+              },
+              onError: (error) {
+                print(error.toString());
+              },
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   @override

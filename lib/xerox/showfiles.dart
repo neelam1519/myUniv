@@ -6,6 +6,7 @@ import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ShowFiles extends StatefulWidget {
@@ -169,13 +170,40 @@ class _ShowFilesState extends State<ShowFiles> {
 
       EasyLoading.dismiss();
       setState(() {});
-      utils.openFile(filePath);
+      viewPdfFullScreen(filePath,filePath.split('/').last);
+
     } catch (e) {
       EasyLoading.dismiss(); // Dismiss progress indicator in case of error
       print('Error downloading or opening file: $e');
     }
   }
-
+  void viewPdfFullScreen(String? filePath, String title) {
+    if (filePath != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(
+              title: Text(title),
+            ),
+            body: PDFView(
+              filePath: filePath,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: false,
+              pageFling: false,
+              onRender: (pages) {
+                setState(() {});
+              },
+              onError: (error) {
+                print(error.toString());
+              },
+            ),
+          ),
+        ),
+      );
+    }
+  }
   void dispose() {
     utils.clearCache(); // Clear cache when the app is disposed
     super.dispose();

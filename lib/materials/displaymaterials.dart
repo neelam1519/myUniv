@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -21,6 +24,7 @@ class DisplayMaterials extends StatefulWidget {
 class _DisplayMaterialsState extends State<DisplayMaterials> {
   FirebaseStorageHelper firebaseStorageHelper = FirebaseStorageHelper();
   LoadingDialog loadingDialog = LoadingDialog();
+  NotificationService notificationService = NotificationService();
   Utils utils = Utils();
 
   int _currentIndex = 0;
@@ -41,6 +45,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
     initialize().then((_) {
       downloadFiles();
     });
+    loadingDialog.showDefaultLoading('Loading Files...');
   }
 
   @override
@@ -91,6 +96,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
 
     setState(() {
       isDownloading = false;
+      loadingDialog.dismiss(); // Stop loading when files are processed
     });
   }
 
@@ -144,18 +150,15 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       body: StreamBuilder<List<File>>(
         stream: _streamController.stream,
         builder: (context, snapshot) {
-          if (pdfFileNames.isEmpty) {
-            return Center(
-              child: Text('No files available.'),
-            );
-          }
           if (snapshot.connectionState == ConnectionState.waiting && isDownloading) {
             return buildSkeletonView();
           } else if (snapshot.hasError) {
+            loadingDialog.dismiss();
             return Center(
               child: Text('Error: ${snapshot.error}'),
             );
-          } else if (snapshot.data == null || snapshot.data!.isEmpty) {
+          } else if (!isDownloading && (snapshot.data == null || snapshot.data!.isEmpty)) {
+            loadingDialog.dismiss();
             return Center(
               child: Text('No files available.'),
             );
@@ -179,7 +182,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
                 File pdfFile = filesToShow[index];
                 return GestureDetector(
                   onTap: () {
-                    utils.openFile(pdfFile.path);
+                    viewPdfFullScreen(pdfFile.path, pdfFile.path.split('/').last);
                   },
                   child: Card(
                     elevation: 5,
@@ -252,15 +255,68 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          initialize().then((_) {
-            downloadFiles();
-          });
+        onPressed: () async {
+          // Your upload action here
+          FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
+
+          if (result != null && result.files.isNotEmpty) {
+            loadingDialog.showDefaultLoading('Uploading Files...');
+            for (PlatformFile platformFile in result.files) {
+              String fileName = platformFile.name;
+              String fileExtension = fileName.split('.').last;
+
+              print("Filename: $fileName");
+              print("Extension: $fileExtension");
+
+              String path = 'userUploadedMaterials/${utils.getTodayDate().replaceAll('/', '-')}';
+              File file = File(platformFile.path!);
+              await firebaseStorageHelper.uploadFile(file, path, '${await utils.getCurrentUserEmail()}-$fileName.$fileExtension');
+
+              DocumentReference specificRef = FirebaseFirestore.instance.doc('AdminDetails/Materials');
+              List<String> tokens = await utils.getSpecificTokens(specificRef);
+              notificationService.sendNotification(tokens, "Materials", '${result.count} files uploaded by ${await utils.getCurrentUserEmail()}', {});
+
+              loadingDialog.dismiss();
+            }
+          } else {
+            // Handle the case when no files are picked
+            utils.showToastMessage('No files are selected', context);
+            print('No files selected');
+          }
+
         },
-        child: Icon(Icons.refresh),
+        child: Icon(Icons.upload),
         backgroundColor: Colors.blue,
       ),
     );
+  }
+
+  void viewPdfFullScreen(String? filePath, String title) {
+    if (filePath != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(
+              title: Text(title),
+            ),
+            body: PDFView(
+              filePath: filePath,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: false,
+              pageFling: false,
+              onRender: (pages) {
+                setState(() {});
+              },
+              onError: (error) {
+                print(error.toString());
+              },
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget buildNextFilePlaceholder(String nextFileName) {

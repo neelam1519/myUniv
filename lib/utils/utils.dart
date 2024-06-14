@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -16,6 +17,7 @@ class Utils{
 
   FirebaseAuth auth = FirebaseAuth.instance;
   FireStoreService fireStoreService = new FireStoreService();
+
 
   Future<void> clearCache() async {
     Directory cacheDir = await getTemporaryDirectory();
@@ -104,26 +106,24 @@ class Utils{
     }
   }
 
-    Future<void> deleteFolder(String folderPath) async {
-    print('Deleting Cache Folder');
-      try {
-        Directory folder = Directory(folderPath);
-        if (await folder.exists()) {
-          await folder.delete(recursive: true);
-          print('Folder deleted: $folderPath');
-        } else {
-          print('Folder not found: $folderPath');
-        }
-      } catch (e) {
-        print('Error deleting folder: $e');
+  Future<void> deleteFolder(String folderPath) async {
+    try {
+      final directory = Directory(folderPath);
+      if (await directory.exists()) {
+        // Recursively delete the directory and its contents
+        await directory.delete(recursive: true);
+      } else {
+        print('Directory does not exist');
       }
+    } catch (e) {
+      print('Error deleting directory: $e');
     }
+  }
 
     bool isValidMobileNumber(String mobileNumber) {
       RegExp regExp = RegExp(r'^[0-9]{10}$');
       return regExp.hasMatch(mobileNumber);
     }
-
 
   String getTodayDate() {
     DateTime now = DateTime.now();
@@ -135,7 +135,6 @@ class Utils{
 
     return formattedDate;
   }
-
 
   Future<void> deleteFile(String filePath) async {
     try {
@@ -247,9 +246,6 @@ class Utils{
     }
   }
 
-
-
-
   Future<void> updateToken() async{
     // Listen for token refresh event
     FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
@@ -297,22 +293,40 @@ class Utils{
     }
   }
 
+  Future<List<String>> getAdmins(DocumentReference specificRef) async{
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    DocumentReference adminRef = firestore.doc('AdminDetails/All');
+
+    Map<String, dynamic>? specificAdmins = await fireStoreService.getDocumentDetails(specificRef);
+    Map<String, dynamic>? mainAdmins = await fireStoreService.getDocumentDetails(adminRef);
+
+    List<String> admins = [];
+    if (specificAdmins != null) {
+      admins.addAll(specificAdmins.values.cast<String>());
+    }
+    if (mainAdmins != null) {
+      admins.addAll(mainAdmins.values.cast<String>());
+    }
+    print('Admins: $admins');
+    return admins;
+  }
+
   Future<List<String>> getSpecificTokens(DocumentReference specificRef) async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     DocumentReference adminRef = firestore.doc('AdminDetails/All');
     DocumentReference tokenRef = firestore.doc('Tokens/Tokens');
 
-    Map<String, dynamic>? xeroxAdmins = await fireStoreService.getDocumentDetails(specificRef);
-    Map<String, dynamic>? adminAll = await fireStoreService.getDocumentDetails(adminRef);
+    Map<String, dynamic>? specificAdmins = await fireStoreService.getDocumentDetails(specificRef);
+    Map<String, dynamic>? mainAdmins = await fireStoreService.getDocumentDetails(adminRef);
 
     List<String> admins = [];
     List<String> tokens = [];
 
-    if (xeroxAdmins != null) {
-      admins.addAll(xeroxAdmins.values.cast<String>());
+    if (specificAdmins != null) {
+      admins.addAll(specificAdmins.values.cast<String>());
     }
-    if (adminAll != null) {
-      admins.addAll(adminAll.values.cast<String>());
+    if (mainAdmins != null) {
+      admins.addAll(mainAdmins.values.cast<String>());
     }
     print('Admin Names: $admins');
 
@@ -333,4 +347,74 @@ class Utils{
     return tokens;
   }
 
+  Future<List<String>> getAllTokens() async {
+    DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
+
+    try {
+      // Fetch the document details
+      Map<String, dynamic>? allTokens = await fireStoreService.getDocumentDetails(tokenRef);
+
+      if (allTokens != null) {
+        // Extract the token values
+        List<String> tokens = allTokens.values.map((token) => token.toString()).toList();
+
+        // Get the current token
+        String? currentToken = await getToken();
+
+        // Remove the current token from the list if it exists
+        if (currentToken != null && tokens.contains(currentToken)) {
+          tokens.remove(currentToken);
+        }
+
+        print('Filtered Tokens: $tokens');
+        return tokens;
+      } else {
+        // Return an empty list if no tokens are found
+        return [];
+      }
+    } catch (e) {
+      // Log any errors encountered during the process
+      print('Error fetching tokens: $e');
+      return [];
+    }
+  }
+
+
+  bool isFileImage(File file) {
+    final List<String> imageExtensions = ['png', 'jpg', 'jpeg', 'gif'];
+    String extension = getFileExtension(file).toLowerCase();
+    return imageExtensions.contains(extension);
+  }
+
+  bool isFilePdf(File file) {
+    return getFileExtension(file).toLowerCase() == 'pdf';
+  }
+
+  bool isMediaImage(ChatMedia media) {
+    final List<String> imageExtensions = ['png', 'jpg', 'jpeg', 'gif'];
+    String extension = getMediaExtension(media.url).toLowerCase();
+    return imageExtensions.contains(extension);
+  }
+
+  bool isMediaPdf(ChatMedia media) {
+    return getMediaExtension(media.url).toLowerCase() == 'pdf';
+  }
+
+  String getMediaExtension(String url) {
+    return path.extension(url).replaceAll('.', '');
+  }
+
+  Future<String?> getCurrentUserProfileImage() async {
+    try {
+      User? user = auth.currentUser;
+      if (user != null && user.photoURL != null) {
+        return user.photoURL;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error getting user profile image URL: $e');
+      return null;
+    }
+  }
 }

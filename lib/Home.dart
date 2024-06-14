@@ -2,7 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
-import 'package:findany_flutter/Other/NewsList.dart';
+import 'package:findany_flutter/Other/notification.dart';
+import 'package:findany_flutter/busbooking/busbookinghome.dart';
+import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/Other/QandA.dart';
 import 'package:findany_flutter/Other/review.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
@@ -65,7 +67,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           IconButton(
             icon: Icon(Icons.notifications_active),
             onPressed: () {
-
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NotificationHome()),
+              );
             },
           ),
         ],
@@ -167,7 +172,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             ),
             _buildGridItem(
               context,
-              'assets/images/navigation.jpeg',
+              'assets/images/navigation.png',
               'Navigation',
               MapScreen(),
             ),
@@ -176,6 +181,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               'assets/images/universitynews.jpeg',
               'University News',
               NewsListScreen(),
+            ),
+            _buildGridItem(
+              context,
+              'assets/images/busbooking.png',
+              'Bus Booking',
+              BusBookingHome(),
             ),
           ],
         ),
@@ -225,25 +236,30 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     utils.updateToken().then((value) {
       loadingDialog.dismiss();
     });
-    print('Home Page Loaded data: $email  $name  $imageUrl');
+
   }
 
+
   Future<void> signOut() async {
-    if (mounted) {
-      loadingDialog.showDefaultLoading('Signing Out...');
-      try {
-        await FirebaseAuth.instance.signOut();
-        await GoogleSignIn().disconnect();
-        utils.deleteFile('/data/data/com.neelam.FindAny/shared_prefs/FlutterSecureStorage.xml');
-        utils.deleteFolder('/data/data/com.neelam.FindAny/cache/libCachedImageData');
+    if (!mounted) return; // Check if the widget is still mounted before proceeding
+    print("Singing out user in Home");
+    loadingDialog.showDefaultLoading('Signing Out...');
+    try {
+      await FirebaseAuth.instance.signOut();
+      await GoogleSignIn().disconnect();
+      utils.deleteFile('/data/data/com.neelam.FindAny/shared_prefs/FlutterSecureStorage.xml');
+      utils.deleteFolder('/data/data/com.neelam.FindAny/cache/libCachedImageData');
+      utils.deleteFolder('/data/data/com.neelam.FindAny/databases');
+
+      if (mounted) {
         loadingDialog.dismiss();
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
-      } catch (error) {
-        print("Error signing out: $error");
+      }
+    } catch (error) {
+      print("Error signing out: $error");
+      if (mounted) {
         loadingDialog.dismiss();
       }
-    } else {
-      print('Unmounted singOut');
     }
   }
 

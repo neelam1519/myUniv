@@ -1,15 +1,12 @@
-import 'dart:ffi';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
 
 class Login extends StatefulWidget {
@@ -18,13 +15,12 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  Utils utils = new Utils();
-  LoadingDialog loadingDialog = new LoadingDialog();
-  SharedPreferences sharedPreferences = new SharedPreferences();
-  FireStoreService fireStoreService = new FireStoreService();
+  Utils utils = Utils();
+  LoadingDialog loadingDialog = LoadingDialog();
+  SharedPreferences sharedPreferences = SharedPreferences();
+  FireStoreService fireStoreService = FireStoreService();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn googleSignIn = GoogleSignIn();
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +55,7 @@ class _LoginState extends State<Login> {
                   bool internet = await utils.checkInternetConnection();
                   print('Internet Connection: $internet');
                   if (internet) {
-                    await _handleGoogleSignIn();
+                    await _handleGoogleSignIn(context);
                   } else {
                     utils.showToastMessage('Check your internet connection', context);
                   }
@@ -71,43 +67,44 @@ class _LoginState extends State<Login> {
       ),
     );
   }
-
-  Future<void> _handleGoogleSignIn() async {
-    print('Handle google sign');
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    print('Handle Google Sign-In');
     try {
       loadingDialog.showDefaultLoading('Signing In...');
 
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
       if (googleSignInAccount != null) {
-        final GoogleSignInAuthentication googleSignInAuthentication =
-        await googleSignInAccount.authentication;
+        final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
+
+        print('Access Token: ${googleSignInAuthentication.accessToken}');
+        print('ID Token: ${googleSignInAuthentication.idToken}');
+
+        if (googleSignInAuthentication.accessToken == null || googleSignInAuthentication.idToken == null) {
+          throw Exception('Google Sign-In authentication tokens are null');
+        }
 
         final AuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleSignInAuthentication.accessToken,
           idToken: googleSignInAuthentication.idToken,
         );
 
-        final UserCredential authResult =
-        await FirebaseAuth.instance.signInWithCredential(credential);
+        final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
         final User? user = authResult.user;
 
         if (user != null && mounted) {
-          if (user.email != null && user.email!.endsWith('@klu.ac.in')) {
-            await storeRequiredData().then((value) {
-              print('Login Value: $value');
-              if (value != null) {
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-              } else {
-                utils.showToastMessage('Error occurred unable to login', context);
-              }
-            });
+          final String? email = user.email;
+          if (email != null && email.endsWith('@klu.ac.in')) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+            await storeRequiredData();
           } else {
-            await FirebaseAuth.instance.signOut();
-            await _googleSignIn.disconnect();
+            await utils.signOut();
             loadingDialog.showError('Please sign in with a valid KLU email.');
           }
+        } else {
+          print('User is null after signing in.');
+          await utils.signOut();
+          loadingDialog.dismiss();
         }
-        print("LOGIN UID: ${utils.getCurrentUserUID()}");
       } else {
         print('Google Sign in canceled.');
         loadingDialog.dismiss();
@@ -115,83 +112,44 @@ class _LoginState extends State<Login> {
     } catch (error) {
       loadingDialog.dismiss();
       utils.showToastMessage('Error occurred while login', context);
-      utils.signOut();
       print('Error signing in with Google: $error');
+      await utils.signOut();
     }
   }
-
-  Future<Map<String, String>?> storeRequiredData() async {
-    String email = await utils.getCurrentUserEmail() ?? '';
-    String displayName = await utils.getCurrentUserDisplayName() ?? '';
-    String name = utils.removeTextAfterFirstNumber(displayName);
-    String imageUrl = await getCurrentUserProfileImage() ?? '';
-    String regNo = utils.removeEmailDomain(email);
-    String? token = await utils.getToken();
-
-    Map<String, String> data = {
-      'Email': email,
-      'Name': name,
-      'ProfileImageURL': imageUrl,
-      'Registration Number': regNo,
-    };
-    print('Login Details: $data');
-    DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
-
+  Future<void> storeRequiredData() async {
     try {
-      DocumentSnapshot documentSnapshot = await documentReference.get();
-      if (documentSnapshot.exists) {
-        print('Document exists');
-        Map<String, dynamic>? retrievedData = await fireStoreService.getDocumentDetails(documentReference);
-        print("Retrieved Data: $retrievedData");
-        if (retrievedData != null && retrievedData.containsKey('ProfileImageURL')) {
-          String profileImageURL = retrievedData['ProfileImageURL'];
-          print('Image Link: $profileImageURL');
-          if (profileImageURL.startsWith('https://firebasestorage.googleapis.com')) {
-            data['ProfileImageURL'] = retrievedData['ProfileImageURL'];
-            print('Profile image URL updated');
-          } else {
-            print('Profile image URL is a current email profile link, not updating');
-          }
-        } else {
-          print('ProfileImageURL field not found in retrieved data');
-        }
-      } else {
-        print('Document does not exist');
-      }
-    } catch (error) {
-      print('Error: $error');
-      utils.showToastMessage('Error occurred while login', context);
-      utils.signOut();
-    }
-    try {
+      String email = await utils.getCurrentUserEmail() ?? " ";
+      String displayName = await utils.getCurrentUserDisplayName() ?? " ";
+      String imageUrl = await utils.getCurrentUserProfileImage() ?? " ";
+      String token = await utils.getToken() ?? " ";
+
+      print('Login Token : $token');
+
+      String name = utils.removeTextAfterFirstNumber(displayName);
+      String regNo = utils.removeEmailDomain(email);
+
+      Map<String, String> data = {'Email': email,
+        'Name': name,
+        'ProfileImageURL': imageUrl,
+        'Registration Number': regNo,
+      };
+      print('Login Details: $data');
+
+      String? currentUserUID =await utils.getCurrentUserUID();
+
+      DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/$currentUserUID');
+      fireStoreService.uploadMapDataToFirestore(data, documentReference);
+      sharedPreferences.storeMapValuesInSecureStorage(data);
+
       DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
       await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
-      DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
-      await sharedPreferences.storeMapValuesInSecureStorage(data);
-      await fireStoreService.uploadMapDataToFirestore(data, userRef);
       loadingDialog.dismiss();
-      if (mounted) {
-        return data;
-      }
+
     } catch (error) {
       print('Error storing data: $error');
-      utils.showToastMessage('Error occurred while login', context);
+      utils.showToastMessage('Error occurred while login  $error', context);
+      print('Login Error2: $error');
       utils.signOut();
-    }
-    return null;
-  }
-
-  Future<String?> getCurrentUserProfileImage() async {
-    try {
-      User? user = _auth.currentUser;
-      if (user != null && user.photoURL != null) {
-        return user.photoURL;
-      } else {
-        return null; // No profile image set or user not signed in
-      }
-    } catch (e) {
-      print('Error getting user profile image URL: $e');
-      return null;
     }
   }
 }

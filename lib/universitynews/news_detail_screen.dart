@@ -1,3 +1,4 @@
+import 'package:findany_flutter/universitynews/addnews.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
@@ -6,10 +7,20 @@ import 'dart:io';
 
 class NewsDetailScreen extends StatefulWidget {
   final String title;
+  final String summary;
   final String details;
   final String? pdfUrl;
+  final bool isAdmin;
+  final String documentID;
 
-  NewsDetailScreen({required this.title, required this.details, this.pdfUrl});
+  NewsDetailScreen({
+    required this.title,
+    required this.details,
+    this.pdfUrl,
+    required this.isAdmin,
+    required this.summary,
+    required this.documentID
+  });
 
   @override
   _NewsDetailScreenState createState() => _NewsDetailScreenState();
@@ -28,6 +39,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     } else {
       _isLoading = false;
     }
+    print('Document Name: ${widget.documentID}');
   }
 
   Future<void> _downloadPdf() async {
@@ -66,8 +78,8 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     }
   }
 
-  void _viewPdfFullScreen() {
-    if (localPdfPath != null) {
+  void viewPdfFullScreen(String? filepath) {
+    if (filepath != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -76,7 +88,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
               title: Text(widget.title),
             ),
             body: PDFView(
-              filePath: localPdfPath,
+              filePath: filepath,
             ),
           ),
         ),
@@ -89,6 +101,16 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: widget.isAdmin
+            ? [
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed:(){
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AddNews(title: widget.title, summary: widget.summary, details: widget.details,pdfUrl: widget.pdfUrl, documentID: widget.documentID,)));
+            },
+          ),
+        ]
+            : null,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -116,7 +138,9 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                       ),
                       SizedBox(height: 16.0),
                       ElevatedButton.icon(
-                        onPressed: _viewPdfFullScreen,
+                        onPressed: (){
+                          viewPdfFullScreen(localPdfPath);
+                        },
                         icon: Icon(Icons.fullscreen),
                         label: Text('View PDF Full Screen'),
                         style: ElevatedButton.styleFrom(

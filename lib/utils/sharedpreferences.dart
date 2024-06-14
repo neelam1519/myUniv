@@ -20,7 +20,7 @@ class SharedPreferences{
           if (firestoreData != null && firestoreData.containsKey(key)) {
             dynamic value = firestoreData[key]; // Value is dynamic
             if (value != null) {
-              await storeValueInSecurePrefs(key, value.toString()); // Store as string
+              await storeValueInSecurePrefs(key, value.toString());
               print('Data stored in SharedPreferences for key: $key');
               return value;
             }
