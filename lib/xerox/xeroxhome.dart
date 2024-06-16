@@ -343,7 +343,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   }
 
   void startPayment(int amount, String number, String email) async {
-    final orderId = await createOrder(amount); // Call to createOrder
+    final orderId = await createOrder(amount);
     print('Order ID: $orderId');
     if (orderId != null) {
       var options = {

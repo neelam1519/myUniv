@@ -1,7 +1,7 @@
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:gsheets/gsheets.dart';
 
-class UserSheetsApi {
+class BusBookingGSheet {
   Utils utils = new Utils();
   static const credentials = r'''{
     "type": "service_account",
@@ -17,7 +17,7 @@ class UserSheetsApi {
     "universe_domain": "googleapis.com"
   }''';
 
-  static final spreadsheetId = '1Jdc6EDIewHSglogg3NqHA0XHeax_kVFIdg2NifBXtfs';
+  static final spreadsheetId = '16P-xDvhVkayNOvD9Az9Z_i8S_6KE_yWDTXyLWGQAzwU';
   static final gsheets = GSheets(credentials);
   static late Worksheet sheet;
 
@@ -29,14 +29,14 @@ class UserSheetsApi {
 
     if (existingSheet == null) {
       existingSheet = await ss.addWorksheet(todayDate);
-      await existingSheet.values.insertRow(1, ['NAME', 'MOBILE NUMBER', 'EMAIL','BINDING','DOUBLE SIDE','TOTAL PRICE','DESCRIPTION','PAYMENT ID','DATA','NO OF FILES','FILES']);
+      await existingSheet.values.insertRow(1, ['REGISTRATION NUMBER','MOBILE NUMBER', 'EMAIL','FROM','TO','DATE','TIME','TOTAL COST','TRANSACTION ID','NUMBER OF TICKETS7','PERSON DETAILS']);
     }
     sheet = existingSheet;
   }
 
 
   Future<void> updateCell(List<dynamic> value) async {
-     await main();
+    await main();
     try {
       await sheet.values.appendRow(value);
     } catch (e) {

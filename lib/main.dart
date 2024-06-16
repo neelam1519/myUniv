@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
+import 'package:in_app_update/in_app_update.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -55,6 +56,7 @@ class _AuthCheckState extends State<AuthCheck> {
     super.initState();
     _setupInteractedMessage();
     FirebaseMessaging.onMessage.listen(_onMessageReceived);
+    _checkForUpdate();
   }
 
   Future<void> _setupInteractedMessage() async {
@@ -74,7 +76,14 @@ class _AuthCheckState extends State<AuthCheck> {
     print('Received a message while in the foreground!');
     print('Message data: ${message.data}');
     NotificationService().showNotification(message);
+  }
 
+  Future<void> _checkForUpdate() async {
+    InAppUpdate.checkForUpdate().then((info) {
+      if (info.updateAvailability == UpdateAvailability.updateAvailable) {
+        InAppUpdate.performImmediateUpdate().catchError((e) => print(e.toString()));
+      }
+    }).catchError((e) => print(e.toString()));
   }
 
   @override
