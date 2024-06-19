@@ -762,5 +762,11 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     );
   }
 
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    loadingDialog.dismiss();
+  }
 
 }

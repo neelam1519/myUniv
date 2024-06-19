@@ -292,6 +292,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   void dispose() {
     super.dispose();
     utils.deleteFolder("/data/data/com.neelam.FindAny/cache");
+    loadingDialog.dismiss();
     print('Home Disposed');
   }
 }

@@ -236,4 +236,11 @@ class _AcademicDetailsState extends State<AcademicDetails> {
     loadingDialog.dismiss();
     Navigator.pop(context);
   }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    loadingDialog.dismiss();
+  }
 }

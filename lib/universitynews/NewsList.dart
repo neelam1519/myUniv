@@ -171,4 +171,5 @@ class _NewsListScreenState extends State<NewsListScreen> {
           : null,
     );
   }
+
 }

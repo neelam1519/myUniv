@@ -191,4 +191,10 @@ class _LoginState extends State<Login> {
       utils.signOut();
     }
   }
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    loadingDialog.dismiss();
+  }
 }

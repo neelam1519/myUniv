@@ -160,4 +160,5 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
       ),
     );
   }
+
 }

@@ -206,4 +206,10 @@ class _PersonalDetailsState extends State<PersonalDetails> {
       ),
     );
   }
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    loadingDialog.dismiss();
+  }
 }

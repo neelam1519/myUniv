@@ -4,6 +4,7 @@ import 'package:findany_flutter/materials/units.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
 class MaterialsHome extends StatefulWidget {
@@ -17,9 +18,12 @@ class _MaterialsHomeState extends State<MaterialsHome> {
   SharedPreferences sharedPreferences = new SharedPreferences();
   Utils utils = Utils();
 
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
+
+
   List<String?> yearsList = ['1', '2', '3', '4'];
   List<String?> branchList = ['CSE', 'ECE'];
-  String announcements ="";
+  String? _announcementText;
 
   List<String?> specializations = [];
 
@@ -47,6 +51,7 @@ class _MaterialsHomeState extends State<MaterialsHome> {
   void initState() {
     super.initState();
     intialize();
+    _fetchAnnouncementText();
   }
 
   Future<void> intialize() async {
@@ -69,6 +74,22 @@ class _MaterialsHomeState extends State<MaterialsHome> {
     selectedSubjects = await sharedPreferences.getListFromSecureStorage('selectedSubjects');
 
     print('Selected Subjects: $selectedSubjects');
+  }
+
+  Future<void> _fetchAnnouncementText() async {
+    final DatabaseReference announcementRef = _database.ref('XeroxData/Announcement');
+    announcementRef.onValue.listen((event) {
+      final DataSnapshot snapshot = event.snapshot;
+      if (snapshot.exists) {
+        setState(() {
+          _announcementText = snapshot.value as String?;
+        });
+      } else {
+        setState(() {
+          _announcementText = null;
+        });
+      }
+    });
   }
 
   void getSpecialization() {
@@ -188,9 +209,9 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                               SizedBox(height: 20.0),
                               ElevatedButton(
                                 onPressed: () async {
-                                  if(!await utils.checkInternetConnection()){
-                                  utils.showToastMessage('Connect to the Internet', context);
-                                  return;
+                                  if (!await utils.checkInternetConnection()) {
+                                    utils.showToastMessage('Connect to the Internet', context);
+                                    return;
                                   }
                                   Navigator.pop(context);
                                   getSubjects();
@@ -210,58 +231,75 @@ class _MaterialsHomeState extends State<MaterialsHome> {
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-
-        child: ListView.builder(
-          itemCount: subjects.length,
-          itemBuilder: (context, index) {
-            return Card(
-              margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-              child: ListTile(
-                title: Text(subjects[index]),
-                onTap: () async {
-                  if(!await utils.checkInternetConnection()){
-                  utils.showToastMessage('Connect to the Internet', context);
-                  return;
-                  }
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => Units(path: 'materials/$yearSelectedOption/${subjects[index]}')));
-                  setState(() {
-                    if (selectedSubjects.contains(subjects[index])) {
-                      selectedSubjects.remove(subjects[index]);
-                      selectedSubjects.insert(0, subjects[index]);
-                    } else {
-                      selectedSubjects.insert(0, subjects[index]);
-                      print('Added to the first');
-                    }
-                    // Sort the subjects list based on the index of each subject in the selectedSubjects list
-                    subjects.sort((a, b) {
-                      int indexA = selectedSubjects.indexOf(a);
-                      int indexB = selectedSubjects.indexOf(b);
-                      if (indexA == -1 && indexB == -1) {
-                        return 0;
-                      } else if (indexA == -1) {
-                        return 1;
-                      } else if (indexB == -1) {
-                        return -1;
-                      }
-                      return indexA.compareTo(indexB);
-                    });
-                    print('onTap Selected Subjects: $selectedSubjects');
-                    print('Subjects: $subjects');
-                  });
+      body: Column(
+        children: [
+          if (_announcementText != null && _announcementText!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 0),
+              child: Text(
+                _announcementText!,
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: ListView.builder(
+                itemCount: subjects.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                    child: ListTile(
+                      title: Text(subjects[index]),
+                      onTap: () async {
+                        if (!await utils.checkInternetConnection()) {
+                          utils.showToastMessage('Connect to the Internet', context);
+                          return;
+                        }
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => Units(path: 'materials/$yearSelectedOption/${subjects[index]}')));
+                        setState(() {
+                          if (selectedSubjects.contains(subjects[index])) {
+                            selectedSubjects.remove(subjects[index]);
+                            selectedSubjects.insert(0, subjects[index]);
+                          } else {
+                            selectedSubjects.insert(0, subjects[index]);
+                            print('Added to the first');
+                          }
+                          // Sort the subjects list based on the index of each subject in the selectedSubjects list
+                          subjects.sort((a, b) {
+                            int indexA = selectedSubjects.indexOf(a);
+                            int indexB = selectedSubjects.indexOf(b);
+                            if (indexA == -1 && indexB == -1) {
+                              return 0;
+                            } else if (indexA == -1) {
+                              return 1;
+                            } else if (indexB == -1) {
+                              return -1;
+                            }
+                            return indexA.compareTo(indexB);
+                          });
+                          print('onTap Selected Subjects: $selectedSubjects');
+                          print('Subjects: $subjects');
+                        });
+                      },
+                    ),
+                  );
                 },
               ),
-            );
-          },
-        ),
+            ),
+          ),
+        ],
       ),
-
     );
   }
+
 
   Future<void> getSubjects() async {
     loadingDialog.showDefaultLoading('Getting subjects');
@@ -324,6 +362,7 @@ class _MaterialsHomeState extends State<MaterialsHome> {
   void dispose() {
     super.dispose();
     print('Storing Selected Subjects: $selectedSubjects');
+    loadingDialog.dismiss();
     sharedPreferences.storeListInSecureStorage(selectedSubjects, 'selectedSubjects');
   }
 }

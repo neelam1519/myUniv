@@ -53,6 +53,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
     stopDownload = true;
     _streamController.close();
     super.dispose();
+    loadingDialog.dismiss();
   }
 
   Future<void> initialize() async {
@@ -349,4 +350,6 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       ),
     );
   }
+
+
 }

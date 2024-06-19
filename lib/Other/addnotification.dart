@@ -59,6 +59,7 @@ class _AddNotificationState extends State<AddNotification> {
   void dispose() {
     _titleController.dispose();
     _messageController.dispose();
+    loadingDialog.dismiss();
     super.dispose();
   }
 

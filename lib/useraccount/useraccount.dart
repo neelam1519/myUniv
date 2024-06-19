@@ -228,4 +228,11 @@ class _UserAccountState extends State<UserAccount> {
     imageUrl = await sharedPreferences.getSecurePrefsValue('ProfileImageURL');
     print('Profile ImageUrl: $imageUrl');
   }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    loadingDialog.dismiss();
+  }
 }

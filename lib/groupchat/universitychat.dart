@@ -44,6 +44,7 @@ class _UniversityChatState extends State<UniversityChat> {
     _messageSubscription.cancel();
     _onlineUsersSubscription.cancel();
     setUserOffline();
+    loadingDialog.dismiss();
     super.dispose();
   }
 
@@ -233,4 +234,5 @@ class _UniversityChatState extends State<UniversityChat> {
       }
     });
   }
+
 }

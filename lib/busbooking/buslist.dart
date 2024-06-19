@@ -81,14 +81,7 @@ class _BusListState extends State<BusList> {
       backgroundColor: Colors.grey[100],
     );
   }
+
+
 }
 
-void main() {
-  runApp(MaterialApp(
-    home: BusList(
-      selectedFrom: 'City A',
-      selectedTo: 'City B',
-      selectedDate: DateTime.now(),
-    ),
-  ));
-}

@@ -26,6 +26,7 @@ class _QuestionAndAnswerState extends State<QuestionAndAnswer> {
   void dispose() {
     _searchController.dispose();
     _questionController.dispose();
+    loadingDialog.dismiss();
     super.dispose();
   }
 
@@ -186,4 +187,5 @@ class _QuestionAndAnswerState extends State<QuestionAndAnswer> {
       ),
     );
   }
+
 }

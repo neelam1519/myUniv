@@ -91,6 +91,7 @@ class _ReviewState extends State<Review> {
   @override
   void dispose() {
     _controller.dispose();
+    loadingDialog.dismiss();
     super.dispose();
   }
 }
