@@ -193,9 +193,6 @@ class _MapScreenState extends State<MapScreen> {
             ),
             if (_isSearching)
               Positioned(
-                top: kToolbarHeight,
-                left: 0,
-                right: 0,
                 child: Container(
                   constraints: BoxConstraints(
                     maxHeight: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).viewInsets.bottom,
@@ -237,24 +234,6 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Align(
-                alignment: Alignment.topRight,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: <Widget>[
-                    SizedBox(height: 16.0),
-                    FloatingActionButton(
-                      onPressed: onInternalViewButtonClicked,
-                      materialTapTargetSize: MaterialTapTargetSize.padded,
-                      backgroundColor: Colors.blue,
-                      child: const Icon(Icons.remove_red_eye, size: 35.0),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),

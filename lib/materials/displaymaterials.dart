@@ -276,6 +276,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
               List<String> tokens = await utils.getSpecificTokens(specificRef);
               notificationService.sendNotification(tokens, "Materials", '${result.count} files uploaded by ${await utils.getCurrentUserEmail()}', {});
 
+              utils.showToastMessage('Files are uploaded', context);
               loadingDialog.dismiss();
             }
           } else {

@@ -41,7 +41,7 @@ class _AddNotificationState extends State<AddNotification> {
 
       DocumentReference specificRef = FirebaseFirestore.instance.doc('AdminDetails/Notification');
       List<String> tokens = await utils.getSpecificTokens(specificRef);
-      notificationService.sendNotification(tokens, "Notification", title, {});
+      notificationService.sendNotification(tokens, "Notification", title, {"source":"NotificationHome"});
 
       _titleController.clear();
       _messageController.clear();

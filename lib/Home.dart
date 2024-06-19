@@ -101,31 +101,47 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                   ListTile(
                     leading: Icon(Icons.person),
                     title: Text('Profile'),
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => UserAccount()),
-                      );
+                    onTap: () async {
+                      if(await utils.checkInternetConnection()){
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => UserAccount()),
+                        );
+                      }else{
+                        utils.showToastMessage("Connect to the internet", context);
+                      }
+
                     },
                   ),
                   ListTile(
                     leading: Icon(Icons.reviews),
                     title: Text('Reviews'),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => Review()),
-                      );
+                    onTap: () async {
+
+                      if(await utils.checkInternetConnection()){
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => Review()),
+                        );
+                      }else{
+                      utils.showToastMessage("Connect to the internet", context);
+                      }
+
                     },
                   ),
                   ListTile(
                     leading: Icon(Icons.question_answer),
                     title: Text('Q & A'),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => QuestionAndAnswer()),
-                      );
+                    onTap: () async{
+                      if(await utils.checkInternetConnection()){
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => QuestionAndAnswer()),
+                        );
+                      }else{
+                        utils.showToastMessage("Connect to the internet", context);
+                      }
+
                     },
                   ),
                   ListTile(
@@ -196,11 +212,16 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   Widget _buildGridItem(BuildContext context, String imagePath, String title, Widget destination) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => destination),
-        );
+      onTap: () async{
+        if(await utils.checkInternetConnection()){
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => destination),
+          );
+        }else{
+        utils.showToastMessage("Connect to the internet", context);
+        }
+
       },
       child: Card(
         elevation: 5,
@@ -253,7 +274,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
       if (mounted) {
         loadingDialog.dismiss();
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
+        if(await utils.checkInternetConnection()){
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
+        }else{
+          utils.showToastMessage("Connect to the internet", context);
+        }
       }
     } catch (error) {
       print("Error signing out: $error");

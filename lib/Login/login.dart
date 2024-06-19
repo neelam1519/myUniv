@@ -25,41 +25,73 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Login'),
-        backgroundColor: Colors.green[700],
+        backgroundColor: Colors.teal,
+        elevation: 0,
       ),
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Image.asset(
-                'assets/images/logo.png', // Add the path to your app logo here
-                height: 120.0,
+              Hero(
+                tag: 'app-logo',
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  height: 120.0,
+                ),
               ),
               SizedBox(height: 40.0),
               Text(
                 'Welcome to FindAny',
                 style: TextStyle(
-                  fontSize: 24.0,
+                  fontSize: 28.0,
                   fontWeight: FontWeight.bold,
+                  color: Colors.teal[800],
                 ),
               ),
               SizedBox(height: 20.0),
-              SignInButton(
-                Buttons.Google,
-                text: "Sign in with Google",
-                onPressed: () async {
-                  bool internet = await utils.checkInternetConnection();
-                  print('Internet Connection: $internet');
-                  if (internet) {
-                    await _handleGoogleSignIn(context);
-                  } else {
-                    utils.showToastMessage('Check your internet connection', context);
-                  }
-                },
+              Card(
+                elevation: 5.0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.0),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30.0),
+                  child: Column(
+                    children: <Widget>[
+                      Text(
+                        'Sign in to continue',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      SizedBox(height: 20.0),
+                      SignInButton(
+                        Buttons.Google,
+                        text: "Sign in with Google",
+                        onPressed: () async {
+                          bool internet = await utils.checkInternetConnection();
+                          print('Internet Connection: $internet');
+                          if (internet) {
+                            await _handleGoogleSignIn(context);
+                          } else {
+                            utils.showToastMessage('Check your internet connection', context);
+                          }
+                        },
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0),
+                        elevation: 5.0,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -67,7 +99,12 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+
   Future<void> _handleGoogleSignIn(BuildContext context) async {
+    if(!await utils.checkInternetConnection()){
+      utils.showToastMessage('Connect to the Internet', context);
+      return;
+    }
     print('Handle Google Sign-In');
     try {
       loadingDialog.showDefaultLoading('Signing In...');
@@ -116,6 +153,7 @@ class _LoginState extends State<Login> {
       await utils.signOut();
     }
   }
+
   Future<void> storeRequiredData() async {
     try {
       String email = await utils.getCurrentUserEmail() ?? " ";
@@ -128,14 +166,15 @@ class _LoginState extends State<Login> {
       String name = utils.removeTextAfterFirstNumber(displayName);
       String regNo = utils.removeEmailDomain(email);
 
-      Map<String, String> data = {'Email': email,
+      Map<String, String> data = {
+        'Email': email,
         'Name': name,
         'ProfileImageURL': imageUrl,
         'Registration Number': regNo,
       };
       print('Login Details: $data');
 
-      String? currentUserUID =await utils.getCurrentUserUID();
+      String? currentUserUID = await utils.getCurrentUserUID();
 
       DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/$currentUserUID');
       fireStoreService.uploadMapDataToFirestore(data, documentReference);

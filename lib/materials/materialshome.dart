@@ -3,6 +3,7 @@ import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/materials/units.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
 
 class MaterialsHome extends StatefulWidget {
@@ -14,9 +15,11 @@ class _MaterialsHomeState extends State<MaterialsHome> {
   FireStoreService fireStoreService = new FireStoreService();
   LoadingDialog loadingDialog = new LoadingDialog();
   SharedPreferences sharedPreferences = new SharedPreferences();
+  Utils utils = Utils();
 
   List<String?> yearsList = ['1', '2', '3', '4'];
   List<String?> branchList = ['CSE', 'ECE'];
+  String announcements ="";
 
   List<String?> specializations = [];
 
@@ -184,7 +187,11 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                               ),
                               SizedBox(height: 20.0),
                               ElevatedButton(
-                                onPressed: () {
+                                onPressed: () async {
+                                  if(!await utils.checkInternetConnection()){
+                                  utils.showToastMessage('Connect to the Internet', context);
+                                  return;
+                                  }
                                   Navigator.pop(context);
                                   getSubjects();
                                   updateSharedPrefsValues();
@@ -208,6 +215,7 @@ class _MaterialsHomeState extends State<MaterialsHome> {
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(8.0),
         ),
+
         child: ListView.builder(
           itemCount: subjects.length,
           itemBuilder: (context, index) {
@@ -215,7 +223,11 @@ class _MaterialsHomeState extends State<MaterialsHome> {
               margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: ListTile(
                 title: Text(subjects[index]),
-                onTap: () {
+                onTap: () async {
+                  if(!await utils.checkInternetConnection()){
+                  utils.showToastMessage('Connect to the Internet', context);
+                  return;
+                  }
                   Navigator.push(context, MaterialPageRoute(builder: (context) => Units(path: 'materials/$yearSelectedOption/${subjects[index]}')));
                   setState(() {
                     if (selectedSubjects.contains(subjects[index])) {

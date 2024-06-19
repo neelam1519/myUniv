@@ -43,25 +43,32 @@ class NotificationService {
     print('showNotification Data: ${message.data}');
 
     final String? title = message.data['title'];
-    final String? body =  message.data['body'];
+    final String? body = message.data['body'];
+
+    final BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
+      body ?? '',
+      contentTitle: title ?? '',
+      summaryText: title ?? '',
+    );
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'Neelam',
       'FindAny',
       importance: Importance.max,
       priority: Priority.high,
-      ticker: 'ticker', // Ticker
+      ticker: 'ticker',
       icon: '@mipmap/transperentlogo',
+      styleInformation: bigTextStyleInformation, // Set BigTextStyleInformation
     );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await flutterLocalNotificationsPlugin.show(
-      0, // Notification ID
-      title, // Notification title
-      body, // Notification body
-      platformChannelSpecifics, // Notification details
-      payload: message.data['source'] ?? 'notification_payload', // Payload
+      0,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: message.data['source'] ?? 'notification_payload',
     );
   }
 }

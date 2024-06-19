@@ -1,11 +1,11 @@
-import 'dart:async';  // Import this for StreamSubscription
+import 'dart:async';
+import 'package:firebase_database/firebase_database.dart' as rtdb;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:flutter/material.dart';
-import 'package:dash_chat_2/dash_chat_2.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class UniversityChat extends StatefulWidget {
   @override
@@ -17,25 +17,33 @@ class _UniversityChatState extends State<UniversityChat> {
   NotificationService notificationService = new NotificationService();
   LoadingDialog loadingDialog = new LoadingDialog();
 
-  late DatabaseReference _chatRef;
+  late rtdb.DatabaseReference _chatRef;
+  late rtdb.DatabaseReference _onlineUsersRef;
   List<ChatMessage> _messages = [];
   ChatUser? _user;
   User? firebaseUser = FirebaseAuth.instance.currentUser;
   String? _lastMessageKey; // To keep track of pagination
   bool _isLoadingMore = false;
-  late StreamSubscription<DatabaseEvent> _messageSubscription;
+  late StreamSubscription<rtdb.DatabaseEvent> _messageSubscription;
+  late StreamSubscription<rtdb.DatabaseEvent> _onlineUsersSubscription;
+  int _onlineUsersCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _chatRef = FirebaseDatabase.instance.ref().child("chats");
+    _chatRef = rtdb.FirebaseDatabase.instance.ref().child("chats");
+    _onlineUsersRef = rtdb.FirebaseDatabase.instance.ref().child("onlineUsers");
     initializeUser();
     listenForNewMessages();
+    trackOnlineUsers();
+    setUserOnline();
   }
 
   @override
   void dispose() {
     _messageSubscription.cancel();
+    _onlineUsersSubscription.cancel();
+    setUserOffline();
     super.dispose();
   }
 
@@ -61,7 +69,7 @@ class _UniversityChatState extends State<UniversityChat> {
     List<String?> keyList = [];
     _messageSubscription = _chatRef.orderByKey().limitToLast(20).onChildAdded.listen((event) {
       if (!mounted) return; // Prevent calling setState if the widget is not mounted
-      DataSnapshot snapshot = event.snapshot;
+      rtdb.DataSnapshot snapshot = event.snapshot;
       var value = snapshot.value;
       keyList.add(snapshot.key);
       if (value is Map) {
@@ -81,6 +89,48 @@ class _UniversityChatState extends State<UniversityChat> {
       loadingDialog.dismiss();
       print('Last Message: $_lastMessageKey');
     });
+
+    _chatRef.once().then((event) {
+      if (!event.snapshot.exists) {
+        if (mounted) {
+          setState(() {
+            loadingDialog.dismiss();
+          });
+        }
+      }
+    });
+  }
+
+  void trackOnlineUsers() {
+    _onlineUsersSubscription = _onlineUsersRef.onValue.listen((event) {
+      if (!mounted) return;
+      rtdb.DataSnapshot snapshot = event.snapshot;
+      if (snapshot.exists) {
+        Map<dynamic, dynamic> onlineUsers = snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          _onlineUsersCount = onlineUsers.length;
+        });
+      } else {
+        setState(() {
+          _onlineUsersCount = 0;
+        });
+      }
+    });
+  }
+
+  void setUserOnline() {
+    if (firebaseUser != null) {
+      String userId = firebaseUser!.uid;
+      _onlineUsersRef.child(userId).set(true);
+      _onlineUsersRef.child(userId).onDisconnect().remove();
+    }
+  }
+
+  void setUserOffline() {
+    if (firebaseUser != null) {
+      String userId = firebaseUser!.uid;
+      _onlineUsersRef.child(userId).remove();
+    }
   }
 
   Future<void> loadMoreMessages() async {
@@ -94,9 +144,9 @@ class _UniversityChatState extends State<UniversityChat> {
 
     print('LastMessageKey: $_lastMessageKey');
 
-    Query query = _chatRef.orderByKey().endAt(_lastMessageKey).limitToLast(21); // Load 21 to account for the last message key overlap
-    DatabaseEvent event = await query.once();
-    DataSnapshot snapshot = event.snapshot;
+    rtdb.Query query = _chatRef.orderByKey().endAt(_lastMessageKey).limitToLast(21); // Load 21 to account for the last message key overlap
+    rtdb.DatabaseEvent event = await query.once();
+    rtdb.DataSnapshot snapshot = event.snapshot;
 
     if (snapshot.exists) {
       List<ChatMessage> moreMessages = [];
@@ -132,11 +182,11 @@ class _UniversityChatState extends State<UniversityChat> {
     }
   }
 
-  Future<void> _handleSend(ChatMessage message) async{
+  Future<void> _handleSend(ChatMessage message) async {
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
     List<String> tokens = await utils.getAllTokens();
-    await notificationService.sendNotification(tokens, "Group Chat", message.text, {"source":'UniversityChat'});
+    await notificationService.sendNotification(tokens, "Group Chat", message.text, {"source": 'UniversityChat'});
   }
 
   @override
@@ -144,9 +194,24 @@ class _UniversityChatState extends State<UniversityChat> {
     return Scaffold(
       appBar: AppBar(
         title: Text('University Chat'),
+        actions: [
+          if (_onlineUsersCount > 0)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Icon(Icons.circle, color: Colors.green, size: 12),
+                  SizedBox(width: 5),
+                  Text('$_onlineUsersCount'),
+                ],
+              ),
+            ),
+        ],
       ),
       body: _user == null
           ? Center(child: CircularProgressIndicator())
+          : _messages.isEmpty
+          ? Center(child: Text('No messages found'))
           : DashChat(
         currentUser: _user!,
         onSend: _handleSend,
@@ -154,6 +219,7 @@ class _UniversityChatState extends State<UniversityChat> {
         messageListOptions: MessageListOptions(
           onLoadEarlier: loadMoreMessages,
         ),
+        inputOptions: InputOptions(), // Adding input field for message
       ),
     );
   }

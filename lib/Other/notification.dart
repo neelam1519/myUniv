@@ -2,7 +2,6 @@ import 'package:findany_flutter/Other/addnotification.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class NotificationHome extends StatefulWidget {
   @override
@@ -21,15 +20,16 @@ class _NotificationHomeState extends State<NotificationHome> {
   }
 
   Future<void> checkAdminStatus() async {
-    User? user = FirebaseAuth.instance.currentUser;
     String? email = await utils.getCurrentUserEmail();
-    String id = utils.removeEmailDomain(email!);
-    if (user != null) {
-      DocumentReference userRef = FirebaseFirestore.instance.doc('AdminDetails/UniversityNews');
+    if (email != null) {
+      String id = utils.removeEmailDomain(email);
+      DocumentReference userRef = _firestore.doc('AdminDetails/Notifications');
       List<String> admins = await utils.getAdmins(userRef);
-      setState(() {
-        isAdmin = admins.contains(id);
-      });
+      if (mounted) {
+        setState(() {
+          isAdmin = admins.contains(id);
+        });
+      }
     }
   }
 
@@ -52,7 +52,14 @@ class _NotificationHomeState extends State<NotificationHome> {
             return Center(child: Text('No notifications found.'));
           }
 
+          // Extract and sort documents by integer document ID in descending order
           final List<DocumentSnapshot> documents = snapshot.data!.docs;
+          documents.sort((a, b) {
+            int idA = int.tryParse(a.id) ?? 0;
+            int idB = int.tryParse(b.id) ?? 0;
+            return idB.compareTo(idA);
+          });
+
           return ListView.separated(
             itemCount: documents.length,
             itemBuilder: (context, index) {
@@ -68,18 +75,16 @@ class _NotificationHomeState extends State<NotificationHome> {
           );
         },
       ),
-      floatingActionButton: Visibility(
-        visible: isAdmin,
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddNotification()),
-            );
-          },
-          child: Icon(Icons.add),
-        ),
-      ),
+      floatingActionButton: isAdmin ? FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddNotification()),
+          );
+        },
+        child: Icon(Icons.add),
+      )
+          : null, // Only show the FAB if the user is an admin
     );
   }
 }

@@ -84,21 +84,21 @@ class _UserAccountState extends State<UserAccount> {
                                 fit: BoxFit.cover,
                               ),
                             ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.black,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.image,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
+                            // Positioned(
+                            //   bottom: 0,
+                            //   right: 0,
+                            //   child: Container(
+                            //     padding: EdgeInsets.all(6),
+                            //     decoration: BoxDecoration(
+                            //       color: Colors.black,
+                            //       shape: BoxShape.circle,
+                            //     ),
+                            //     child: Icon(
+                            //       Icons.image,
+                            //       color: Colors.white,
+                            //     ),
+                            //   ),
+                            // ),
                           ],
                         ),
                       ),

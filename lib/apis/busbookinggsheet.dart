@@ -29,7 +29,7 @@ class BusBookingGSheet {
 
     if (existingSheet == null) {
       existingSheet = await ss.addWorksheet(todayDate);
-      await existingSheet.values.insertRow(1, ['REGISTRATION NUMBER','MOBILE NUMBER', 'EMAIL','FROM','TO','DATE','TIME','TOTAL COST','TRANSACTION ID','NUMBER OF TICKETS7','PERSON DETAILS']);
+      await existingSheet.values.insertRow(1, ['REGISTRATION NUMBER','MOBILE NUMBER', 'EMAIL','FROM','TO','DATE','TIME','TOTAL COST','TRANSACTION ID','BOOKING ID','CONFIRM TICKETS - WAITING LIST TICKETS','PERSON DETAILS']);
     }
     sheet = existingSheet;
   }

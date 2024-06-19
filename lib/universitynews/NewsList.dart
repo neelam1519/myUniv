@@ -22,16 +22,14 @@ class _NewsListScreenState extends State<NewsListScreen> {
   }
 
   Future<void> checkAdminStatus() async {
-    User? user = FirebaseAuth.instance.currentUser;
     String? email = await utils.getCurrentUserEmail();
     String id = utils.removeEmailDomain(email!);
-    if (user != null) {
-      DocumentReference userRef = FirebaseFirestore.instance.doc('AdminDetails/UniversityNews');
-      List<String> admins = await utils.getAdmins(userRef);
-      setState(() {
-        isAdmin = admins.contains(id);
-      });
-    }
+    DocumentReference userRef = FirebaseFirestore.instance.doc('AdminDetails/UniversityNews');
+    List<String> admins = await utils.getAdmins(userRef);
+    setState(() {
+      isAdmin = admins.contains(id);
+    });
+
   }
 
   @override

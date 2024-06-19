@@ -343,7 +343,9 @@ class _XeroxHomeState extends State<XeroxHome> {
   }
 
   void startPayment(int amount, String number, String email) async {
+    loadingDialog.showDefaultLoading('Redirecting to Payment page');
     final orderId = await createOrder(amount);
+    loadingDialog.dismiss();
     print('Order ID: $orderId');
     if (orderId != null) {
       var options = {
@@ -437,6 +439,10 @@ class _XeroxHomeState extends State<XeroxHome> {
 
 
   Future<void> onSubmitClicked(int price) async {
+    if(!await utils.checkInternetConnection()){
+      utils.showToastMessage('Connect to the Internet', context);
+      return;
+    }
     if (_uploadedFiles.isEmpty) {
       utils.showToastMessage('Files are missing', context);
       return;

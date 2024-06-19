@@ -133,7 +133,7 @@ class _QuestionAndAnswerState extends State<QuestionAndAnswer> {
           }).toList();
 
           if (filteredQuestions.isEmpty) {
-            return Center(child: Text('No results found'));
+            return Center(child: Text('No Answers found ask a question?'));
           }
 
           return ListView.builder(

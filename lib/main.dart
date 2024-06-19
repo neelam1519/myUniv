@@ -66,9 +66,11 @@ class _AuthCheckState extends State<AuthCheck> {
   }
 
   void _handleMessage(RemoteMessage message) {
+    print('Entered handle message');
     print('Notification Data: ${message.data}');
-    if (message.data['source'] == 'UniversityChat') {
-      Navigator.pushNamed(context, '/UniversityChat');
+    if (message.data['source'] != null) {
+      print('Source is not null: ${message.data['source']}');
+      Navigator.pushNamed(context, message.data['source']);
     }
   }
 
@@ -81,9 +83,9 @@ class _AuthCheckState extends State<AuthCheck> {
   Future<void> _checkForUpdate() async {
     InAppUpdate.checkForUpdate().then((info) {
       if (info.updateAvailability == UpdateAvailability.updateAvailable) {
-        InAppUpdate.performImmediateUpdate().catchError((e) => print(e.toString()));
+        InAppUpdate.performImmediateUpdate();
       }
-    }).catchError((e) => print(e.toString()));
+    });
   }
 
   @override

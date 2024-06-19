@@ -1,7 +1,10 @@
 import 'dart:convert';
-
+import 'package:findany_flutter/Firebase/realtimedatabase.dart';
 import 'package:findany_flutter/apis/busbookinggsheet.dart';
+import 'package:findany_flutter/busbooking/history.dart';
+import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
@@ -19,8 +22,11 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   LoadingDialog loadingDialog = LoadingDialog();
   FireStoreService fireStoreService = FireStoreService();
   BusBookingGSheet busBookingGSheet = BusBookingGSheet();
-
+  RealTimeDatabase realTimeDatabase = RealTimeDatabase();
+  NotificationService notificationService = NotificationService();
   Utils utils = Utils();
+
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
 
   String? _selectedFrom;
   String? _selectedTo;
@@ -32,8 +38,10 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   List<String> _toPlaces = [];
   List<String> _timings = [];
   List<String> _availableDates = [];
-  List<DocumentSnapshot> _availableBuses = [];
   String busID="";
+  int _waitingListSeats = 0;
+  int _availableSeats = 0;
+  String? _announcementText;  // State variable to store the fetched text
 
   Map<String, dynamic>? detailsData = {};
   Map<String, dynamic>? placesData = {};
@@ -59,6 +67,54 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     super.initState();
     _fetchFromPlaces();
     initializeRazorpay();
+    _fetchAnnouncementText();
+    utils.sendSMS('Testing the SMS', "8501070702");
+  }
+
+  Future<void> listen(String busID) async {
+    loadingDialog.showDefaultLoading("Getting Seats Availability...");
+    final DatabaseReference databaseReference = _database.ref('BusBookingTickets/$busID');
+
+    databaseReference.onValue.listen((event) {
+      final dataSnapshot = event.snapshot;
+      if (dataSnapshot.exists) {
+        _availableSeats = dataSnapshot.child('Available').value as int;
+        _waitingListSeats = dataSnapshot.child('WaitingList').value as int;
+        setState(() {
+          _availableSeats;
+          _waitingListSeats;
+        });
+        print('Available Seats: $_availableSeats');
+        print('Waiting List: $_waitingListSeats');
+      } else {
+        print('No data available for busID: $busID');
+      }
+    });
+
+    _availableSeats = await realTimeDatabase.getCurrentValue('BusBookingTickets/$busID/Available') ?? 0;
+    _waitingListSeats = await realTimeDatabase.getCurrentValue('BusBookingTickets/$busID/WaitingList') ?? 0;
+
+    setState(() {
+
+    });
+
+    loadingDialog.dismiss();
+  }
+
+  Future<void> _fetchAnnouncementText() async {
+    final DatabaseReference announcementRef = _database.ref('BusBookingTickets/Announcements');
+    announcementRef.onValue.listen((event) {
+      final DataSnapshot snapshot = event.snapshot;
+      if (snapshot.exists) {
+        setState(() {
+          _announcementText = snapshot.value as String?;
+        });
+      } else {
+        setState(() {
+          _announcementText = null;
+        });
+      }
+    });
   }
 
   initializeRazorpay() async {
@@ -99,6 +155,10 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   }
 
   void startPayment(int amount, String number, String email) async {
+    if(!await utils.checkInternetConnection()){
+      utils.showToastMessage('Connect to the Internet', context);
+      return;
+    }
     loadingDialog.showDefaultLoading('Redirecting to Payment Page');
     final orderId = await createOrder(amount); // Call to createOrder
     loadingDialog.dismiss();
@@ -127,8 +187,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
 
   Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
     print('razorpay successful ${response.paymentId}');
-    utils.showToastMessage('Payment Sucessfull', context);
-    await uploadData(response);
+    await updateTickets(_people.length,response);
   }
 
   void handlePaymentError(PaymentFailureResponse response) {
@@ -140,12 +199,56 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     print('razorpay External wallet ${response.walletName}');
   }
 
-  Future<void> uploadData(PaymentSuccessResponse response) async {
-    loadingDialog.showDefaultLoading('Uploading the data');
+  Future<void> updateTickets(int peopleCount,PaymentSuccessResponse response) async {
+    final DatabaseReference ticketRef = _database.ref('BusBookingTickets/$busID');
+    String availableTickets = 'BusBookingTickets/$busID/Available';
+    String waitingListTickets = 'BusBookingTickets/$busID/WaitingList';
+
+    int currentTickets = (await realTimeDatabase.getCurrentValue(availableTickets) as int?) ?? 0;
+    int currentWaitingList = (await realTimeDatabase.getCurrentValue(waitingListTickets) as int?) ?? 0;
+    int waitingListCount = 0;
+    int confirmTicketCount = 0;
+
+    if (currentTickets <= 0) {
+      // If there are no available tickets, add the people count to the waiting list
+      currentWaitingList += peopleCount;
+      await ticketRef.child('WaitingList').set(currentWaitingList);
+      waitingListCount = peopleCount;
+      print('All tickets are sold out. Added $peopleCount people to the waiting list.');
+    } else if (peopleCount <= currentTickets) {
+      // If available tickets are enough to cover people count, book the tickets
+      currentTickets -= peopleCount;
+      await ticketRef.child('Available').set(currentTickets);
+      confirmTicketCount= peopleCount;
+      print('Booked $peopleCount tickets. Remaining tickets: $currentTickets');
+    } else {
+      // If available tickets are less than people count, book the available tickets and add the rest to the waiting list
+      int bookedTickets = currentTickets;
+      int waitingListAddition = peopleCount - currentTickets;
+      currentTickets = 0;
+      currentWaitingList += waitingListAddition;
+
+      await ticketRef.child('Available').set(currentTickets);
+      await ticketRef.child('WaitingList').set(currentWaitingList);
+
+      waitingListCount = waitingListAddition;
+      confirmTicketCount = bookedTickets;
+
+      print('Booked $bookedTickets tickets. Added $waitingListAddition people to the waiting list.');
+    }
+
+    await uploadData(response,confirmTicketCount,waitingListCount);
+
+  }
+
+  Future<void> uploadData(PaymentSuccessResponse response,int confirmTickets, int waitingListTickets) async {
+    loadingDialog.showDefaultLoading('Booking Ticket...');
     print('Response: ${response.data}');
 
     String? email = await utils.getCurrentUserEmail();
     String regNo = utils.removeEmailDomain(email!);
+
+    int? bookingID= await realTimeDatabase.incrementValue("BusBookingTickets/TicketID");
 
     List<dynamic> data = [
       regNo,
@@ -157,7 +260,8 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       _selectedTiming.toString(),
       _totalCostController.text,
       response.paymentId ?? "",
-      _people.length,
+      bookingID,
+      "$confirmTickets - $waitingListTickets",
       _people.toString()
     ];
 
@@ -170,13 +274,34 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       'TO': _selectedTo,
       'DATE': _selectedDate,
       'TIMINGS': _selectedTiming,
-      'TOTAL COST': _totalCostController,
+      'TOTAL COST': _totalCostController.text,
       'PAYMENT ID': response.paymentId,
-      'PEOPLE LIST': _people
+      'PEOPLE LIST': _people,
+      'TICKET COUNT': _people.length,
+      'CONFORM TICKETS':confirmTickets,
+      'WAITING LIST TICKETS': waitingListTickets,
+      'BOOKING ID' : bookingID
     };
 
-    DocumentReference busDetailsRef = FirebaseFirestore.instance.doc('/BusBookingDetails/${utils.getTodayDate().replaceAll('/', '-')}');
+    DocumentReference historyRef = FirebaseFirestore.instance.doc("UserDetails/${await utils.getCurrentUserUID()}/BusBooking/BookedTickets");
+
+    DocumentReference busDetailsRef = FirebaseFirestore.instance.doc('/busbooking/BookingIDs/$busID/$bookingID');
     await fireStoreService.uploadMapDataToFirestore(busBookingData, busDetailsRef);
+    Map<String,dynamic> historyData = {bookingID.toString():busDetailsRef};
+    await fireStoreService.uploadMapDataToFirestore(historyData, historyRef);
+    utils.showToastMessage('Ticket is booked check the history', context);
+    
+    DocumentReference tokenRef = FirebaseFirestore.instance.doc('AdminDetails/BusBooking');
+    List<String> tokens = await utils.getSpecificTokens(tokenRef);
+
+    notificationService.sendNotification(tokens, "Bus Booking", 'Bus is booked with the ID: $bookingID', {});
+
+    String? token = await utils.getToken();
+
+    notificationService.sendNotification([token], "Bus Booking", 'Your bus is booked with the ID $bookingID you can check your booking details in the history', {});
+
+
+    Navigator.pop(context);
     loadingDialog.dismiss();
   }
 
@@ -284,11 +409,10 @@ class _BusBookingHomeState extends State<BusBookingHome> {
           _timings = [];
         }
         _selectedTiming = _timings.isNotEmpty ? _timings.first : null;
-        _updateBusID(); // Call the method to update the bus ID
+        _updateBusID();
       });
     }
   }
-
 
   void _updateTotalCost() {
     double totalCost = (_travelCost ?? 0) * _people.length;
@@ -316,13 +440,24 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       );
       return;
     }
+    print('People: $_people');
+
+    for (var person in _people) {
+      if (person['name'] == null || person['gender'] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please fill the Pesons details')),
+        );
+        return;
+      }
+    }
 
     if (_people.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter the Pesons details')),
+        SnackBar(content: Text('Please add the Pesons details')),
       );
       return;
     }
+
 
     if (!utils.isValidMobileNumber(_mobileNumber)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -350,6 +485,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
           if (timingsMap[id]!.contains(_selectedTiming)) {
             setState(() {
               busID = id;
+              listen(busID);
               print('Updated BusID: $busID');
             });
             return;
@@ -358,7 +494,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       }
     }
     setState(() {
-      busID = ""; // Reset if no matching ID is found
+      busID = "";
     });
   }
 
@@ -367,13 +503,37 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Bus Booking'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => BusBookedHistory()),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
             children: <Widget>[
+              if (_announcementText != null && _announcementText!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 0),
+                  child: Text(
+                    _announcementText!,
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              SizedBox(height: 16.0),
               DropdownButtonFormField<String>(
                 value: _selectedFrom,
                 decoration: InputDecoration(
@@ -527,7 +687,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.delete),
+                          icon: Icon(Icons.delete, color: Colors.red),
                           onPressed: () => _removePerson(index),
                         ),
                       ],
@@ -563,35 +723,37 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                 ),
               ),
               SizedBox(height: 16.0),
+              Text(
+                'Available Seats: $_availableSeats',
+                style: TextStyle(fontSize: 16),
+              ),
+              Text(
+                'Waiting List Seats: $_waitingListSeats',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 16.0),
+              Text(
+                "If we receive a significant number of bookings on the waiting list, an additional bus will be arranged.",
+                style: TextStyle(color: Colors.red),
+              ),
+              SizedBox(height: 16.0),
+              Text(
+                'Note: 95% refund on unconfirmed tickets.',
+                style: TextStyle(color: Colors.red),
+              ),
+              SizedBox(height: 16.0),
               ElevatedButton(
                 onPressed: _searchBuses,
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   textStyle: TextStyle(fontSize: 16),
                 ),
-                child: Text('Book bus'),
+                child: Text('Book Bus'),
               ),
               SizedBox(height: 16.0),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: _availableBuses.length,
-                itemBuilder: (context, index) {
-                  var bus = _availableBuses[index].data() as Map<String, dynamic>;
-                  return Card(
-                    margin: EdgeInsets.symmetric(vertical: 8.0),
-                    child: ListTile(
-                      title: Text('Bus: ${bus['busNumber']}'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Departure: ${bus['departureTime']}'),
-                          Text('From: ${bus['from']} To: ${bus['to']}'),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              Text(
+                'Any timing adjustments contact us through  \nEmail: neelammsr@gmail.com  \nMobile Number: 8501070702 or 7207010295',
+                style: TextStyle(color: Colors.red),
               ),
             ],
           ),
@@ -599,4 +761,6 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       ),
     );
   }
+
+
 }
