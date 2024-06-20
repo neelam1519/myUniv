@@ -519,6 +519,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   void dispose() {
     _bindingFileController.dispose();
     _singleSideFileController.dispose();
+    loadingDialog.dismiss();
     super.dispose();
   }
 }

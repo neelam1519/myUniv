@@ -360,9 +360,9 @@ class _MaterialsHomeState extends State<MaterialsHome> {
 
   @override
   void dispose() {
-    super.dispose();
     print('Storing Selected Subjects: $selectedSubjects');
     loadingDialog.dismiss();
     sharedPreferences.storeListInSecureStorage(selectedSubjects, 'selectedSubjects');
+    super.dispose();
   }
 }

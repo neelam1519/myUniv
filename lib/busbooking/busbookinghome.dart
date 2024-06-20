@@ -733,7 +733,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
               ),
               SizedBox(height: 16.0),
               Text(
-                "If we receive a significant number of bookings on the waiting list, an additional bus will be arranged.",
+                "If we receive a significant number of bookings on the waiting list, an additional bus will be arranged",
                 style: TextStyle(color: Colors.red),
               ),
               SizedBox(height: 16.0),
@@ -765,8 +765,8 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   @override
   void dispose() {
     // TODO: implement dispose
-    super.dispose();
     loadingDialog.dismiss();
+    super.dispose();
   }
 
 }

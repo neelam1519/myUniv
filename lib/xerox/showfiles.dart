@@ -206,6 +206,7 @@ class _ShowFilesState extends State<ShowFiles> {
   }
   void dispose() {
     utils.clearCache(); // Clear cache when the app is disposed
+    loadingDialog.dismiss();
     super.dispose();
   }
 }

@@ -52,8 +52,8 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
   void dispose() {
     stopDownload = true;
     _streamController.close();
-    super.dispose();
     loadingDialog.dismiss();
+    super.dispose();
   }
 
   Future<void> initialize() async {

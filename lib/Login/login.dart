@@ -193,8 +193,7 @@ class _LoginState extends State<Login> {
   }
   @override
   void dispose() {
-    // TODO: implement dispose
-    super.dispose();
     loadingDialog.dismiss();
+    super.dispose();
   }
 }
