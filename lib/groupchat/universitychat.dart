@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +18,7 @@ class _UniversityChatState extends State<UniversityChat> {
   Utils utils = Utils();
   NotificationService notificationService = new NotificationService();
   LoadingDialog loadingDialog = new LoadingDialog();
+  SharedPreferences sharedPreferences = SharedPreferences();
 
   late rtdb.DatabaseReference _chatRef;
   late rtdb.DatabaseReference _onlineUsersRef;
@@ -48,12 +51,16 @@ class _UniversityChatState extends State<UniversityChat> {
     super.dispose();
   }
 
-  void initializeUser() {
+  Future<void> initializeUser() async {
     loadingDialog.showDefaultLoading('Loading Messages...');
     if (firebaseUser != null) {
       String email = firebaseUser!.email!;
       String userId = utils.removeEmailDomain(email);
-      String name = utils.removeTextAfterFirstNumber(firebaseUser!.displayName ?? 'User');
+      DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
+      String username = await sharedPreferences.getDataFromReference(userRef, "Username");
+      String displayName = utils.removeTextAfterFirstNumber(firebaseUser!.displayName ?? 'Anonymous');
+      String name = username.isNotEmpty ? username : displayName;
+
       if (mounted) {
         setState(() {
           _user = ChatUser(
@@ -64,6 +71,7 @@ class _UniversityChatState extends State<UniversityChat> {
       }
     }
   }
+
 
   void listenForNewMessages() {
     print('Listening For New Messages...');

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
@@ -17,6 +19,7 @@ import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -33,14 +36,19 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   NotificationService notificationService = new NotificationService();
   FireStoreService fireStoreService = new FireStoreService();
   FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
   FirebaseMessaging messaging = FirebaseMessaging.instance;
+
   String? email = '', name = '', imageUrl = '';
+  String? _announcementText;
+  StreamSubscription<DatabaseEvent>? _announcementSubscription;
 
   @override
   void initState() {
     super.initState();
     loadData();
     requestPermission();
+    _fetchAnnouncementText();
     utils.getToken();
   }
 
@@ -55,6 +63,20 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       sound: true,
     );
     print('User granted permission: ${settings.authorizationStatus}');
+  }
+
+  Future<void> _fetchAnnouncementText() async {
+    final DatabaseReference announcementRef = _database.ref('Home');
+    _announcementSubscription = announcementRef.onValue.listen((event) {
+      if (!mounted) return;
+      final DataSnapshot snapshot = event.snapshot;
+      setState(() {
+        _announcementText = snapshot.exists
+            ? (snapshot.value as Map)['Announcement']
+            : null;
+        print("Values in Xerox: ${snapshot.value}");
+      });
+    });
   }
 
   @override
@@ -82,78 +104,83 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
             } else {
-              return ListView(
-                padding: EdgeInsets.zero,
+              return Column(
                 children: <Widget>[
-                  UserAccountsDrawerHeader(
-                    accountName: Text(name!),
-                    accountEmail: Text(email!),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[700],
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: <Widget>[
+                        UserAccountsDrawerHeader(
+                          accountName: Text(name!),
+                          accountEmail: Text(email!),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[700],
+                          ),
+                          currentAccountPicture: CircleAvatar(
+                            backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
+                                ? CachedNetworkImageProvider(imageUrl!) as ImageProvider<Object>?
+                                : AssetImage('assets/images/defaultimage.png'),
+                            backgroundColor: Colors.white,
+                          ),
+                        ),
+                        ListTile(
+                          leading: Icon(Icons.person),
+                          title: Text('Profile'),
+                          onTap: () async {
+                            if (await utils.checkInternetConnection()) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => UserAccount()),
+                              );
+                            } else {
+                              utils.showToastMessage("Connect to the internet", context);
+                            }
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(Icons.reviews),
+                          title: Text('Reviews/Suggestions'),
+                          onTap: () async {
+                            if (await utils.checkInternetConnection()) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => Review()),
+                              );
+                            } else {
+                              utils.showToastMessage("Connect to the internet", context);
+                            }
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(Icons.question_answer),
+                          title: Text('Q & A'),
+                          onTap: () async {
+                            if (await utils.checkInternetConnection()) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => QuestionAndAnswer()),
+                              );
+                            } else {
+                              utils.showToastMessage("Connect to the internet", context);
+                            }
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(Icons.exit_to_app),
+                          title: Text('Sign Out'),
+                          onTap: () async {
+                            if (await utils.checkInternetConnection()) {
+                              signOut();
+                            } else {
+                              utils.showToastMessage('Check your internet connections', context);
+                            }
+                          },
+                        ),
+                      ],
                     ),
-                    currentAccountPicture: CircleAvatar(
-                      backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
-                          ? CachedNetworkImageProvider(imageUrl!) as ImageProvider<Object>?
-                          : AssetImage('assets/images/defaultimage.png'),
-                      backgroundColor: Colors.white,
-                    ),
                   ),
                   ListTile(
-                    leading: Icon(Icons.person),
-                    title: Text('Profile'),
-                    onTap: () async {
-                      if(await utils.checkInternetConnection()){
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => UserAccount()),
-                        );
-                      }else{
-                        utils.showToastMessage("Connect to the internet", context);
-                      }
-
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.reviews),
-                    title: Text('Reviews'),
-                    onTap: () async {
-
-                      if(await utils.checkInternetConnection()){
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => Review()),
-                        );
-                      }else{
-                      utils.showToastMessage("Connect to the internet", context);
-                      }
-
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.question_answer),
-                    title: Text('Q & A'),
-                    onTap: () async{
-                      if(await utils.checkInternetConnection()){
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => QuestionAndAnswer()),
-                        );
-                      }else{
-                        utils.showToastMessage("Connect to the internet", context);
-                      }
-
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.exit_to_app),
-                    title: Text('Sign Out'),
-                    onTap: () async {
-                      if (await utils.checkInternetConnection()) {
-                        signOut();
-                      } else {
-                        utils.showToastMessage('Check your internet connections', context);
-                      }
-                    },
+                    title: Center(child: Text('Brand Name: FindAny', style: TextStyle(fontWeight: FontWeight.bold))),
                   ),
                 ],
               );
@@ -163,52 +190,71 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16.0,
-          mainAxisSpacing: 16.0,
+        child: Column(
           children: [
-            _buildGridItem(
-              context,
-              'assets/images/groupchat.png',
-              'Let\'s Talk',
-              UniversityChat(),
-            ),
-            _buildGridItem(
-              context,
-              'assets/images/xerox.png',
-              'Get Xerox',
-              XeroxHome(),
-            ),
-            _buildGridItem(
-              context,
-              'assets/images/materials.png',
-              'Materials',
-              MaterialsHome(),
-            ),
-            _buildGridItem(
-              context,
-              'assets/images/navigation.png',
-              'Navigation',
-              MapScreen(),
-            ),
-            _buildGridItem(
-              context,
-              'assets/images/universitynews.jpeg',
-              'University News',
-              NewsListScreen(),
-            ),
-            _buildGridItem(
-              context,
-              'assets/images/busbooking.png',
-              'Bus Booking',
-              BusBookingHome(),
+            if (_announcementText != null && _announcementText!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16.0),
+                child: Text(
+                  _announcementText!,
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16.0,
+                mainAxisSpacing: 16.0,
+                children: [
+                  _buildGridItem(
+                    context,
+                    'assets/images/groupchat.png',
+                    'Let\'s Talk',
+                    UniversityChat(),
+                  ),
+                  _buildGridItem(
+                    context,
+                    'assets/images/xerox.png',
+                    'Get Xerox',
+                    XeroxHome(),
+                  ),
+                  _buildGridItem(
+                    context,
+                    'assets/images/materials.png',
+                    'Materials',
+                    MaterialsHome(),
+                  ),
+                  _buildGridItem(
+                    context,
+                    'assets/images/navigation.png',
+                    'Navigation',
+                    MapScreen(),
+                  ),
+                  _buildGridItem(
+                    context,
+                    'assets/images/universitynews.jpeg',
+                    'University News',
+                    NewsListScreen(),
+                  ),
+                  _buildGridItem(
+                    context,
+                    'assets/images/busbooking.png',
+                    'Bus Booking',
+                    BusBookingHome(),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
 
   Widget _buildGridItem(BuildContext context, String imagePath, String title, Widget destination) {
     return GestureDetector(
@@ -219,7 +265,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             MaterialPageRoute(builder: (context) => destination),
           );
         }else{
-        utils.showToastMessage("Connect to the internet", context);
+          utils.showToastMessage("Connect to the internet", context);
         }
 
       },
@@ -260,7 +306,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   }
 
-
   Future<void> signOut() async {
     if (!mounted) return; // Check if the widget is still mounted before proceeding
     print("Singing out user in Home");
@@ -290,6 +335,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _announcementSubscription?.cancel();
     super.dispose();
     utils.deleteFolder("/data/data/com.neelam.FindAny/cache");
     loadingDialog.dismiss();

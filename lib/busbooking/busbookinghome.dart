@@ -1,17 +1,19 @@
+import 'dart:collection';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+
+import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Firebase/realtimedatabase.dart';
 import 'package:findany_flutter/apis/busbookinggsheet.dart';
 import 'package:findany_flutter/busbooking/history.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
-import 'package:findany_flutter/utils/utils.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
+import 'package:findany_flutter/utils/utils.dart';
 
 class BusBookingHome extends StatefulWidget {
   @override
@@ -38,25 +40,28 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   List<String> _toPlaces = [];
   List<String> _timings = [];
   List<String> _availableDates = [];
-  String busID="";
+  String busID = "";
   int _waitingListSeats = 0;
   int _availableSeats = 0;
-  String? _announcementText;  // State variable to store the fetched text
+  String? _announcementText = "";
+  String? message = "";
+  String? contactus = "";
 
   Map<String, dynamic>? detailsData = {};
   Map<String, dynamic>? placesData = {};
-  Map<String, Map<String,List<String>>> dateToTimingsMap = {};
+  Map<String, Map<String, List<String>>> dateToTimingsMap = {};
 
   DocumentReference placesDoc = FirebaseFirestore.instance.doc("busbooking/places");
   DocumentReference detailsDoc = FirebaseFirestore.instance.doc("busbooking/Details");
 
   final TextEditingController _costController = TextEditingController();
   final TextEditingController _totalCostController = TextEditingController();
+  final timeFormat = DateFormat('HH:mm');
   String _mobileNumber = "";
+  String trainNo = "";
 
-  List<Map<String, String?>> _people = []; // List to store people details
+  List<Map<String, String?>> _people = [];
 
-  // Razorpay
   Razorpay razorpay = Razorpay();
   String apiUrl = 'https://api.razorpay.com/v1/orders';
   static const _razorpayKey = 'rzp_live_kYGlb6Srm9dDRe';
@@ -94,9 +99,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     _availableSeats = await realTimeDatabase.getCurrentValue('BusBookingTickets/$busID/Available') ?? 0;
     _waitingListSeats = await realTimeDatabase.getCurrentValue('BusBookingTickets/$busID/WaitingList') ?? 0;
 
-    setState(() {
-
-    });
+    setState(() {});
 
     loadingDialog.dismiss();
   }
@@ -115,6 +118,34 @@ class _BusBookingHomeState extends State<BusBookingHome> {
         });
       }
     });
+
+    final DatabaseReference messageText = _database.ref('BusBookingTickets/message');
+    messageText.onValue.listen((event) {
+      final DataSnapshot snapshot = event.snapshot;
+      if (snapshot.exists) {
+        setState(() {
+          message = snapshot.value as String?;
+        });
+      } else {
+        setState(() {
+          message = null;
+        });
+      }
+    });
+
+    final DatabaseReference contactText = _database.ref('BusBookingTickets/contact');
+    contactText.onValue.listen((event) {
+      final DataSnapshot snapshot = event.snapshot;
+      if (snapshot.exists) {
+        setState(() {
+          contactus = snapshot.value as String?;
+        });
+      } else {
+        setState(() {
+          contactus = null;
+        });
+      }
+    });
   }
 
   initializeRazorpay() async {
@@ -126,7 +157,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   Future<String?> createOrder(int amount) async {
     try {
       final response = await http.post(
-        Uri.parse('https://api.razorpay.com/v1/orders'),
+        Uri.parse(apiUrl),
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': 'Basic ${base64Encode(utf8.encode("$_razorpayKey:$_apiSecret"))}',
@@ -135,14 +166,14 @@ class _BusBookingHomeState extends State<BusBookingHome> {
           'amount': amount * 100,
           'currency': 'INR',
           'receipt': 'order_receipt_${DateTime.now().millisecondsSinceEpoch}',
-          'payment_capture': 1, // Auto capture payment
+          'payment_capture': 1,
         }),
       );
 
       if (response.statusCode == 200) {
         print('Got response code as 200');
         final responseData = jsonDecode(response.body);
-        return responseData['id']; // Return the order ID
+        return responseData['id'];
       } else {
         print('Failed to create order: ${response.statusCode}');
         print('Response body: ${response.body}');
@@ -155,12 +186,12 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   }
 
   void startPayment(int amount, String number, String email) async {
-    if(!await utils.checkInternetConnection()){
+    if (!await utils.checkInternetConnection()) {
       utils.showToastMessage('Connect to the Internet', context);
       return;
     }
     loadingDialog.showDefaultLoading('Redirecting to Payment Page');
-    final orderId = await createOrder(amount); // Call to createOrder
+    final orderId = await createOrder(amount);
     loadingDialog.dismiss();
     print('Order ID: $orderId');
     if (orderId != null) {
@@ -180,14 +211,13 @@ class _BusBookingHomeState extends State<BusBookingHome> {
         debugPrint('Razorpay Error: $e');
       }
     } else {
-      // Handle error in creating order
       print('Order is Null');
     }
   }
 
   Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
     print('razorpay successful ${response.paymentId}');
-    await updateTickets(_people.length,response);
+    await updateTickets(_people.length, response);
   }
 
   void handlePaymentError(PaymentFailureResponse response) {
@@ -199,7 +229,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     print('razorpay External wallet ${response.walletName}');
   }
 
-  Future<void> updateTickets(int peopleCount,PaymentSuccessResponse response) async {
+  Future<void> updateTickets(int peopleCount, PaymentSuccessResponse response) async {
     final DatabaseReference ticketRef = _database.ref('BusBookingTickets/$busID');
     String availableTickets = 'BusBookingTickets/$busID/Available';
     String waitingListTickets = 'BusBookingTickets/$busID/WaitingList';
@@ -210,19 +240,16 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     int confirmTicketCount = 0;
 
     if (currentTickets <= 0) {
-      // If there are no available tickets, add the people count to the waiting list
       currentWaitingList += peopleCount;
       await ticketRef.child('WaitingList').set(currentWaitingList);
       waitingListCount = peopleCount;
       print('All tickets are sold out. Added $peopleCount people to the waiting list.');
     } else if (peopleCount <= currentTickets) {
-      // If available tickets are enough to cover people count, book the tickets
       currentTickets -= peopleCount;
       await ticketRef.child('Available').set(currentTickets);
-      confirmTicketCount= peopleCount;
+      confirmTicketCount = peopleCount;
       print('Booked $peopleCount tickets. Remaining tickets: $currentTickets');
     } else {
-      // If available tickets are less than people count, book the available tickets and add the rest to the waiting list
       int bookedTickets = currentTickets;
       int waitingListAddition = peopleCount - currentTickets;
       currentTickets = 0;
@@ -237,18 +264,17 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       print('Booked $bookedTickets tickets. Added $waitingListAddition people to the waiting list.');
     }
 
-    await uploadData(response,confirmTicketCount,waitingListCount);
-
+    await uploadData(response, confirmTicketCount, waitingListCount);
   }
 
-  Future<void> uploadData(PaymentSuccessResponse response,int confirmTickets, int waitingListTickets) async {
+  Future<void> uploadData(PaymentSuccessResponse response, int confirmTickets, int waitingListTickets) async {
     loadingDialog.showDefaultLoading('Booking Ticket...');
     print('Response: ${response.data}');
 
     String? email = await utils.getCurrentUserEmail();
     String regNo = utils.removeEmailDomain(email!);
 
-    int? bookingID= await realTimeDatabase.incrementValue("BusBookingTickets/TicketID");
+    int? bookingID = await realTimeDatabase.incrementValue("BusBookingTickets/TicketID");
 
     List<dynamic> data = [
       regNo,
@@ -258,6 +284,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       _selectedTo.toString(),
       _selectedDate.toString(),
       _selectedTiming.toString(),
+      trainNo,
       _totalCostController.text,
       response.paymentId ?? "",
       bookingID,
@@ -274,23 +301,24 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       'TO': _selectedTo,
       'DATE': _selectedDate,
       'TIMINGS': _selectedTiming,
+      'TRAIN NO': trainNo,
       'TOTAL COST': _totalCostController.text,
       'PAYMENT ID': response.paymentId,
       'PEOPLE LIST': _people,
       'TICKET COUNT': _people.length,
-      'CONFORM TICKETS':confirmTickets,
+      'CONFIRM TICKETS': confirmTickets,
       'WAITING LIST TICKETS': waitingListTickets,
-      'BOOKING ID' : bookingID
+      'BOOKING ID': bookingID
     };
 
     DocumentReference historyRef = FirebaseFirestore.instance.doc("UserDetails/${await utils.getCurrentUserUID()}/BusBooking/BookedTickets");
 
     DocumentReference busDetailsRef = FirebaseFirestore.instance.doc('/busbooking/BookingIDs/$busID/$bookingID');
     await fireStoreService.uploadMapDataToFirestore(busBookingData, busDetailsRef);
-    Map<String,dynamic> historyData = {bookingID.toString():busDetailsRef};
+    Map<String, dynamic> historyData = {bookingID.toString(): busDetailsRef};
     await fireStoreService.uploadMapDataToFirestore(historyData, historyRef);
-    utils.showToastMessage('Ticket is booked check the history', context);
-    
+    utils.showToastMessage('Ticket is booked. Check the history', context);
+
     DocumentReference tokenRef = FirebaseFirestore.instance.doc('AdminDetails/BusBooking');
     List<String> tokens = await utils.getSpecificTokens(tokenRef);
 
@@ -298,8 +326,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
 
     String? token = await utils.getToken();
 
-    notificationService.sendNotification([token], "Bus Booking", 'Your bus is booked with the ID $bookingID you can check your booking details in the history', {});
-
+    notificationService.sendNotification([token], "Bus Booking", 'Your bus is booked with the ID $bookingID. You can check your booking details in the history', {});
 
     Navigator.pop(context);
     loadingDialog.dismiss();
@@ -332,7 +359,6 @@ class _BusBookingHomeState extends State<BusBookingHome> {
   }
 
   Future<void> _fetchDetails(String fromPlace, String toPlace) async {
-    // loadingDialog.showDefaultLoading("Getting details... $fromPlace  $toPlace");
     try {
       Map<String, dynamic>? detailsData = await FireStoreService().getDocumentDetails(detailsDoc);
       print('Details Data: $detailsData');
@@ -363,13 +389,12 @@ class _BusBookingHomeState extends State<BusBookingHome> {
             dateToTimingsMap[date]![id] = [];
           }
 
-          dateToTimingsMap[date]![id]!.add(time); // Store time in the list for each ID
-
+          dateToTimingsMap[date]![id]!.add(time);
         });
 
-        print("Dates Data: $dateToTimingsMap");
+        // Sort dates
         setState(() {
-          _availableDates = availableDates.toList();
+          _availableDates = availableDates.toList()..sort((a, b) => dateFormat.parse(a).compareTo(dateFormat.parse(b)));
           _selectedDateFormatted = _availableDates.isNotEmpty ? _availableDates.first : null;
           _selectedDate = _selectedDateFormatted != null ? dateFormat.parse(_selectedDateFormatted!) : null;
 
@@ -396,7 +421,6 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       loadingDialog.dismiss();
     }
   }
-
   void _updateTimingsForSelectedDate() {
     final dateFormat = DateFormat('dd-MM-yyyy');
 
@@ -405,6 +429,8 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       setState(() {
         if (dateToTimingsMap.containsKey(selectedDateString)) {
           _timings = dateToTimingsMap[selectedDateString]!.values.expand((timings) => timings).toList();
+          // Sort timings
+          _timings.sort((a, b) => timeFormat.parse(a).compareTo(timeFormat.parse(b)));
         } else {
           _timings = [];
         }
@@ -445,7 +471,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     for (var person in _people) {
       if (person['name'] == null || person['gender'] == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please fill the Pesons details')),
+          SnackBar(content: Text('Please fill the Persons details')),
         );
         return;
       }
@@ -453,11 +479,10 @@ class _BusBookingHomeState extends State<BusBookingHome> {
 
     if (_people.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please add the Pesons details')),
+        SnackBar(content: Text('Please add the Persons details')),
       );
       return;
     }
-
 
     if (!utils.isValidMobileNumber(_mobileNumber)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -629,7 +654,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
               SizedBox(height: 16.0),
               TextFormField(
                 decoration: InputDecoration(
-                  labelText: 'Mobile Number',
+                  labelText: 'Mobile Number*',
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (value) {
@@ -638,6 +663,18 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                   });
                 },
                 keyboardType: TextInputType.phone,
+              ),
+              SizedBox(height: 16.0),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Train No/Bus drop time',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    trainNo = value;
+                  });
+                },
               ),
               SizedBox(height: 16.0),
               ListView.builder(
@@ -722,24 +759,25 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 16.0),
-              Text(
-                'Available Seats: $_availableSeats',
-                style: TextStyle(fontSize: 16),
-              ),
-              Text(
-                'Waiting List Seats: $_waitingListSeats',
-                style: TextStyle(fontSize: 16),
-              ),
-              SizedBox(height: 16.0),
-              Text(
-                "If we receive a significant number of bookings on the waiting list, an additional bus will be arranged",
-                style: TextStyle(color: Colors.red),
-              ),
-              SizedBox(height: 16.0),
-              Text(
-                'Note: 95% refund on unconfirmed tickets.',
-                style: TextStyle(color: Colors.red),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Available Seats: $_availableSeats',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  if (_waitingListSeats > 0)
+                    Text(
+                      'Waiting List Seats: $_waitingListSeats',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  SizedBox(height: 16.0),
+                  if (message?.isNotEmpty ?? false)
+                    Text(
+                      message!,
+                      style: TextStyle(color: Colors.red),
+                    ),
+                ],
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
@@ -752,7 +790,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
               ),
               SizedBox(height: 16.0),
               Text(
-                'Any timing adjustments contact us through  \nEmail: neelammsr@gmail.com  \nMobile Number: 8501070702 or 7207010295',
+                contactus!,
                 style: TextStyle(color: Colors.red),
               ),
             ],
@@ -764,9 +802,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     loadingDialog.dismiss();
     super.dispose();
   }
-
 }

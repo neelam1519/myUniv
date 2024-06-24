@@ -11,11 +11,14 @@ import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../services/pdfscreen.dart';
+
 class DisplayMaterials extends StatefulWidget {
   final String path;
   final String unit;
+  final String subject;
 
-  DisplayMaterials({required this.path, required this.unit});
+  DisplayMaterials({required this.path,required this.subject,required this.unit});
 
   @override
   _DisplayMaterialsState createState() => _DisplayMaterialsState();
@@ -146,7 +149,10 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarText),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text("${widget.subject}>${widget.unit}"),
+        ),
       ),
       body: StreamBuilder<List<File>>(
         stream: _streamController.stream,
@@ -257,7 +263,6 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Your upload action here
           FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
           if (result != null && result.files.isNotEmpty) {
@@ -269,7 +274,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
               print("Filename: $fileName");
               print("Extension: $fileExtension");
 
-              String path = 'userUploadedMaterials/${utils.getTodayDate().replaceAll('/', '-')}';
+              String path = 'userUploadedMaterials/"${widget.path.replaceAll('/', '-')}-${widget.unit}"/${utils.getTodayDate().replaceAll('/', '-')}';
               File file = File(platformFile.path!);
               await firebaseStorageHelper.uploadFile(file, path, '${await utils.getCurrentUserEmail()}-$fileName.$fileExtension');
 
@@ -277,11 +282,10 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
               List<String> tokens = await utils.getSpecificTokens(specificRef);
               notificationService.sendNotification(tokens, "Materials", '${result.count} files uploaded by ${await utils.getCurrentUserEmail()}', {});
 
-              utils.showToastMessage('Files are uploaded', context);
+              utils.showToastMessage('Files are submitted sent for reviewing', context);
               loadingDialog.dismiss();
             }
           } else {
-            // Handle the case when no files are picked
             utils.showToastMessage('No files are selected', context);
             print('No files selected');
           }
@@ -298,24 +302,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text(title),
-            ),
-            body: PDFView(
-              filePath: filePath,
-              enableSwipe: true,
-              swipeHorizontal: false,
-              autoSpacing: false,
-              pageFling: false,
-              onRender: (pages) {
-                setState(() {});
-              },
-              onError: (error) {
-                print(error.toString());
-              },
-            ),
-          ),
+          builder: (context) => PDFScreen(filePath: filePath, title: title),
         ),
       );
     }

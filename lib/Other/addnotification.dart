@@ -39,9 +39,8 @@ class _AddNotificationState extends State<AddNotification> {
       DocumentReference documentReference = FirebaseFirestore.instance.doc('notifications/${count.toString()}');
       fireStoreService.uploadMapDataToFirestore(data, documentReference);
 
-      DocumentReference specificRef = FirebaseFirestore.instance.doc('AdminDetails/Notification');
-      List<String> tokens = await utils.getSpecificTokens(specificRef);
-      notificationService.sendNotification(tokens, "Notification", title, {"source":"NotificationHome"});
+      List<String> tokens = await utils.getAllTokens();
+      notificationService.sendNotification(tokens, title, message, {"source":"NotificationHome"});
 
       _titleController.clear();
       _messageController.clear();
@@ -90,7 +89,7 @@ class _AddNotificationState extends State<AddNotification> {
               ),
               SizedBox(height: 16),
               Container(
-                height: 180, // Approximately three times the height of the title field
+                height: 180,
                 child: TextFormField(
                   controller: _messageController,
                   decoration: InputDecoration(labelText: 'Message'),

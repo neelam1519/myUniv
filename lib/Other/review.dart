@@ -25,7 +25,7 @@ class _ReviewState extends State<Review> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Review'),
+        title: Text('Review/Suggestions'),
       ),
       body: Padding(
         padding: EdgeInsets.all(20.0),
@@ -34,7 +34,7 @@ class _ReviewState extends State<Review> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Write your review',
+              'Write your review/suggestion',
               style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -42,7 +42,7 @@ class _ReviewState extends State<Review> {
             TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: 'Enter your review here',
+                hintText: 'Enter your review/suggestion here',
                 border: OutlineInputBorder(),
               ),
               maxLines: 5,
@@ -78,7 +78,7 @@ class _ReviewState extends State<Review> {
             ),
             SizedBox(height: 20.0),
             Text(
-              'Contact Us: neelammsr@gmail.com',
+              'Contact Us: findanylive@gmail.com',
               style: TextStyle(fontSize: 16.0),
               textAlign: TextAlign.center,
             ),

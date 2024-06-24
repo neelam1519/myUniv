@@ -25,73 +25,41 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Login'),
-        backgroundColor: Colors.teal,
-        elevation: 0,
+        backgroundColor: Colors.green[700],
       ),
       body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Hero(
-                tag: 'app-logo',
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  height: 120.0,
-                ),
+              Image.asset(
+                'assets/images/logo.png', // Add the path to your app logo here
+                height: 120.0,
               ),
               SizedBox(height: 40.0),
               Text(
                 'Welcome to FindAny',
                 style: TextStyle(
-                  fontSize: 28.0,
+                  fontSize: 24.0,
                   fontWeight: FontWeight.bold,
-                  color: Colors.teal[800],
                 ),
               ),
               SizedBox(height: 20.0),
-              Card(
-                elevation: 5.0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30.0),
-                  child: Column(
-                    children: <Widget>[
-                      Text(
-                        'Sign in to continue',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      SizedBox(height: 20.0),
-                      SignInButton(
-                        Buttons.Google,
-                        text: "Sign in with Google",
-                        onPressed: () async {
-                          bool internet = await utils.checkInternetConnection();
-                          print('Internet Connection: $internet');
-                          if (internet) {
-                            await _handleGoogleSignIn(context);
-                          } else {
-                            utils.showToastMessage('Check your internet connection', context);
-                          }
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0),
-                        elevation: 5.0,
-                      ),
-                    ],
-                  ),
-                ),
+              SignInButton(
+                Buttons.Google,
+                text: "Sign in with Google",
+                onPressed: () async {
+                  bool internet = await utils.checkInternetConnection();
+                  print('Internet Connection: $internet');
+                  if (internet) {
+                    await _handleGoogleSignIn(context);
+                  } else {
+                    utils.showToastMessage('Check your internet connection', context);
+                  }
+                },
               ),
             ],
           ),
@@ -101,10 +69,6 @@ class _LoginState extends State<Login> {
   }
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
-    if(!await utils.checkInternetConnection()){
-      utils.showToastMessage('Connect to the Internet', context);
-      return;
-    }
     print('Handle Google Sign-In');
     try {
       loadingDialog.showDefaultLoading('Signing In...');
@@ -130,16 +94,19 @@ class _LoginState extends State<Login> {
 
         if (user != null && mounted) {
           final String? email = user.email;
+          print('Email: $email');
           if (email != null && email.endsWith('@klu.ac.in')) {
+            print('User logged in with the University Email');
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
             await storeRequiredData();
           } else {
-            await utils.signOut();
+            await signOut();
+            loadingDialog.dismiss();
             loadingDialog.showError('Please sign in with a valid KLU email.');
           }
         } else {
           print('User is null after signing in.');
-          await utils.signOut();
+          await signOut();
           loadingDialog.dismiss();
         }
       } else {
@@ -150,7 +117,7 @@ class _LoginState extends State<Login> {
       loadingDialog.dismiss();
       utils.showToastMessage('Error occurred while login', context);
       print('Error signing in with Google: $error');
-      await utils.signOut();
+      await signOut();
     }
   }
 
@@ -186,14 +153,15 @@ class _LoginState extends State<Login> {
 
     } catch (error) {
       print('Error storing data: $error');
-      utils.showToastMessage('Error occurred while login  $error', context);
+      utils.showToastMessage('Error occurred while login $error', context);
       print('Login Error2: $error');
-      utils.signOut();
+      await signOut();
     }
   }
-  @override
-  void dispose() {
-    loadingDialog.dismiss();
-    super.dispose();
+
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+    await googleSignIn.disconnect();
+    await googleSignIn.signOut();
   }
 }

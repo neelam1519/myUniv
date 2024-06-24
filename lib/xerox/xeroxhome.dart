@@ -12,6 +12,7 @@ import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:findany_flutter/xerox/showfiles.dart';
 import 'package:findany_flutter/xerox/xeroxhistory.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -40,6 +41,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   NotificationService notificationService = new NotificationService();
 
   Razorpay razorpay = new Razorpay();
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
 
   TextEditingController _nameController = TextEditingController();
   TextEditingController _mobilenumberController = TextEditingController();
@@ -56,6 +58,7 @@ class _XeroxHomeState extends State<XeroxHome> {
   double progress=0;
   String xeroxNote='Contact 8501070702';
   int totalFileCount=0;
+  String? _announcementText = "";
   Map<String, dynamic>? xeroxDetails= {};
 
   //Razorpay
@@ -69,6 +72,7 @@ class _XeroxHomeState extends State<XeroxHome> {
     getData();
     totalFileCount = _uploadedFiles.length;
     initializeRazorpay();
+    _fetchAnnouncementText();
   }
 
 
@@ -80,11 +84,28 @@ class _XeroxHomeState extends State<XeroxHome> {
 
   }
 
+
+  Future<void> _fetchAnnouncementText() async {
+    final DatabaseReference announcementRef = _database.ref('Xerox');
+    announcementRef.onValue.listen((event) {
+      final DataSnapshot snapshot = event.snapshot;
+      if (snapshot.exists) {
+        setState(() {
+          print("Values in the Xerox: ${snapshot.value}");
+          _announcementText = (snapshot.value as Map)['Announcement'];
+        });
+      } else {
+        setState(() {
+          _announcementText = null;
+        });
+      }
+    });
+  }
+
   Future<void> getData() async {
     loadingDialog.showDefaultLoading('Getting Details...');
     DocumentReference detailsRef = FirebaseFirestore.instance.doc('XeroxDetails/DisplayDetails');
     xeroxDetails = await fireStoreService.getDocumentDetails(detailsRef);
-    xeroxNote = xeroxDetails!['XeroxNote'];
 
     email = (await sharedPreferences.getSecurePrefsValue('Email'))!;
     setState(() {});
@@ -113,28 +134,19 @@ class _XeroxHomeState extends State<XeroxHome> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              margin: EdgeInsets.only(bottom: 20),
-              child: RichText(
-                text: TextSpan(
+            if (_announcementText != null && _announcementText!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16.0),
+                child: Text(
+                  _announcementText!,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black, // Default text color
+                    fontSize: 16.0,
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
                   ),
-                  children: <TextSpan>[
-                    TextSpan(
-                      text: 'Note: ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextSpan(
-                      text: xeroxNote, // Rest of the text
-                    ),
-                  ],
                 ),
               ),
-            ),
+            SizedBox(height: 15),
             Text(
               email,
               style: TextStyle(
@@ -207,11 +219,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                       for (int index = 0; index < _uploadedFiles.length; index++)
                         ListTile(
                           title: Text('${index + 1}. ${_uploadedFiles.keys.toList()[index]}'),
-                          onTap: () => (){
-                           // utils.openFile(_uploadedFiles.values.toList()[index]);
-                            viewPdfFullScreen(_uploadedFiles.values.toList()[index],_uploadedFiles.values.toList()[index].split('/').last);
-
-                          },
+                          onTap: () => viewPdfFullScreen(_uploadedFiles.values.toList()[index], _uploadedFiles.values.toList()[index].split('/').last),
                           trailing: IconButton(
                             icon: Icon(Icons.close),
                             onPressed: () {
@@ -252,8 +260,8 @@ class _XeroxHomeState extends State<XeroxHome> {
             TextField(
               controller: _descriptionController,
               decoration: InputDecoration(
-                labelText: 'Specify any other requirements with file numbers (Extra cost applies)',
-                hintText: 'spiral binding, color xerox, etc..',
+                labelText: 'Specify other requirements with file numbers',
+                hintText: 'You will be contacted regarding the amount',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.multiline,
@@ -311,6 +319,7 @@ class _XeroxHomeState extends State<XeroxHome> {
       ),
     );
   }
+
 
   Future<String?> createOrder(int amount) async {
     try {

@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 
 class Units extends StatefulWidget {
   final String path;
+  final String subject;
 
-  Units({required this.path});
+  Units({required this.path,required this.subject});
 
   @override
   _UnitsState createState() => _UnitsState();
@@ -15,7 +16,10 @@ class _UnitsState extends State<Units> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Units'),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(widget.subject),
+        ),
       ),
       body: ListView.builder(
         itemCount: 5,
@@ -24,7 +28,7 @@ class _UnitsState extends State<Units> {
             child: ListTile(
               title: Text('UNIT ${index + 1}'),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => DisplayMaterials(path: '${widget.path}', unit: 'UNIT ${index+1}',)));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => DisplayMaterials(path: '${widget.path}', unit: 'UNIT ${index+1}',subject: widget.subject)));
               },
             ),
           );

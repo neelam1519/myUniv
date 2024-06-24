@@ -163,9 +163,9 @@ class Utils{
     return extension;
   }
 
-  Future<void> signOut() async{
-    await FirebaseAuth.instance.signOut();
-    await GoogleSignIn().disconnect(); // Disconnect Google Sign-In
+  void signOut(){
+    FirebaseAuth.instance.signOut();
+    GoogleSignIn().disconnect();
   }
 
   String removeTextAfterFirstNumber(String input) {
@@ -217,15 +217,21 @@ class Utils{
   final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
 
   Future<String?> getToken() async {
-    String? token = await firebaseMessaging.getToken();
-    if (token != null) {
-      print('Token: $token');
-      return token;
-    } else {
-      print('Failed to get token.');
-      return 'no Token';
+    try {
+      String? token = await firebaseMessaging.getToken();
+      if (token != null) {
+        print('Token: $token');
+        return token;
+      } else {
+        print('Failed to get token.');
+        return null;
+      }
+    } catch (e) {
+      print('Error retrieving token: $e');
+      return null;
     }
   }
+
 
   Future<void> openFile(String filePath) async {
     try {
@@ -354,17 +360,13 @@ class Utils{
     DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
 
     try {
-      // Fetch the document details
       Map<String, dynamic>? allTokens = await fireStoreService.getDocumentDetails(tokenRef);
 
       if (allTokens != null) {
-        // Extract the token values
         List<String> tokens = allTokens.values.map((token) => token.toString()).toList();
 
-        // Get the current token
         String? currentToken = await getToken();
 
-        // Remove the current token from the list if it exists
         if (currentToken != null && tokens.contains(currentToken)) {
           tokens.remove(currentToken);
         }
@@ -372,11 +374,9 @@ class Utils{
         print('Filtered Tokens: $tokens');
         return tokens;
       } else {
-        // Return an empty list if no tokens are found
         return [];
       }
     } catch (e) {
-      // Log any errors encountered during the process
       print('Error fetching tokens: $e');
       return [];
     }

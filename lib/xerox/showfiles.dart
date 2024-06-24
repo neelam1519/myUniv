@@ -1,16 +1,14 @@
-
 import 'package:dio/dio.dart';
+import 'package:findany_flutter/services/pdfscreen.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
+import 'dart:io'; // Add this import for file operations
 
 class ShowFiles extends StatefulWidget {
-
   @override
   _ShowFilesState createState() => _ShowFilesState();
 }
@@ -18,12 +16,13 @@ class ShowFiles extends StatefulWidget {
 class _ShowFilesState extends State<ShowFiles> {
   Utils utils = Utils();
   LoadingDialog loadingDialog = LoadingDialog();
-  String _selectedValue = '1'; // Default selected value
+  String _selectedValue = 'YEAR 1'; // Default selected value
   Map<String, String> _selectedFiles = {}; // List to store selected file names
-
-  Map<String,String> retrievedFiles = {};
+  Map<String, String> retrievedFiles = {};
   Icon addIcon = Icon(Icons.add);
   Icon minusIcon = Icon(Icons.remove);
+  TextEditingController searchController = TextEditingController();
+  bool isSearching = false;
 
   @override
   void initState() {
@@ -37,36 +36,54 @@ class _ShowFilesState extends State<ShowFiles> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Xerox Home'),
+        title: !isSearching
+            ? Text('Xerox Home')
+            : TextField(
+          controller: searchController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Search files...',
+            border: InputBorder.none,
+          ),
+          onChanged: (value) {
+            setState(() {});
+          },
+        ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: Row(
-              children: [
-                Text(
-                  'Year',
-                  style: TextStyle(
-                    fontSize: 16.0,
+          if (!isSearching)
+            Padding(
+              padding: const EdgeInsets.only(right: 20.0),
+              child: Row(
+                children: [
+                  DropdownButton(
+                    value: _selectedValue,
+                    onChanged: (newValue) {
+                      setState(() {
+                        _selectedValue = newValue.toString();
+                        fetchFiles();
+                      });
+                    },
+                    items: ['YEAR 1', 'YEAR 2', 'YEAR 3', 'YEAR 4', 'COMMON']
+                        .map<DropdownMenuItem<String>>((value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                   ),
-                ),
-                SizedBox(width: 10),
-                DropdownButton(
-                  value: _selectedValue,
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedValue = newValue.toString();
-                      fetchFiles();
-                    });
-                  },
-                  items: ['1', '2', '3', '4'].map<DropdownMenuItem<String>>((value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-              ],
+                ],
+              ),
             ),
+          IconButton(
+            icon: isSearching ? Icon(Icons.clear) : Icon(Icons.search),
+            onPressed: () {
+              setState(() {
+                if (isSearching) {
+                  searchController.clear();
+                }
+                isSearching = !isSearching;
+              });
+            },
           ),
           IconButton(
             icon: Icon(Icons.check),
@@ -78,17 +95,26 @@ class _ShowFilesState extends State<ShowFiles> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0),
-        child: retrievedFiles.isEmpty ? Center(
+        child: retrievedFiles.isEmpty
+            ? Center(
           child: Text(
             'No files found',
             style: TextStyle(fontSize: 16.0),
           ),
-        ) :
-        ListView.builder(
-          itemCount: retrievedFiles.length,
+        )
+            : ListView.builder(
+          itemCount: retrievedFiles.keys
+              .where((filename) => filename
+              .toLowerCase()
+              .contains(searchController.text.toLowerCase()))
+              .length,
           itemBuilder: (context, index) {
-            String filename = retrievedFiles.keys.elementAt(index);
-            String url = retrievedFiles.values.elementAt(index);
+            String filename = retrievedFiles.keys
+                .where((filename) => filename
+                .toLowerCase()
+                .contains(searchController.text.toLowerCase()))
+                .elementAt(index);
+            String url = retrievedFiles[filename]!;
             bool isSelected = _selectedFiles.containsKey(filename);
 
             return Container(
@@ -112,15 +138,16 @@ class _ShowFilesState extends State<ShowFiles> {
                       setState(() {
                         if (isSelected) {
                           _selectedFiles.remove(filename);
-                          utils.showToastMessage('$filename removed from your xerox list', context);
+                          utils.showToastMessage(
+                              '$filename removed from your xerox list',
+                              context);
                         } else {
                           _selectedFiles[filename] = url;
-                          utils.showToastMessage('$filename added in your xerox list', context);
+                          utils.showToastMessage(
+                              '$filename added in your xerox list',
+                              context);
                         }
-
                       });
-
-                      print("Selected Files: ${_selectedFiles.toString()}");
                     },
                   ),
                 ],
@@ -132,12 +159,14 @@ class _ShowFilesState extends State<ShowFiles> {
     );
   }
 
-
   Future<void> fetchFiles() async {
     loadingDialog.showDefaultLoading('Getting Files...');
     try {
       print('Fetching Files..');
-      final ListResult result = await FirebaseStorage.instance.ref().child('ShowFiles/$_selectedValue').listAll();
+      final ListResult result = await FirebaseStorage.instance
+          .ref()
+          .child('ShowFiles/$_selectedValue')
+          .listAll();
       retrievedFiles.clear(); // Clear existing files
       for (final ref in result.items) {
         String url = await ref.getDownloadURL();
@@ -149,64 +178,56 @@ class _ShowFilesState extends State<ShowFiles> {
     } catch (e) {
       EasyLoading.dismiss();
       throw e.toString();
-
     }
   }
 
   Future<void> _downloadAndOpenFile(String url, String filename) async {
     try {
-      loadingDialog.showDefaultLoading('Downloading...'); // Show progress indicator
-      final dio = Dio();
       final dir = await getTemporaryDirectory(); // Get temporary directory
       final filePath = '${dir.path}/FileSelection/$filename'; // Create file path
 
-      print('Temp File Path: ${filePath}');
+      final file = File(filePath);
 
-      await dio.download(url, filePath, onReceiveProgress: (received, total) {
-        if (total != -1) {
-          EasyLoading.showProgress(received / total, status: 'Downloading...'); // Update progress
-        }
-      });
+      if (await file.exists()) {
+        // File already exists, open it directly
+        print('File already exists at $filePath');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PDFScreen(filePath: filePath, title: filename),
+          ),
+        );
+      } else {
+        // File does not exist, download it
+        loadingDialog.showDefaultLoading('Downloading...');
+        final dio = Dio();
 
-      EasyLoading.dismiss();
-      setState(() {});
-      viewPdfFullScreen(filePath,filePath.split('/').last);
+        await dio.download(url, filePath, onReceiveProgress: (received, total) {
+          if (total != -1) {
+            EasyLoading.showProgress(received / total, status: 'Downloading...');
+          }
+        });
 
+        EasyLoading.dismiss();
+        print('File downloaded to $filePath');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PDFScreen(filePath: filePath, title: filename),
+          ),
+        );
+      }
     } catch (e) {
-      EasyLoading.dismiss(); // Dismiss progress indicator in case of error
+      EasyLoading.dismiss();
       print('Error downloading or opening file: $e');
     }
   }
-  void viewPdfFullScreen(String? filePath, String title) {
-    if (filePath != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text(title),
-            ),
-            body: PDFView(
-              filePath: filePath,
-              enableSwipe: true,
-              swipeHorizontal: false,
-              autoSpacing: false,
-              pageFling: false,
-              onRender: (pages) {
-                setState(() {});
-              },
-              onError: (error) {
-                print(error.toString());
-              },
-            ),
-          ),
-        ),
-      );
-    }
-  }
+
+  @override
   void dispose() {
     utils.clearCache(); // Clear cache when the app is disposed
     loadingDialog.dismiss();
+    searchController.dispose();
     super.dispose();
   }
 }

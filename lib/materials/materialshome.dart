@@ -13,13 +13,12 @@ class MaterialsHome extends StatefulWidget {
 }
 
 class _MaterialsHomeState extends State<MaterialsHome> {
-  FireStoreService fireStoreService = new FireStoreService();
-  LoadingDialog loadingDialog = new LoadingDialog();
-  SharedPreferences sharedPreferences = new SharedPreferences();
+  FireStoreService fireStoreService = FireStoreService();
+  LoadingDialog loadingDialog = LoadingDialog();
+  SharedPreferences sharedPreferences = SharedPreferences();
   Utils utils = Utils();
 
   final FirebaseDatabase _database = FirebaseDatabase.instance;
-
 
   List<String?> yearsList = ['1', '2', '3', '4'];
   List<String?> branchList = ['CSE', 'ECE'];
@@ -50,34 +49,28 @@ class _MaterialsHomeState extends State<MaterialsHome> {
   @override
   void initState() {
     super.initState();
-    intialize();
+    initialize();
     _fetchAnnouncementText();
   }
 
-  Future<void> intialize() async {
-    await getSharedPrefsValues().then((value) {
-      getSpecialization();
-      getSubjects();
-    });
+  Future<void> initialize() async {
+    await getSharedPrefsValues();
+    getSpecialization();
+    getSubjects();
   }
 
   Future<void> getSharedPrefsValues() async {
-    yearSelectedOption =
-        await sharedPreferences.getSecurePrefsValue('yearSelectedOption') ?? yearsList.first;
-    branchSelectedOption =
-        await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ?? branchList.first;
-    if(specializations.isNotEmpty) {
-      streamSelectedOption =
-          await sharedPreferences.getSecurePrefsValue('streamSelectedOption') ??
-              specializations.first;
+    yearSelectedOption = await sharedPreferences.getSecurePrefsValue('yearSelectedOption') ?? yearsList.first;
+    branchSelectedOption = await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ?? branchList.first;
+    if (specializations.isNotEmpty) {
+      streamSelectedOption = await sharedPreferences.getSecurePrefsValue('streamSelectedOption') ?? specializations.first;
     }
     selectedSubjects = await sharedPreferences.getListFromSecureStorage('selectedSubjects');
-
     print('Selected Subjects: $selectedSubjects');
   }
 
   Future<void> _fetchAnnouncementText() async {
-    final DatabaseReference announcementRef = _database.ref('XeroxData/Announcement');
+    final DatabaseReference announcementRef = _database.ref('Materials/Announcement');
     announcementRef.onValue.listen((event) {
       final DataSnapshot snapshot = event.snapshot;
       if (snapshot.exists) {
@@ -217,7 +210,7 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                                   getSubjects();
                                   updateSharedPrefsValues();
                                 },
-                                child: Text('submit'),
+                                child: Text('Submit'),
                               ),
                             ],
                           ),
@@ -235,11 +228,11 @@ class _MaterialsHomeState extends State<MaterialsHome> {
         children: [
           if (_announcementText != null && _announcementText!.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 0),
+              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10.0),
               child: Text(
                 _announcementText!,
                 style: TextStyle(
-                  fontSize: 16.0,
+                  fontSize: 15.0,
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
                 ),
@@ -259,34 +252,27 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                     child: ListTile(
                       title: Text(subjects[index]),
                       onTap: () async {
+                        final selectedSubject = subjects[index];
                         if (!await utils.checkInternetConnection()) {
                           utils.showToastMessage('Connect to the Internet', context);
                           return;
                         }
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => Units(path: 'materials/$yearSelectedOption/${subjects[index]}')));
-                        setState(() {
-                          if (selectedSubjects.contains(subjects[index])) {
-                            selectedSubjects.remove(subjects[index]);
-                            selectedSubjects.insert(0, subjects[index]);
-                          } else {
-                            selectedSubjects.insert(0, subjects[index]);
-                            print('Added to the first');
-                          }
-                          // Sort the subjects list based on the index of each subject in the selectedSubjects list
-                          subjects.sort((a, b) {
-                            int indexA = selectedSubjects.indexOf(a);
-                            int indexB = selectedSubjects.indexOf(b);
-                            if (indexA == -1 && indexB == -1) {
-                              return 0;
-                            } else if (indexA == -1) {
-                              return 1;
-                            } else if (indexB == -1) {
-                              return -1;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Units(
+                              path: 'materials/$yearSelectedOption/$selectedSubject',
+                              subject: selectedSubject,
+                            ),
+                          ),
+                        ).then((_) {
+                          setState(() {
+                            if (selectedSubjects.contains(selectedSubject)) {
+                              selectedSubjects.remove(selectedSubject);
                             }
-                            return indexA.compareTo(indexB);
+                            selectedSubjects.insert(0, selectedSubject);
+                            sortSubjects();
                           });
-                          print('onTap Selected Subjects: $selectedSubjects');
-                          print('Subjects: $subjects');
                         });
                       },
                     ),
@@ -300,37 +286,32 @@ class _MaterialsHomeState extends State<MaterialsHome> {
     );
   }
 
-
   Future<void> getSubjects() async {
     loadingDialog.showDefaultLoading('Getting subjects');
 
     subjects.clear();
-    DocumentReference branchRef =
-    FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/COMMON');
-    DocumentReference streamRef = FirebaseFirestore.instance
-        .doc('subjects/$yearSelectedOption/$branchSelectedOption/$streamSelectedOption');
+    DocumentReference branchRef = FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/COMMON');
+    DocumentReference streamRef = FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/$streamSelectedOption');
 
     Map<String, dynamic>? branchDetails = await fireStoreService.getDocumentDetails(branchRef);
     Map<String, dynamic>? streamDetails = await fireStoreService.getDocumentDetails(streamRef);
 
-    List<dynamic> branchValues = [];
-    List<dynamic> streamValues = [];
-
-    if (branchDetails != null) {
-      branchValues = branchDetails.values.toList();
-    }
-
-    if (streamDetails != null) {
-      streamValues = streamDetails.values.toList();
-    }
+    List<dynamic> branchValues = branchDetails?.values.toList() ?? [];
+    List<dynamic> streamValues = streamDetails?.values.toList() ?? [];
 
     print('Document Ref: $branchRef  $streamRef');
-    print('Subjects values ${branchValues}   $streamValues');
+    print('Subjects values $branchValues  $streamValues');
 
     subjects.addAll(branchValues);
     subjects.addAll(streamValues);
 
-    // Sort the subjects list based on the index of each subject in the selectedSubjects list
+    sortSubjects();
+
+    setState(() {});
+    loadingDialog.dismiss();
+  }
+
+  void sortSubjects() {
     subjects.sort((a, b) {
       int indexA = selectedSubjects.indexOf(a);
       int indexB = selectedSubjects.indexOf(b);
@@ -343,17 +324,13 @@ class _MaterialsHomeState extends State<MaterialsHome> {
       }
       return indexA.compareTo(indexB);
     });
-    setState(() {
-
-    });
-    loadingDialog.dismiss();
   }
 
   Future<void> updateSharedPrefsValues() async {
     Map<String, String> values = {
       'streamSelectedOption': streamSelectedOption!,
       'branchSelectedOption': branchSelectedOption!,
-      'yearSelectedOption': yearSelectedOption!
+      'yearSelectedOption': yearSelectedOption!,
     };
     sharedPreferences.storeMapValuesInSecureStorage(values);
   }

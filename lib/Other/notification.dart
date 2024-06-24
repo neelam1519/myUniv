@@ -52,7 +52,6 @@ class _NotificationHomeState extends State<NotificationHome> {
             return Center(child: Text('No notifications found.'));
           }
 
-          // Extract and sort documents by integer document ID in descending order
           final List<DocumentSnapshot> documents = snapshot.data!.docs;
           documents.sort((a, b) {
             int idA = int.tryParse(a.id) ?? 0;
@@ -82,9 +81,8 @@ class _NotificationHomeState extends State<NotificationHome> {
             MaterialPageRoute(builder: (context) => AddNotification()),
           );
         },
-        child: Icon(Icons.add),
-      )
-          : null, // Only show the FAB if the user is an admin
+        child: Icon(Icons.add)
+      ) : null,
     );
   }
 
