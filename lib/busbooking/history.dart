@@ -38,7 +38,6 @@ class _BusBookedHistoryState extends State<BusBookedHistory> {
             var refSnapshot = await reference.get();
             if (refSnapshot.exists) {
               var data = refSnapshot.data() as Map<String, dynamic>;
-              // Convert Timestamp to DateTime and then to a formatted string
               if (data.containsKey('DATE') && data['DATE'] is Timestamp) {
                 Timestamp timestamp = data['DATE'];
                 DateTime dateTime = timestamp.toDate();
@@ -49,7 +48,6 @@ class _BusBookedHistoryState extends State<BusBookedHistory> {
             }
           }
 
-          // Sort the history by 'BOOKING ID' in descending order
           history.sort((a, b) => b['BOOKING ID'].compareTo(a['BOOKING ID']));
 
           setState(() {
@@ -102,9 +100,9 @@ class _BusBookedHistoryState extends State<BusBookedHistory> {
                   Text('From: ${history['FROM']} To: ${history['TO']}'),
                   Text('Pickup time: ${history['TIMINGS']}'),
                   if (history['WAITING LIST TICKETS'] == null || history['WAITING LIST TICKETS'] == 0)
-                    Text('Confirmed tickets: ${history['CONFORM TICKETS']}'),
+                    Text('Confirmed tickets: ${history['CONFIRM TICKETS']}'),
                   if (history['WAITING LIST TICKETS'] != null && history['WAITING LIST WAITING LIST'] != 0)
-                    Text('Confirmed tickets: ${history['CONFORM TICKETS']} Waiting list tickets: ${history['WAITING LIST TICKETS']}'),
+                    Text('CONFIRMED TICKETS: ${history['CONFIRM TICKETS']} WAITING LIST TICKETS ${history['WAITING LIST TICKETS']}'),
                   Text('Date: ${history['DATE']}'),
                   Text('Amount paid: ${history['TOTAL COST']}'),
                 ],
@@ -116,5 +114,4 @@ class _BusBookedHistoryState extends State<BusBookedHistory> {
           : Center(child: Text('No bookings found')),
     );
   }
-
 }

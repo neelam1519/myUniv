@@ -8,6 +8,7 @@ import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UniversityChat extends StatefulWidget {
   @override
@@ -25,7 +26,7 @@ class _UniversityChatState extends State<UniversityChat> {
   List<ChatMessage> _messages = [];
   ChatUser? _user;
   User? firebaseUser = FirebaseAuth.instance.currentUser;
-  String? _lastMessageKey; // To keep track of pagination
+  String? _lastMessageKey;
   bool _isLoadingMore = false;
   late StreamSubscription<rtdb.DatabaseEvent> _messageSubscription;
   late StreamSubscription<rtdb.DatabaseEvent> _onlineUsersSubscription;
@@ -71,7 +72,6 @@ class _UniversityChatState extends State<UniversityChat> {
       }
     }
   }
-
 
   void listenForNewMessages() {
     print('Listening For New Messages...');
@@ -229,6 +229,24 @@ class _UniversityChatState extends State<UniversityChat> {
           onLoadEarlier: loadMoreMessages,
         ),
         inputOptions: InputOptions(), // Adding input field for message
+        messageOptions: MessageOptions(
+          parsePatterns: [
+            MatchText(
+              type: ParsedType.URL,
+              style: TextStyle(
+                color: Colors.white,
+                decoration: TextDecoration.underline,
+              ),
+              onTap: (url) async {
+                if (await canLaunch(url)) {
+                  await launch(url);
+                } else {
+                  throw 'Could not launch $url';
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -242,5 +260,4 @@ class _UniversityChatState extends State<UniversityChat> {
       }
     });
   }
-
 }

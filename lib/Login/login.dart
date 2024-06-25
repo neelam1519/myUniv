@@ -102,7 +102,7 @@ class _LoginState extends State<Login> {
           } else {
             await signOut();
             loadingDialog.dismiss();
-            loadingDialog.showError('Please sign in with a valid KLU email.');
+            loadingDialog.showError('Please sign in with a valid KARE email.');
           }
         } else {
           print('User is null after signing in.');

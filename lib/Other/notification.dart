@@ -10,7 +10,7 @@ class NotificationHome extends StatefulWidget {
 
 class _NotificationHomeState extends State<NotificationHome> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  Utils utils = Utils();
+  final Utils utils = Utils();
   bool isAdmin = false;
 
   @override
@@ -20,11 +20,11 @@ class _NotificationHomeState extends State<NotificationHome> {
   }
 
   Future<void> checkAdminStatus() async {
-    String? email = await utils.getCurrentUserEmail();
+    final email = await utils.getCurrentUserEmail();
     if (email != null) {
-      String id = utils.removeEmailDomain(email);
-      DocumentReference userRef = _firestore.doc('AdminDetails/Notifications');
-      List<String> admins = await utils.getAdmins(userRef);
+      final id = utils.removeEmailDomain(email);
+      final userRef = _firestore.doc('AdminDetails/Notifications');
+      final admins = await utils.getAdmins(userRef);
       if (mounted) {
         setState(() {
           isAdmin = admins.contains(id);
@@ -37,53 +37,52 @@ class _NotificationHomeState extends State<NotificationHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Notifications'),
+        title: const Text('Notifications'),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('notifications').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('No notifications found.'));
+            return const Center(child: Text('No notifications found.'));
           }
 
-          final List<DocumentSnapshot> documents = snapshot.data!.docs;
+          final documents = snapshot.data!.docs;
           documents.sort((a, b) {
-            int idA = int.tryParse(a.id) ?? 0;
-            int idB = int.tryParse(b.id) ?? 0;
+            final idA = int.tryParse(a.id) ?? 0;
+            final idB = int.tryParse(b.id) ?? 0;
             return idB.compareTo(idA);
           });
 
           return ListView.separated(
             itemCount: documents.length,
             itemBuilder: (context, index) {
-              final Map<String, dynamic> data = documents[index].data() as Map<String, dynamic>;
+              final data = documents[index].data() as Map<String, dynamic>;
               return ListTile(
                 title: Text(data['title'] ?? 'No Title'),
                 subtitle: Text(data['message'] ?? 'No Message'),
               );
             },
-            separatorBuilder: (context, index) {
-              return Divider();
-            },
+            separatorBuilder: (context, index) => const Divider(),
           );
         },
       ),
-      floatingActionButton: isAdmin ? FloatingActionButton(
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AddNotification()),
           );
         },
-        child: Icon(Icons.add)
-      ) : null,
+        child: const Icon(Icons.add),
+      )
+          : null,
     );
   }
-
 }
