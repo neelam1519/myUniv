@@ -18,7 +18,7 @@ class DisplayMaterials extends StatefulWidget {
   final String unit;
   final String subject;
 
-  DisplayMaterials({required this.path,required this.subject,required this.unit});
+  DisplayMaterials({required this.path, required this.subject, required this.unit});
 
   @override
   _DisplayMaterialsState createState() => _DisplayMaterialsState();
@@ -39,6 +39,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
   late StreamController<List<File>> _streamController;
   String appBarText = 'PDFs';
   String? nextFileName;
+  bool isInitialized = false;
 
   @override
   void initState() {
@@ -46,7 +47,14 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
     _streamController = StreamController<List<File>>();
     storagePath = '${widget.path}/${widget.unit}';
     initialize().then((_) {
-      downloadFiles();
+      setState(() {
+        isInitialized = true;
+        if (pdfFileNames.isNotEmpty) {
+          downloadFiles();
+        } else {
+          loadingDialog.dismiss();
+        }
+      });
     });
     loadingDialog.showDefaultLoading('Loading Files...');
   }
@@ -157,7 +165,9 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       body: StreamBuilder<List<File>>(
         stream: _streamController.stream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && isDownloading) {
+          if (!isInitialized) {
+            return buildSkeletonView();
+          } else if (isDownloading) {
             return buildSkeletonView();
           } else if (snapshot.hasError) {
             loadingDialog.dismiss();
@@ -337,6 +347,4 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       ),
     );
   }
-
-
 }

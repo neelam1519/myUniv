@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -6,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Firebase/realtimedatabase.dart';
 import 'package:findany_flutter/apis/busbookinggsheet.dart';
@@ -56,7 +54,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
 
   final TextEditingController _costController = TextEditingController();
   final TextEditingController _totalCostController = TextEditingController();
-  final timeFormat = DateFormat('HH:mm');
+  final timeFormat = DateFormat('hh:mm a');
   String _mobileNumber = "";
   String trainNo = "";
 
@@ -73,7 +71,6 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     _fetchFromPlaces();
     initializeRazorpay();
     _fetchAnnouncementText();
-    utils.sendSMS('Testing the SMS', "8501070702");
   }
 
   Future<void> listen(String busID) async {
@@ -292,7 +289,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       _people.toString()
     ];
 
-    busBookingGSheet.updateCell(data);
+    busBookingGSheet.updateCell(data,busID);
 
     Map<String, dynamic> busBookingData = {
       'REGISTRATION NUMBER': regNo,
@@ -373,12 +370,11 @@ class _BusBookingHomeState extends State<BusBookingHome> {
         dateToTimingsMap.clear();
 
         final dateFormat = DateFormat('dd-MM-yyyy');
-        final timeFormat = DateFormat('HH:mm');
 
         datesData.forEach((id, timestamp) {
           DateTime dateTime = (timestamp as Timestamp).toDate();
           String date = dateFormat.format(dateTime);
-          String time = timeFormat.format(dateTime);
+          String time = timeFormat.format(dateTime); // Changed to use the new time format
           availableDates.add(date);
 
           if (!dateToTimingsMap.containsKey(date)) {
@@ -421,6 +417,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       loadingDialog.dismiss();
     }
   }
+
   void _updateTimingsForSelectedDate() {
     final dateFormat = DateFormat('dd-MM-yyyy');
 
@@ -786,7 +783,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                   padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   textStyle: TextStyle(fontSize: 16),
                 ),
-                child: Text('Book Bus'),
+                child: Text('Book Ticket'),
               ),
               SizedBox(height: 16.0),
               Text(

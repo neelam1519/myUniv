@@ -6,6 +6,7 @@ import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/notification.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
+import 'package:findany_flutter/moneyEarning/Home.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/Other/QandA.dart';
 import 'package:findany_flutter/Other/review.dart';
@@ -246,6 +247,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     'Bus Booking',
                     BusBookingHome(),
                   ),
+                  // _buildGridItem(
+                  //   context,
+                  //   'assets/images/earnmoney.png',
+                  //   'Earn Money',
+                  //   MoneyEarningHome(),
+                  // ),
                 ],
               ),
             ),

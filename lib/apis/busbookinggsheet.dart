@@ -21,22 +21,20 @@ class BusBookingGSheet {
   static final gsheets = GSheets(credentials);
   static late Worksheet sheet;
 
-  Future<void> main() async {
-    String todayDate = utils.getTodayDate();
+  Future<void> main(String title) async {
     final ss = await gsheets.spreadsheet(spreadsheetId);
 
-    Worksheet? existingSheet = await ss.worksheetByTitle(todayDate);
+    Worksheet? existingSheet = await ss.worksheetByTitle(title);
 
     if (existingSheet == null) {
-      existingSheet = await ss.addWorksheet(todayDate);
+      existingSheet = await ss.addWorksheet(title);
       await existingSheet.values.insertRow(1, ['REGISTRATION NUMBER','MOBILE NUMBER', 'EMAIL','FROM','TO','DATE','TIME','TRAIN NO','TOTAL COST','TRANSACTION ID','BOOKING ID','CONFIRM TICKETS - WAITING LIST TICKETS','PERSON DETAILS']);
     }
     sheet = existingSheet;
   }
 
-
-  Future<void> updateCell(List<dynamic> value) async {
-    await main();
+  Future<void> updateCell(List<dynamic> value,String title) async {
+    await main(title);
     try {
       await sheet.values.appendRow(value);
     } catch (e) {

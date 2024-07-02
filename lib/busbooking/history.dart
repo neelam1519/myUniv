@@ -97,12 +97,13 @@ class _BusBookedHistoryState extends State<BusBookedHistory> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('From: ${history['FROM']} To: ${history['TO']}'),
+                  Text('From: ${history['FROM']} \nTo: ${history['TO']}'),
                   Text('Pickup time: ${history['TIMINGS']}'),
-                  if (history['WAITING LIST TICKETS'] == null || history['WAITING LIST TICKETS'] == 0)
+                  if (history['CONFIRM TICKETS'] != null && history['CONFIRM TICKETS'] > 0)
                     Text('Confirmed tickets: ${history['CONFIRM TICKETS']}'),
-                  if (history['WAITING LIST TICKETS'] != null && history['WAITING LIST WAITING LIST'] != 0)
-                    Text('CONFIRMED TICKETS: ${history['CONFIRM TICKETS']} WAITING LIST TICKETS ${history['WAITING LIST TICKETS']}'),
+                  if ((history['CONFIRM TICKETS'] == null || history['CONFIRM TICKETS'] == 0) &&
+                      history['WAITING LIST TICKETS'] != null && history['WAITING LIST TICKETS'] > 0)
+                    Text('Waiting list tickets: ${history['WAITING LIST TICKETS']}'),
                   Text('Date: ${history['DATE']}'),
                   Text('Amount paid: ${history['TOTAL COST']}'),
                 ],

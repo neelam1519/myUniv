@@ -49,12 +49,18 @@
         <meta-data
             android:name="com.google.firebase.messaging.Neelam"
             android:value="Neelam"/>
-        <!-- Correct meta-data for Google Maps API key -->
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDYSzTKbzcOTjRQffYl9PX_uXCIHCbzHVU"/>
 
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7692584421652718~9352982817"/>
+
     </application>
+
+
 
     <queries>
         <intent>

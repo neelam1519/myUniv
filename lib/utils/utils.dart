@@ -421,42 +421,42 @@ class Utils{
     }
   }
 
-  Future<void> sendSMS(String message, String recipient) async {
-    final url = Uri.parse('https://www.fast2sms.com/dev/bulkV2');
-
-    // Headers
-    final headers = {
-      'authorization': 'Kkt6bmG7ejlnpJAfC6Gut6fxJR3WU2uUneDZjKZSXi7FUAP1VQDdVPZbS230',
-      'Content-Type': 'application/json'
-    };
-
-    // Body
-    final body = jsonEncode({
-      'route': 'q',
-      'sender_id': 'FindAny',
-      'message': message,
-      'language': 'english',
-      'flash': 0,
-      'numbers': recipient
-    });
-
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        print('Response Data: $responseData');
-        if (responseData['return']) {
-          print('SMS sent successfully');
-        } else {
-          print('Failed to send SMS: ${responseData['message']}');
-        }
-      } else {
-        print('Failed to send SMS: ${response.body}');
-      }
-    } catch (e) {
-      print('Error sending SMS: $e');
-    }
-  }
+  // Future<void> sendSMS(String message, String recipient) async {
+  //   final url = Uri.parse('https://www.fast2sms.com/dev/bulkV2');
+  //
+  //   // Headers
+  //   final headers = {
+  //     'authorization': 'Kkt6bmG7ejlnpJAfC6Gut6fxJR3WU2uUneDZjKZSXi7FUAP1VQDdVPZbS230',
+  //     'Content-Type': 'application/json'
+  //   };
+  //
+  //   // Body
+  //   final body = jsonEncode({
+  //     'route': 'q',
+  //     'sender_id': 'FindAny',
+  //     'message': message,
+  //     'language': 'english',
+  //     'flash': 0,
+  //     'numbers': recipient
+  //   });
+  //
+  //   try {
+  //     final response = await http.post(url, headers: headers, body: body);
+  //
+  //     if (response.statusCode == 200) {
+  //       final responseData = jsonDecode(response.body);
+  //       print('Response Data: $responseData');
+  //       if (responseData['return']) {
+  //         print('SMS sent successfully');
+  //       } else {
+  //         print('Failed to send SMS: ${responseData['message']}');
+  //       }
+  //     } else {
+  //       print('Failed to send SMS: ${response.body}');
+  //     }
+  //   } catch (e) {
+  //     print('Error sending SMS: $e');
+  //   }
+  // }
 
 }

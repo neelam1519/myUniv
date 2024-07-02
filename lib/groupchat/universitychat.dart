@@ -6,9 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
-import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../main.dart';
 
 class UniversityChat extends StatefulWidget {
   @override
@@ -17,8 +18,7 @@ class UniversityChat extends StatefulWidget {
 
 class _UniversityChatState extends State<UniversityChat> {
   Utils utils = Utils();
-  NotificationService notificationService = new NotificationService();
-  LoadingDialog loadingDialog = new LoadingDialog();
+  NotificationService notificationService = NotificationService();
   SharedPreferences sharedPreferences = SharedPreferences();
 
   late rtdb.DatabaseReference _chatRef;
@@ -28,6 +28,7 @@ class _UniversityChatState extends State<UniversityChat> {
   User? firebaseUser = FirebaseAuth.instance.currentUser;
   String? _lastMessageKey;
   bool _isLoadingMore = false;
+  bool _isInitialLoadComplete = false;
   late StreamSubscription<rtdb.DatabaseEvent> _messageSubscription;
   late StreamSubscription<rtdb.DatabaseEvent> _onlineUsersSubscription;
   int _onlineUsersCount = 0;
@@ -37,10 +38,11 @@ class _UniversityChatState extends State<UniversityChat> {
     super.initState();
     _chatRef = rtdb.FirebaseDatabase.instance.ref().child("chats");
     _onlineUsersRef = rtdb.FirebaseDatabase.instance.ref().child("onlineUsers");
-    initializeUser();
-    listenForNewMessages();
-    trackOnlineUsers();
-    setUserOnline();
+    initializeUser().then((_) {
+      listenForNewMessages();
+      trackOnlineUsers();
+      setUserOnline();
+    });
   }
 
   @override
@@ -48,19 +50,20 @@ class _UniversityChatState extends State<UniversityChat> {
     _messageSubscription.cancel();
     _onlineUsersSubscription.cancel();
     setUserOffline();
-    loadingDialog.dismiss();
     super.dispose();
   }
 
   Future<void> initializeUser() async {
-    loadingDialog.showDefaultLoading('Loading Messages...');
     if (firebaseUser != null) {
       String email = firebaseUser!.email!;
       String userId = utils.removeEmailDomain(email);
       DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
-      String username = await sharedPreferences.getDataFromReference(userRef, "Username");
+
+      // Handle potential null values with default values
+      String username = await sharedPreferences.getDataFromReference(userRef, "Username") ?? '';
       String displayName = utils.removeTextAfterFirstNumber(firebaseUser!.displayName ?? 'Anonymous');
-      String name = username.isNotEmpty ? username : displayName;
+
+      String name = username.isNotEmpty ? username : (displayName.isNotEmpty ? displayName : 'Anonymous');
 
       if (mounted) {
         setState(() {
@@ -84,7 +87,6 @@ class _UniversityChatState extends State<UniversityChat> {
       if (value is Map) {
         try {
           Map<String, dynamic> messageData = _convertToMapStringDynamic(value);
-
           if (mounted) {
             setState(() {
               _messages.insert(0, ChatMessage.fromJson(messageData));
@@ -95,7 +97,6 @@ class _UniversityChatState extends State<UniversityChat> {
         }
       }
       _lastMessageKey = keyList.first;
-      loadingDialog.dismiss();
       print('Last Message: $_lastMessageKey');
     });
 
@@ -103,9 +104,24 @@ class _UniversityChatState extends State<UniversityChat> {
       if (!event.snapshot.exists) {
         if (mounted) {
           setState(() {
-            loadingDialog.dismiss();
+            // Trigger a state update to show "No messages found"
+            _isInitialLoadComplete = true;
+            print("No messages found");
           });
         }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isInitialLoadComplete = true;
+          });
+        }
+      }
+    }).catchError((error) {
+      print("Error fetching messages: $error");
+      if (mounted) {
+        setState(() {
+          _isInitialLoadComplete = true;
+        });
       }
     });
   }
@@ -151,50 +167,62 @@ class _UniversityChatState extends State<UniversityChat> {
       });
     }
 
-    print('LastMessageKey: $_lastMessageKey');
+    print('Loading more messages from key: $_lastMessageKey');
 
     rtdb.Query query = _chatRef.orderByKey().endAt(_lastMessageKey).limitToLast(21); // Load 21 to account for the last message key overlap
-    rtdb.DatabaseEvent event = await query.once();
-    rtdb.DataSnapshot snapshot = event.snapshot;
+    try {
+      rtdb.DatabaseEvent event = await query.once();
+      rtdb.DataSnapshot snapshot = event.snapshot;
 
-    if (snapshot.exists) {
-      List<ChatMessage> moreMessages = [];
-      String? newLastMessageKey;
-      snapshot.children.forEach((childSnapshot) {
-        var value = childSnapshot.value;
-        if (value is Map) {
-          try {
-            Map<String, dynamic> messageData = _convertToMapStringDynamic(value);
-            ChatMessage chatMessage = ChatMessage.fromJson(messageData);
-            if (childSnapshot.key != _lastMessageKey) {
-              moreMessages.add(chatMessage);
+      if (snapshot.exists) {
+        List<ChatMessage> moreMessages = [];
+        String? newLastMessageKey;
+        snapshot.children.forEach((childSnapshot) {
+          var value = childSnapshot.value;
+          if (value is Map) {
+            try {
+              Map<String, dynamic> messageData = _convertToMapStringDynamic(value);
+              ChatMessage chatMessage = ChatMessage.fromJson(messageData);
+              if (childSnapshot.key != _lastMessageKey) {
+                moreMessages.add(chatMessage);
+              }
+              newLastMessageKey = newLastMessageKey ?? childSnapshot.key;
+            } catch (e) {
+              print("Error parsing message: $e");
             }
-            newLastMessageKey = newLastMessageKey ?? childSnapshot.key;
-          } catch (e) {
-            print("Error parsing message: $e");
           }
+        });
+
+        if (mounted) {
+          setState(() {
+            _messages.addAll(moreMessages.reversed.toList());
+            _lastMessageKey = newLastMessageKey;
+          });
         }
-      });
+      }
 
       if (mounted) {
         setState(() {
-          _messages.addAll(moreMessages.reversed.toList());
-          _lastMessageKey = newLastMessageKey;
+          _isLoadingMore = false;
         });
       }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoadingMore = false;
-      });
+    } catch (error) {
+      print("Error loading more messages: $error");
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
   Future<void> _handleSend(ChatMessage message) async {
+
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
-    List<String> tokens = await utils.getAllTokens();
+    //List<String> tokens = await utils.getAllTokens();
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('AdminDetails/All');
+    List<String> tokens = await utils.getSpecificTokens(documentReference);
     await notificationService.sendNotification(tokens, "Group Chat", message.text, {"source": 'UniversityChat'});
   }
 
@@ -219,6 +247,8 @@ class _UniversityChatState extends State<UniversityChat> {
       ),
       body: _user == null
           ? Center(child: CircularProgressIndicator())
+          : !_isInitialLoadComplete
+          ? Center(child: CircularProgressIndicator())
           : _messages.isEmpty
           ? Center(child: Text('No messages found'))
           : DashChat(
@@ -228,7 +258,7 @@ class _UniversityChatState extends State<UniversityChat> {
         messageListOptions: MessageListOptions(
           onLoadEarlier: loadMoreMessages,
         ),
-        inputOptions: InputOptions(), // Adding input field for message
+        inputOptions: InputOptions(),
         messageOptions: MessageOptions(
           parsePatterns: [
             MatchText(
