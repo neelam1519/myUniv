@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'creategroup.dart';
-
 class GroupChatHome extends StatefulWidget {
   @override
   _GroupChatHomeState createState() => _GroupChatHomeState();
@@ -13,7 +11,7 @@ class _GroupChatHomeState extends State<GroupChatHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Group Chat'), // Set the title of the app bar
+        title: Text('Group Chat'),
       ),
       body: FutureBuilder(
         future: FirebaseFirestore.instance.collection('GroupChats').get(),
@@ -46,53 +44,6 @@ class _GroupChatHomeState extends State<GroupChatHome> {
             }).toList(),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Show bottom sheet with options
-          showModalBottomSheet(
-            context: context,
-            builder: (BuildContext context) {
-              return Container(
-                constraints: BoxConstraints(maxHeight: 300), // Set a maximum height for the container
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      leading: Icon(Icons.group),
-                      title: Text('Create Group Chat'),
-                      onTap: () {
-                        // Handle create group chat option
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => CreateGroupChat()),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.handshake),
-                      title: Text('Join the Chat'),
-                      onTap: () {
-                        // Handle create group chat option
-                        Navigator.pop(context);
-                        // Add your logic to create a group chat
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.cancel),
-                      title: Text('Cancel'),
-                      onTap: () {
-                        // Handle cancel option
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-        child: Icon(Icons.add), // Add a chat icon to the button
       ),
     );
   }

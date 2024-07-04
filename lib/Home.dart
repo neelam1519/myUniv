@@ -6,6 +6,7 @@ import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/notification.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
+import 'package:findany_flutter/groupchat/groupchathome.dart';
 import 'package:findany_flutter/moneyEarning/Home.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/Other/QandA.dart';
@@ -249,7 +250,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                   ),
                   // _buildGridItem(
                   //   context,
-                  //   'assets/images/earnmoney.png',
+                  //   'assets/images/VIDEOS AND IMAGES.png',
                   //   'Earn Money',
                   //   MoneyEarningHome(),
                   // ),

@@ -1,3 +1,4 @@
+import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -80,7 +81,13 @@ class _AuthCheckState extends State<AuthCheck> {
   void _onMessageReceived(RemoteMessage message) {
     print('Received a message while in the foreground!');
     print('Message data: ${message.data}');
-    NotificationService().showNotification(message);
+
+    if (UniversityChat.isChatOpen && message.data['source'] == 'UniversityChat') {
+
+      print('Message belongs to UniversityChat and chat is open.');
+    } else {
+      NotificationService().showNotification(message);
+    }
   }
 
   Future<void> _checkForUpdate() async {
@@ -106,5 +113,4 @@ class _AuthCheckState extends State<AuthCheck> {
       },
     );
   }
-
 }

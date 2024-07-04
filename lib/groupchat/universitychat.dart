@@ -9,9 +9,9 @@ import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../main.dart';
-
 class UniversityChat extends StatefulWidget {
+  static bool isChatOpen = false;
+
   @override
   _UniversityChatState createState() => _UniversityChatState();
 }
@@ -38,6 +38,7 @@ class _UniversityChatState extends State<UniversityChat> {
     super.initState();
     _chatRef = rtdb.FirebaseDatabase.instance.ref().child("chats");
     _onlineUsersRef = rtdb.FirebaseDatabase.instance.ref().child("onlineUsers");
+    UniversityChat.isChatOpen = true;
     initializeUser().then((_) {
       listenForNewMessages();
       trackOnlineUsers();
@@ -50,6 +51,7 @@ class _UniversityChatState extends State<UniversityChat> {
     _messageSubscription.cancel();
     _onlineUsersSubscription.cancel();
     setUserOffline();
+    UniversityChat.isChatOpen = false;
     super.dispose();
   }
 
@@ -217,12 +219,11 @@ class _UniversityChatState extends State<UniversityChat> {
   }
 
   Future<void> _handleSend(ChatMessage message) async {
-
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
-    //List<String> tokens = await utils.getAllTokens();
-    DocumentReference documentReference = FirebaseFirestore.instance.doc('AdminDetails/All');
-    List<String> tokens = await utils.getSpecificTokens(documentReference);
+    List<String> tokens = await utils.getAllTokens();
+    //DocumentReference specificRef = FirebaseFirestore.instance.doc('/AdminDetails/Admins');
+    //List<String> tokens = await utils.getSpecificTokens(specificRef);
     await notificationService.sendNotification(tokens, "Group Chat", message.text, {"source": 'UniversityChat'});
   }
 

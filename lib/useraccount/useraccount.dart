@@ -129,18 +129,18 @@ class _UserAccountState extends State<UserAccount> {
                             },
                           ),
                         ),
-                        // Visibility(
-                        //   visible: showAcademicDetails,
-                        //   child: ListTile(
-                        //     title: Text('Academic details', style: TextStyle(fontSize: 16)),
-                        //     trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                        //     onTap: () {
-                        //       Navigator.push(
-                        //         context,
-                        //         MaterialPageRoute(builder: (context) => AcademicDetails()),
-                        //       );                            },
-                        //   ),
-                        // ),
+                        Visibility(
+                          visible: showAcademicDetails,
+                          child: ListTile(
+                            title: Text('Academic details', style: TextStyle(fontSize: 16)),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => AcademicDetails()),
+                              );                            },
+                          ),
+                        ),
                         // Visibility(
                         //   visible: showFacultyDetails,
                         //   child: ListTile(
