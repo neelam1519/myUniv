@@ -1,6 +1,6 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,17 +10,27 @@ import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class UniversityChat extends StatefulWidget {
+class Chatting extends StatefulWidget {
   static bool isChatOpen = false;
+  final rtdb.DatabaseReference chatRef;
+  final rtdb.DatabaseReference onlineUsersRef;
+  final String chatName;
+
+  Chatting({
+    required this.chatRef,
+    required this.onlineUsersRef,
+    required this.chatName,
+  });
 
   @override
-  _UniversityChatState createState() => _UniversityChatState();
+  _ChattingState createState() => _ChattingState();
 }
 
-class _UniversityChatState extends State<UniversityChat> {
+class _ChattingState extends State<Chatting> {
   Utils utils = Utils();
   NotificationService notificationService = NotificationService();
   SharedPreferences sharedPreferences = SharedPreferences();
+  FireStoreService fireStoreService = FireStoreService();
 
   late rtdb.DatabaseReference _chatRef;
   late rtdb.DatabaseReference _onlineUsersRef;
@@ -34,16 +44,58 @@ class _UniversityChatState extends State<UniversityChat> {
   late StreamSubscription<rtdb.DatabaseEvent> _onlineUsersSubscription;
   int _onlineUsersCount = 0;
 
+  List<String> tokens = [];
+  List<dynamic> restrictedWords = [];
+
+  DocumentReference? userRef;
+  bool isMember = false;
+  String regNo= "";
+  String chatName = "";
+
   @override
   void initState() {
     super.initState();
-    _chatRef = rtdb.FirebaseDatabase.instance.ref().child("chats");
-    _onlineUsersRef = rtdb.FirebaseDatabase.instance.ref().child("onlineUsers");
-    UniversityChat.isChatOpen = true;
+    _chatRef = widget.chatRef;
+    _onlineUsersRef = widget.onlineUsersRef;
+    chatName = widget.chatName.replaceAll(" ", "");
+    Chatting.isChatOpen = true;
     initializeUser().then((_) {
+      if(chatName =="UniversityChat"){
+        isMember = true;
+      }else{
+        checkMembershipStatus();
+        isFirstTime();
+      }
+      fetchRestrictedWords();
       listenForNewMessages();
       trackOnlineUsers();
       setUserOnline();
+    });
+
+
+  }
+
+  Future<void> isFirstTime() async{
+    String key = "${chatName}isFirstTime";
+    print('key $key');
+    bool value = await utils.checkFirstTime(key);
+    print('isFirstTime: $value');
+    if(value){
+      Map<String,dynamic> values = {"${chatName}isFirstTime": false};
+      sharedPreferences.storeMapValuesInSecureStorage(values);
+    }
+  }
+
+  void subscribeToChat() async {
+    String regNo = await sharedPreferences.getDataFromReference(userRef!, "Registration Number");
+    DocumentReference groupRef = FirebaseFirestore.instance.doc('ChatGroups/$chatName');
+    isMember = true;
+
+    Map<String, dynamic> data = {"MEMBERS": FieldValue.arrayUnion([regNo])};
+    fireStoreService.uploadMapDataToFirestore(data, groupRef);
+
+    setState(() {
+      isMember = true;
     });
   }
 
@@ -52,7 +104,7 @@ class _UniversityChatState extends State<UniversityChat> {
     _messageSubscription.cancel();
     _onlineUsersSubscription.cancel();
     setUserOffline();
-    UniversityChat.isChatOpen = false;
+    Chatting.isChatOpen = false;
     super.dispose();
   }
 
@@ -60,12 +112,10 @@ class _UniversityChatState extends State<UniversityChat> {
     if (firebaseUser != null) {
       String email = firebaseUser!.email!;
       String userId = utils.removeEmailDomain(email);
-      DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
+      userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
 
-      // Handle potential null values with default values
-      String username = await sharedPreferences.getDataFromReference(userRef, "Username") ?? '';
+      String username = await sharedPreferences.getDataFromReference(userRef!, "Username") ?? '';
       String displayName = utils.removeTextAfterFirstNumber(firebaseUser!.displayName ?? 'Anonymous');
-
       String name = username.isNotEmpty ? username : (displayName.isNotEmpty ? displayName : 'Anonymous');
 
       if (mounted) {
@@ -79,11 +129,44 @@ class _UniversityChatState extends State<UniversityChat> {
     }
   }
 
+  Future<void> checkMembershipStatus() async {
+    if (firebaseUser != null) {
+      print("Entered Membership Status");
+      regNo = await sharedPreferences.getDataFromReference(userRef!, "Registration Number");
+      DocumentReference groupRef = FirebaseFirestore.instance.doc('ChatGroups/$chatName');
+
+      print('Registration Number: $regNo   ChatName: $chatName');
+
+      DocumentSnapshot groupSnapshot = await groupRef.get();
+      if (groupSnapshot.exists) {
+        Map<String, dynamic>? groupData = groupSnapshot.data() as Map<String, dynamic>?;
+        if (groupData != null && groupData.containsKey('MEMBERS')) {
+          List<dynamic> members = groupData['MEMBERS'];
+          print('Group Members: $members');
+          setState(() {
+            isMember = members.contains(regNo);
+          });
+        } else {
+          print('MEMBERS field does not exist in the group document');
+          setState(() {
+            isMember = false;
+          });
+        }
+      } else {
+        print('Group document does not exist');
+        setState(() {
+          isMember = false;
+        });
+      }
+    }
+  }
+
+
   void listenForNewMessages() {
     print('Listening For New Messages...');
     List<String?> keyList = [];
     _messageSubscription = _chatRef.orderByKey().limitToLast(20).onChildAdded.listen((event) {
-      if (!mounted) return; // Prevent calling setState if the widget is not mounted
+      if (!mounted) return;
       rtdb.DataSnapshot snapshot = event.snapshot;
       var value = snapshot.value;
       keyList.add(snapshot.key);
@@ -107,9 +190,7 @@ class _UniversityChatState extends State<UniversityChat> {
       if (!event.snapshot.exists) {
         if (mounted) {
           setState(() {
-            // Trigger a state update to show "No messages found"
             _isInitialLoadComplete = true;
-            print("No messages found");
           });
         }
       } else {
@@ -172,7 +253,7 @@ class _UniversityChatState extends State<UniversityChat> {
 
     print('Loading more messages from key: $_lastMessageKey');
 
-    rtdb.Query query = _chatRef.orderByKey().endAt(_lastMessageKey).limitToLast(21); // Load 21 to account for the last message key overlap
+    rtdb.Query query = _chatRef.orderByKey().endAt(_lastMessageKey).limitToLast(21);
     try {
       rtdb.DatabaseEvent event = await query.once();
       rtdb.DataSnapshot snapshot = event.snapshot;
@@ -219,19 +300,134 @@ class _UniversityChatState extends State<UniversityChat> {
     }
   }
 
+  Future<void> fetchRestrictedWords() async {
+    DocumentReference chatRef = FirebaseFirestore.instance.doc('/ChatDetails/Restricted');
+    DocumentSnapshot snapshot = await chatRef.get();
+
+    if (snapshot.exists && snapshot.data() != null) {
+      Map<String, dynamic> details = snapshot.data() as Map<String, dynamic>;
+      restrictedWords = List<String>.from(details["RestrictedWords"]);
+      print('Restricted Words: $restrictedWords');
+    } else {
+      print('Restricted words document does not exist or is empty.');
+    }
+  }
+
   Future<void> _handleSend(ChatMessage message) async {
+    if (restrictedWords.isEmpty) {
+      await fetchRestrictedWords();
+    }
+
+    bool containsRestrictedWord = restrictedWords.any((word) => message.text.toLowerCase().contains(word.toLowerCase()));
+
+    if (containsRestrictedWord) {
+      utils.showToastMessage('Message contains restricted content', context);
+      if (mounted) {
+        setState(() {
+          _messages.remove(message);
+        });
+      }
+      return;
+    }
+
+    await _sendMessageAndNotify(message);
+  }
+
+  Future<void> _sendMessageAndNotify(ChatMessage message) async {
+
+    if(tokens.isEmpty) {
+      print('Tokens: $tokens');
+      if (chatName == "UniversityChat") {
+        tokens = await utils.getAllTokens();
+      } else {
+        List<dynamic> members = await getSubscribers();
+        members.remove(regNo);
+        tokens = await getTokensForMembers(members);
+      }
+    }
+
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
-    List<String> tokens = await utils.getAllTokens();
-    await notificationService.sendNotification(tokens, "Group Chat", message.text, {"source": 'UniversityChat'});
+    await notificationService.sendNotification(tokens, widget.chatName, message.text, {"source": "Group Chat"});
+
+    print('Tokens: $tokens');
   }
+
+  Future<List<dynamic>> getSubscribers() async {
+    DocumentReference chatRef = FirebaseFirestore.instance.doc('/ChatGroups/$chatName');
+    Map<String, dynamic>? details = await fireStoreService.getDocumentDetails(chatRef);
+    List<dynamic> members = details!["MEMBERS"];
+
+    print('Members: $members');
+
+    return members;
+  }
+
+  Future<List<String>> getTokensForMembers(List<dynamic> members) async {
+    List<String> tokens = [];
+    DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
+
+    DocumentSnapshot docSnapshot = await tokenRef.get();
+    if (docSnapshot.exists) {
+      Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
+
+      for (var member in members) {
+        if (data.containsKey(member)) {
+          tokens.add(data[member].toString());
+        }
+      }
+    }
+
+    print('Tokens: $tokens');
+    return tokens;
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('University Chat'),
+        title: Text(widget.chatName),
         actions: [
+          if (chatName != "UniversityChat")
+            IconButton(
+              icon: Icon(
+                isMember ? Icons.group_remove : Icons.group_add,
+                color: isMember ? Colors.red : Colors.green,
+              ),
+              onPressed: () async {
+                String regNo = await sharedPreferences.getDataFromReference(userRef!, "Registration Number");
+                DocumentReference groupRef = FirebaseFirestore.instance.doc('ChatGroups/$chatName');
+
+                if (isMember) {
+                  DocumentSnapshot groupSnapshot = await groupRef.get();
+                  if (groupSnapshot.exists) {
+                    Map<String, dynamic>? groupData = groupSnapshot.data() as Map<String, dynamic>?;
+                    if (groupData != null && groupData.containsKey('MEMBERS')) {
+                      List<dynamic> members = List.from(groupData['MEMBERS']);
+                      members.remove(regNo);
+                      await groupRef.update({'MEMBERS': members});
+                      print('Removed $regNo from MEMBERS list');
+                    } else {
+                      print('MEMBERS field does not exist in the group document');
+                    }
+                  } else {
+                    print('Group document does not exist');
+                  }
+                  utils.showToastMessage('Removed from the group', context);
+                  print('Removed from the group');
+                } else {
+                  Map<String, dynamic> data = {"MEMBERS": FieldValue.arrayUnion([regNo])};
+                  fireStoreService.uploadMapDataToFirestore(data, groupRef);
+                  utils.showToastMessage('Added to the group', context);
+                  print('Added to the group');
+                }
+
+                setState(() {
+                  isMember = !isMember;
+                });
+              },
+            ),
           if (_onlineUsersCount > 0)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -249,17 +445,17 @@ class _UniversityChatState extends State<UniversityChat> {
           ? Center(child: CircularProgressIndicator())
           : !_isInitialLoadComplete
           ? Center(child: CircularProgressIndicator())
-          : _messages.isEmpty
-          ? Center(child: Text('No messages found'))
           : DashChat(
         currentUser: _user!,
         onSend: _handleSend,
         messages: _messages,
+        readOnly: !isMember,
         messageListOptions: MessageListOptions(
           onLoadEarlier: loadMoreMessages,
         ),
         inputOptions: InputOptions(),
         messageOptions: MessageOptions(
+          showTime: true,
           parsePatterns: [
             MatchText(
               type: ParsedType.URL,
@@ -280,6 +476,7 @@ class _UniversityChatState extends State<UniversityChat> {
       ),
     );
   }
+
 
   Map<String, dynamic> _convertToMapStringDynamic(Map<dynamic, dynamic> original) {
     return original.map((key, value) {

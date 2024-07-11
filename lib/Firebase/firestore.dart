@@ -3,24 +3,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FireStoreService {
 
-  Future<void> uploadMapDataToFirestore(Map<String, dynamic> data, DocumentReference documentReference) async {
+  Future<bool> uploadMapDataToFirestore(Map<String, dynamic> data, DocumentReference documentReference) async {
     try {
-
       await documentReference.set(data, SetOptions(merge: true));
       print('Map data uploaded successfully to Firestore!');
+      return true;
     } on FirebaseException catch (e) {
       print('Firestore Error: ${e.code} - ${e.message}');
       // Handle specific Firestore error
       if (e.code == 'permission-denied') {
-        // Handle permission denied error
+
       } else {
         // Handle other Firestore errors
       }
+      return false;
     } catch (e) {
       print('Error uploading map data to Firestore: $e');
       // Handle generic error
+      return false;
     }
   }
+
 
   Future<void> deleteDocument(DocumentReference documentReference) async {
     try {

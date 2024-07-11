@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -382,7 +383,6 @@ class Utils{
     }
   }
 
-
   bool isFileImage(File file) {
     final List<String> imageExtensions = ['png', 'jpg', 'jpeg', 'gif'];
     String extension = getFileExtension(file).toLowerCase();
@@ -421,7 +421,47 @@ class Utils{
     }
   }
 
-  // Future<void> sendSMS(String message, String recipient) async {
+  Future<bool> checkFirstTime(String key) async {
+    SharedPreferences sharedPreferences = SharedPreferences();
+    String? isFirstTime = await sharedPreferences.getSecurePrefsValue(key);
+
+    bool value = true;
+
+    if (isFirstTime != null) {
+      // Check if the stored value is 'false' (as a string)
+      if (isFirstTime.toLowerCase() == 'false') {
+        value = false;
+      }
+    }
+
+    print('checkFirstTime: $value');
+    return value;
+  }
+
+  Future<File> downloadFile(String url, String fileName) async {
+    final Directory directory = await getApplicationDocumentsDirectory();
+    final String filePath = path.join(directory.path, fileName);
+
+    final File file = File(filePath);
+
+    final http.Response response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      await file.writeAsBytes(response.bodyBytes);
+    } else {
+      throw Exception('Failed to download file');
+    }
+
+    return file;
+  }
+
+
+  double calculatePages(int numberOfFiles, int pagesPerFile) {
+    return (numberOfFiles * pagesPerFile).toDouble();
+  }
+
+
+// Future<void> sendSMS(String message, String recipient) async {
   //   final url = Uri.parse('https://www.fast2sms.com/dev/bulkV2');
   //
   //   // Headers

@@ -136,12 +136,12 @@ class _XeroxHomeState extends State<XeroxHome> {
           children: [
             if (_announcementText != null && _announcementText!.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16.0),
                 child: Text(
                   _announcementText!,
                   style: TextStyle(
                     fontSize: 16.0,
-                    color: Colors.red,
+                    color: Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -149,15 +149,13 @@ class _XeroxHomeState extends State<XeroxHome> {
             SizedBox(height: 15),
             Text(
               email,
-              style: TextStyle(
-                fontSize: 15,
-              ),
+              style: TextStyle(fontSize: 15),
             ),
             SizedBox(height: 20),
             TextFormField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: 'Xerox Name*',
+                labelText: 'Xerox copy name*',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -190,9 +188,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => ShowFiles(),
-                            ),
+                            MaterialPageRoute(builder: (context) => ShowFiles()),
                           ).then((value) {
                             if (value != null) {
                               setState(() {
@@ -261,11 +257,11 @@ class _XeroxHomeState extends State<XeroxHome> {
               controller: _descriptionController,
               decoration: InputDecoration(
                 labelText: 'Specify other requirements with file numbers',
-                hintText: 'You will be contacted regarding the amount',
+                hintText: 'color ,spiral biniding...',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.multiline,
-              maxLines: null, // Allows multiple lines of text input
+              maxLines: null,
             ),
             SizedBox(height: 20),
             DataTable(
@@ -287,6 +283,7 @@ class _XeroxHomeState extends State<XeroxHome> {
               controller: _totalAmountController,
               decoration: InputDecoration(
                 labelText: 'Total Amount',
+                hintText: 'Calculate the price and enter here',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
@@ -300,7 +297,6 @@ class _XeroxHomeState extends State<XeroxHome> {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Call the startPayment function when the button is pressed
                   if (totalPrice.toInt() < 1) {
                     totalPrice = 2;
                   }
@@ -309,7 +305,7 @@ class _XeroxHomeState extends State<XeroxHome> {
                   onSubmitClicked(price);
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0), // Adjust horizontal padding as needed
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text('Pay & Submit'),
                 ),
               ),

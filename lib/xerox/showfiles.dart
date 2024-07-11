@@ -37,7 +37,7 @@ class _ShowFilesState extends State<ShowFiles> {
     return Scaffold(
       appBar: AppBar(
         title: !isSearching
-            ? Text('Xerox Home')
+            ? Text('Select')
             : TextField(
           controller: searchController,
           autofocus: true,
@@ -63,7 +63,7 @@ class _ShowFilesState extends State<ShowFiles> {
                         fetchFiles();
                       });
                     },
-                    items: ['YEAR 1', 'YEAR 2', 'YEAR 3', 'YEAR 4', 'COMMON']
+                    items: ['YEAR 1', 'YEAR 2', 'YEAR 3', 'YEAR 4', 'OTHER']
                         .map<DropdownMenuItem<String>>((value) {
                       return DropdownMenuItem<String>(
                         value: value,

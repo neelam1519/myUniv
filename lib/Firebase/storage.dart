@@ -17,9 +17,30 @@ class FirebaseStorageHelper {
       return 0;
     }
   }
+
   Future<List<String>> getFileNames(String storagePath) async {
     final result = await storage.ref(storagePath).listAll();
     return result.items.map((ref) => ref.name).toList();
+  }
+
+  Future<String> uploadXeroxFiles(String fileName, File file) async {
+    try {
+      // Create a reference to the location where you want to upload the file
+      final Reference storageReference = storage.ref().child('XeroxFiles/$fileName');
+
+      // Upload the file
+      final UploadTask uploadTask = storageReference.putFile(file);
+
+      // Wait until the file is uploaded
+      await uploadTask.whenComplete(() => null);
+
+      // Get the download URL of the uploaded file
+      final String downloadUrl = await storageReference.getDownloadURL();
+
+      return downloadUrl;
+    } catch (e) {
+      throw Exception('Failed to upload file: $e');
+    }
   }
 
   Future<String> uploadFile(File file, String folderName, String fileName) async {
@@ -88,5 +109,4 @@ class FirebaseStorageHelper {
       return null;
     }
   }
-
 }

@@ -6,12 +6,12 @@ import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/notification.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
+import 'package:findany_flutter/groupchat/chatting.dart';
 import 'package:findany_flutter/groupchat/groupchathome.dart';
-import 'package:findany_flutter/moneyEarning/Home.dart';
+import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/Other/QandA.dart';
 import 'package:findany_flutter/Other/review.dart';
-import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:findany_flutter/materials/materialshome.dart';
 import 'package:findany_flutter/navigation/navigationhome.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
@@ -22,6 +22,7 @@ import 'package:findany_flutter/utils/utils.dart';
 import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -44,6 +45,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   String? email = '', name = '', imageUrl = '';
   String? _announcementText;
   StreamSubscription<DatabaseEvent>? _announcementSubscription;
+
+  rtdb.DatabaseReference chatRef = rtdb.FirebaseDatabase.instance.ref().child("chats");
+  rtdb.DatabaseReference onlineUsersRef = rtdb.FirebaseDatabase.instance.ref().child("onlineUsers");
 
   @override
   void initState() {
@@ -76,7 +80,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         _announcementText = snapshot.exists
             ? (snapshot.value as Map)['Announcement']
             : null;
-        print("Values in Xerox: ${snapshot.value}");
+        print("HOME : ${snapshot.value}");
       });
     });
   }
@@ -216,7 +220,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     context,
                     'assets/images/groupchat.png',
                     'Let\'s Talk',
-                    UniversityChat(),
+                    GroupChatHome(),
                   ),
                   _buildGridItem(
                     context,
@@ -315,7 +319,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   }
 
   Future<void> signOut() async {
-    if (!mounted) return; // Check if the widget is still mounted before proceeding
+    if (!mounted) return;
     print("Singing out user in Home");
     loadingDialog.showDefaultLoading('Signing Out...');
     try {

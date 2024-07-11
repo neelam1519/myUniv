@@ -528,7 +528,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
         backgroundColor: Colors.green,
         actions: [
           IconButton(
-            icon: Icon(Icons.history),
+            icon: Icon(Icons.history, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
