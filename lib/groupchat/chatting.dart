@@ -12,6 +12,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 class Chatting extends StatefulWidget {
   static bool isChatOpen = false;
+  static String groupName = "";
+
   final rtdb.DatabaseReference chatRef;
   final rtdb.DatabaseReference onlineUsersRef;
   final String chatName;
@@ -58,6 +60,7 @@ class _ChattingState extends State<Chatting> {
     _chatRef = widget.chatRef;
     _onlineUsersRef = widget.onlineUsersRef;
     chatName = widget.chatName.replaceAll(" ", "");
+    Chatting.groupName = widget.chatName;
     Chatting.isChatOpen = true;
     initializeUser().then((_) {
       if(chatName =="UniversityChat"){

@@ -15,7 +15,6 @@ class UserSheetsApi {
     return await rootBundle.loadString('assets/gsheets_credentials.json');
   }
 
-  // Initialize GSheets
   Future<void> _initGSheets() async {
     final credentialsJson = await _loadCredentials();
     final credentials = json.decode(credentialsJson);
@@ -33,7 +32,7 @@ class UserSheetsApi {
 
     if (existingSheet == null) {
       existingSheet = await ss.addWorksheet(todayDate);
-      await existingSheet.values.insertRow(1, ['NAME', 'MOBILE NUMBER', 'EMAIL', 'BINDING', 'DOUBLE SIDE', 'TOTAL PRICE', 'DESCRIPTION', 'PAYMENT ID', 'DATA', 'NO OF FILES', 'FILES']);
+      await existingSheet.values.insertRow(1, ['ID','NAME', 'MOBILE NUMBER', 'EMAIL', 'BINDING', 'DOUBLE SIDE', 'TOTAL PRICE', 'DESCRIPTION', 'PAYMENT ID', 'DATA', 'NO OF FILES', 'FILES']);
     }
     sheet = existingSheet;
   }

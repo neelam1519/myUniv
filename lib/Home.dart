@@ -5,10 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/notification.dart';
+import 'package:findany_flutter/apis/googleDrive.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
 import 'package:findany_flutter/groupchat/chatting.dart';
 import 'package:findany_flutter/groupchat/groupchathome.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
+import 'package:findany_flutter/leaveforms/leaveformshome.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/Other/QandA.dart';
 import 'package:findany_flutter/Other/review.dart';
@@ -25,7 +27,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -200,14 +204,25 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           children: [
             if (_announcementText != null && _announcementText!.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16.0),
-                child: Text(
-                  _announcementText!,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16.0),
+                child: Linkify(
+                  text: _announcementText!,
                   style: TextStyle(
                     fontSize: 16.0,
-                    color: Colors.red,
+                    color: Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
+                  linkStyle: TextStyle(
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                  onOpen: (link) async {
+                    if (await canLaunch(link.url)) {
+                      await launch(link.url);
+                    } else {
+                      throw 'Could not launch ${link.url}';
+                    }
+                  },
                 ),
               ),
             Expanded(
@@ -254,9 +269,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                   ),
                   // _buildGridItem(
                   //   context,
-                  //   'assets/images/VIDEOS AND IMAGES.png',
-                  //   'Earn Money',
-                  //   MoneyEarningHome(),
+                  //   'assets/images/LeaveForms.png',
+                  //   'Leave Forms',
+                  //   LeaveFormHome()
                   // ),
                 ],
               ),

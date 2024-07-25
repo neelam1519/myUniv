@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -12,6 +13,7 @@ import 'package:findany_flutter/busbooking/history.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BusBookingHome extends StatefulWidget {
   @override
@@ -545,14 +547,25 @@ class _BusBookingHomeState extends State<BusBookingHome> {
             children: <Widget>[
               if (_announcementText != null && _announcementText!.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 0),
-                  child: Text(
-                    _announcementText!,
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16.0),
+                  child: Linkify(
+                    text: _announcementText!,
                     style: TextStyle(
                       fontSize: 16.0,
-                      color: Colors.red,
+                      color: Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
+                    linkStyle: TextStyle(
+                      color: Colors.blue,
+                      decoration: TextDecoration.underline,
+                    ),
+                    onOpen: (link) async {
+                      if (await canLaunch(link.url)) {
+                        await launch(link.url);
+                      } else {
+                        throw 'Could not launch ${link.url}';
+                      }
+                    },
                   ),
                 ),
               SizedBox(height: 16.0),
@@ -712,7 +725,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                                 person['gender'] = newValue;
                               });
                             },
-                            items: ['M', 'F', 'O'].map<DropdownMenuItem<String>>((String value) {
+                            items: ['M', 'F'].map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value),

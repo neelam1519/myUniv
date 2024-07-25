@@ -11,8 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_core: ^2.31.0
-  firebase_auth: ^4.19.5
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.20.0
   firebase_database: ^10.5.5
   firebase_storage: ^11.7.0
   cloud_firestore: ^4.17.3
@@ -47,11 +47,18 @@ dependencies:
   shimmer: ^3.0.0
   google_mobile_ads: ^5.1.0
   awesome_notifications: ^0.9.3+1
+  pdf: ^3.11.0
+  pdfrx: ^1.0.82
+  pdfx: ^2.6.0
+  flutter_linkify: ^6.0.0
+  google_sign_in_web: ^0.12.4+1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  build_web_compilers: ^4.0.10
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -77,4 +84,6 @@ flutter:
     - assets/images/VIDEOS AND IMAGES.png
     - assets/images/groupicon.png
     - assets/gsheets_credentials.json
+    - assets/googleDrive.json
+    - assets/images/LeaveForms.png
 

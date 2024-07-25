@@ -1,3 +1,4 @@
+import 'package:findany_flutter/groupchat/chatting.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -6,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'firebase_options.dart';
 import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/Login/login.dart';
@@ -27,6 +29,14 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(clientId: '87807759596-d3l0pni6qqsdcj686ojllrv334134cn2.apps.googleusercontent.com');
+
+  try {
+    await _googleSignIn.signInSilently();
+  } catch (error) {
+    print('Error during Google Sign-In initialization: $error');
+  }
 
   const initializationSettings = InitializationSettings(
     android: AndroidInitializationSettings('@mipmap/transperentlogo'),
@@ -82,8 +92,7 @@ class _AuthCheckState extends State<AuthCheck> {
     print('Received a message while in the foreground!');
     print('Message data: ${message.data}');
 
-    if (UniversityChat.isChatOpen && message.data['source'] == 'UniversityChat') {
-
+    if (Chatting.isChatOpen && Chatting.groupName == message.data["title"]) {
       print('Message belongs to UniversityChat and chat is open.');
     } else {
       NotificationService().showNotification(message);

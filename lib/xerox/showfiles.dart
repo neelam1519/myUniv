@@ -2,11 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:findany_flutter/services/pdfscreen.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io'; // Add this import for file operations
+import 'dart:io';
+import 'package:http/http.dart' as http;
+
 
 class ShowFiles extends StatefulWidget {
   @override
@@ -87,8 +90,23 @@ class _ShowFilesState extends State<ShowFiles> {
           ),
           IconButton(
             icon: Icon(Icons.check),
-            onPressed: () {
+            onPressed: () async{
+              loadingDialog.showDefaultLoading('Adding to your files');
+              // Get the application cache directory
+              final cacheDir = await getTemporaryDirectory();
+              final uploadDir = Directory('${cacheDir.path}/xeroxPdfs');
+
+              for (var entry in _selectedFiles.entries) {
+                final key = entry.key; // Identifier or unique name for the file
+                final firebaseUrl = entry.value; // Firebase URL of the file
+
+                await downloadAndStoreFile(firebaseUrl, key, uploadDir);
+              }
+
+              print("Selected Files: $_selectedFiles");
+
               Navigator.pop(context, _selectedFiles);
+              loadingDialog.dismiss();
             },
           ),
         ],
@@ -141,11 +159,13 @@ class _ShowFilesState extends State<ShowFiles> {
                           utils.showToastMessage(
                               '$filename removed from your xerox list',
                               context);
+                          print('Selected Files: $_selectedFiles');
                         } else {
                           _selectedFiles[filename] = url;
                           utils.showToastMessage(
                               '$filename added in your xerox list',
                               context);
+                          print('Selected Files: $_selectedFiles');
                         }
                       });
                     },
@@ -163,10 +183,7 @@ class _ShowFilesState extends State<ShowFiles> {
     loadingDialog.showDefaultLoading('Getting Files...');
     try {
       print('Fetching Files..');
-      final ListResult result = await FirebaseStorage.instance
-          .ref()
-          .child('ShowFiles/$_selectedValue')
-          .listAll();
+      final ListResult result = await FirebaseStorage.instance.ref().child('ShowFiles/$_selectedValue').listAll();
       retrievedFiles.clear(); // Clear existing files
       for (final ref in result.items) {
         String url = await ref.getDownloadURL();
@@ -178,6 +195,35 @@ class _ShowFilesState extends State<ShowFiles> {
     } catch (e) {
       EasyLoading.dismiss();
       throw e.toString();
+    }
+  }
+
+  Future<void> downloadAndStoreFile(String firebaseUrl, String fileName,Directory uploadDir) async {
+    try {
+
+      // Create the directory if it does not exist
+      if (!await uploadDir.exists()) {
+        await uploadDir.create(recursive: true);
+      }
+
+      // Create the file path
+      final filePath = '${uploadDir.path}/$fileName';
+
+      // Send HTTP GET request to the Firebase URL
+      final response = await http.get(Uri.parse(firebaseUrl));
+
+      // Check if the request was successful
+      if (response.statusCode == 200) {
+        // Write the file to the directory
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        print('File downloaded and saved to $filePath');
+        _selectedFiles[fileName] = filePath;
+      } else {
+        print('Failed to download file: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error downloading file: $e');
     }
   }
 

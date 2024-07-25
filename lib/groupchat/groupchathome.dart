@@ -71,9 +71,13 @@ class _GroupChatHomeState extends State<GroupChatHome> {
             );
           }
 
-          List<Future<Map<String, dynamic>>> chatFutures = snapshot.data!.docs.map((DocumentSnapshot document) async {
+          List<Future<Map<String, dynamic>?>> chatFutures = snapshot.data!.docs.map((DocumentSnapshot document) async {
             Map<String, dynamic> data = document.data() as Map<String, dynamic>;
             String groupName = data['GroupName'];
+
+            if (groupName == 'App Testing') {
+              return null;
+            }
 
             rtdb.DatabaseReference chatRef = rtdb.FirebaseDatabase.instance.ref().child("Chat/$groupName");
 
@@ -109,7 +113,7 @@ class _GroupChatHomeState extends State<GroupChatHome> {
             }
           }).toList();
 
-          return FutureBuilder<List<Map<String, dynamic>>>(
+          return FutureBuilder<List<Map<String, dynamic>?>>(
             future: Future.wait(chatFutures),
             builder: (context, futureSnapshot) {
               if (futureSnapshot.connectionState == ConnectionState.waiting) {
@@ -128,7 +132,11 @@ class _GroupChatHomeState extends State<GroupChatHome> {
                 );
               }
 
-              List<Map<String, dynamic>> chatGroups = futureSnapshot.data!;
+              List<Map<String, dynamic>> chatGroups = futureSnapshot.data!
+                  .where((group) => group != null)
+                  .map((group) => group!)
+                  .toList();
+
               chatGroups.sort((a, b) => b['createdAt'].compareTo(a['createdAt']));
 
               return ListView(

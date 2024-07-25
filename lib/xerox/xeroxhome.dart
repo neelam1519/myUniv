@@ -15,13 +15,17 @@ import 'package:findany_flutter/xerox/xeroxhistory.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:path/path.dart' as path;
+import 'package:url_launcher/url_launcher.dart';
+import '../services/pdfscreen.dart';
+
 
 class XeroxHome extends StatefulWidget {
 
@@ -60,7 +64,9 @@ class _XeroxHomeState extends State<XeroxHome> {
   int totalFileCount=0;
   String? _announcementText = "";
   Map<String, dynamic>? xeroxDetails= {};
+  int totalPdfPages = 0;
 
+  Map<String,int> pdfPagesCount = {};
   //Razorpay
   String apiUrl = 'https://api.razorpay.com/v1/orders';
   static const _razorpayKey = 'rzp_live_kYGlb6Srm9dDRe';
@@ -137,13 +143,24 @@ class _XeroxHomeState extends State<XeroxHome> {
             if (_announcementText != null && _announcementText!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16.0),
-                child: Text(
-                  _announcementText!,
+                child: Linkify(
+                  text: _announcementText!,
                   style: TextStyle(
                     fontSize: 16.0,
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
+                  linkStyle: TextStyle(
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                  onOpen: (link) async {
+                    if (await canLaunch(link.url)) {
+                      await launch(link.url);
+                    } else {
+                      throw 'Could not launch ${link.url}';
+                    }
+                  },
                 ),
               ),
             SizedBox(height: 15),
@@ -316,7 +333,6 @@ class _XeroxHomeState extends State<XeroxHome> {
     );
   }
 
-
   Future<String?> createOrder(int amount) async {
     try {
       final response = await http.post(
@@ -380,7 +396,6 @@ class _XeroxHomeState extends State<XeroxHome> {
 
 
   void handlePaymentError(PaymentFailureResponse response) {
-    // Handle payment failure
     print('razorpay unsuccessful: ${response.message}');
     utils.showToastMessage('Payment unsuccessful', context);
   }
@@ -389,53 +404,136 @@ class _XeroxHomeState extends State<XeroxHome> {
     print('razorpay External wallet ${response.walletName}');
   }
 
-  Future<void> uploadData(PaymentSuccessResponse response) async{
+  Future<void> uploadData(PaymentSuccessResponse response) async {
     loadingDialog.showProgressLoading(progress, 'Uploading files...');
 
     List<String> uploadedUrls = [];
     int fileLength = _uploadedFiles.length;
-    double totalProgress=0.9/fileLength;
+    double totalProgress = 0.9 / fileLength;
+
+    int? count = await realTimeDatabase.incrementValue('Xerox/XeroxHistory');
+    String folderPath = "XeroList/${utils.getTodayDate().replaceAll('/', ',')}/$count";
+
+    print('Uploading Files: $_uploadedFiles');
+
+    int fileIndex = 1;
 
     for (String value in _uploadedFiles.values) {
       File file = File(value);
-      String? uploadedUrl = '';
-      if(utils.isURL(value)){
-        uploadedUrl = value;
-      }else{
-        uploadedUrl = await firebaseStorageHelper.uploadFile(file, 'XeroList/${utils.getTodayDate().replaceAll('/', ',')}', '${getFileName(file)}',);
-      }
+      String uploadedUrl = '';
+      String fileName = '${fileIndex}.pdf';
+
+      uploadedUrl = await firebaseStorageHelper.uploadFile(file, folderPath, fileName);
+
       print('Uploading url: $uploadedUrl');
 
       uploadedUrls.add(uploadedUrl);
-      progress+=totalProgress;
+
+      progress += totalProgress;
       loadingDialog.showProgressLoading(progress, 'Uploading Files...');
 
+      fileIndex++;
     }
 
-    int? count = await realTimeDatabase.incrementValue('Xerox/XeroxHistory');
     DocumentReference userRef = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
-    Map<String, dynamic> uploadData = {'ID': count,'Date': utils.getTodayDate(),'Name': _nameController.text, 'Mobile Number': _mobilenumberController.text, 'Email': email,
-      'Total Price': totalPrice,'Transaction ID':response.paymentId,'Uploaded Files': uploadedUrls, 'Description':_descriptionController.text};
+    Map<String, dynamic> uploadData = {
+      'ID': count,
+      'Name': _nameController.text,
+      'Mobile Number': _mobilenumberController.text,
+      'Email': email,
+      'Date': utils.getTodayDate(),
+      'Total Price': totalPrice,
+      'Transaction ID': response.paymentId,
+      'Uploaded Files': uploadedUrls,
+      'Description': _descriptionController.text,
+    };
 
-    List<String> sheetData = [_nameController.text, _mobilenumberController.text, email,_bindingFileController.text,_singleSideFileController.text, totalPrice.toString(),_descriptionController.text,response.paymentId!,
-      'Xerox Details: ${xeroxDetails.toString()}', '${uploadedUrls.length}'];
+    List<String> sheetData = [
+      count.toString(),
+      _nameController.text,
+      _mobilenumberController.text,
+      email,
+      _bindingFileController.text,
+      _singleSideFileController.text,
+      totalPrice.toString(),
+      _descriptionController.text,
+      response.paymentId!,
+      'Xerox Details: ${xeroxDetails.toString()}',
+    ];
+
+    print('Xerox Details: $uploadedUrls');
+
     sheetData.addAll(uploadedUrls);
 
     await fireStoreService.uploadMapDataToFirestore(uploadData, userRef);
-
     userSheetsApi.updateCell(sheetData);
-    utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/uploadedFiles/');
+    utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/XeroxPdfs/');
     DocumentReference xeroxRef = FirebaseFirestore.instance.doc('AdminDetails/Xerox');
     List<String> tokens = await utils.getSpecificTokens(xeroxRef);
 
     notificationService.sendNotification(tokens, 'Xerox Submitted', _nameController.text, {});
 
-    loadingDialog.showProgressLoading(progress+0.05, 'Uploading Files...');
+    loadingDialog.showProgressLoading(progress + 0.05, 'Uploading Files...');
 
     utils.showToastMessage('Request submitted', context);
     EasyLoading.dismiss();
     Navigator.pop(context);
+  }
 
+
+  Future<int> calculatePrice() async{
+
+    String doubleSide = _singleSideFileController.text.replaceAll(RegExp(r'\s+'), '');
+    String binding = _bindingFileController.text.replaceAll(RegExp(r'\s+'), '');
+
+    List<String> doubleSideList = doubleSide.split(",");
+    List<String> bindingList = binding.split(",");
+
+    print("Double Side: $doubleSideList  bindingList  $bindingList");
+
+    int fileIndex = 1;
+    Map<int, int> pdfPageCounts = {};
+    double totalPrice = 0;
+
+
+    for (String value in _uploadedFiles.values) {
+      File file = File(value);
+      // Count the number of pages in the PDF using pdfrx
+      int pdfPages = await countPdfPages(file);
+      totalPdfPages += pdfPages;
+
+      // Store the page count for this PDF with file number as key
+      pdfPageCounts[fileIndex] = pdfPages;
+
+      // Calculate the cost for this file
+      double cost = 0;
+      if (doubleSideList.contains(fileIndex.toString())) {
+        cost += pdfPages * int.parse(xeroxDetails!["Double Side"]!); // Double-sided printing cost
+      } else {
+        cost += pdfPages * double.parse(xeroxDetails!["Single Side"]!); // Single-sided printing cost
+      }
+
+      if (bindingList.contains(fileIndex.toString())) {
+        cost += int.parse(xeroxDetails!["Binding"]!);
+      }
+
+      totalPrice += cost;
+
+      fileIndex++; // Increment file index after processing
+    }
+
+    print('Total Cost: $totalPrice');
+    print('Total PDF pages count: $totalPdfPages'); // Print the total number of PDF pages
+    print('PDF page counts: $pdfPageCounts'); // Print the page counts for each PDF
+    print('Total Price: $totalPrice'); // Print the total price
+
+    return totalPrice.toInt();
+
+  }
+
+  Future<int> countPdfPages(File file) async {
+    final pdfDocument = await PdfDocument.openFile(file.path);
+    return pdfDocument.pages.length;
   }
 
   String getFileName(File file) {
@@ -458,63 +556,55 @@ class _XeroxHomeState extends State<XeroxHome> {
       utils.showToastMessage('Enter at least 5 letter name', context);
       return;
     }
+    int cost = await calculatePrice();
 
-    startPayment(price,_mobilenumberController.text,email);
+    if(price >= cost){
+      startPayment(price,_mobilenumberController.text,email);
+    }else{
+      utils.showToastMessage('Minimum total cost is $cost', context);
+    }
   }
 
 
   Future<void> pickFile() async {
-    List<PlatformFile>? files = await utils.pickMultipleFiles();
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      allowMultiple: true,
+    );
 
-    if(files!.isNotEmpty){
+    if (result != null && result.files.isNotEmpty) {
       Directory cacheDir = await getTemporaryDirectory();
-      Directory uploadDir = Directory('${cacheDir.path}/uploadedFiles');
+      Directory uploadDir = Directory('${cacheDir.path}/xeroxPdfs');
       if (!await uploadDir.exists()) {
         await uploadDir.create(recursive: true);
       }
       print('uploadDir: ${uploadDir.path}');
-      for (var file in files) {
-        String fileName = file.name;
-        File pickedFile = File(file.path!);
-        File newFile = File('${uploadDir.path}/$fileName');
-        await pickedFile.copy(newFile.path);
-        String filePath = newFile.path;
-        print('File uploaded: $fileName at $filePath');
-        setState(() {
-          _uploadedFiles[fileName] = filePath;
-        });
+
+      for (var file in result.files) {
+        if (file.extension == 'pdf') {
+          String fileName = file.name;
+          File pickedFile = File(file.path!);
+          File newFile = File('${uploadDir.path}/$fileName');
+          await pickedFile.copy(newFile.path);
+          String filePath = newFile.path;
+          print('File uploaded: $fileName at $filePath');
+          setState(() {
+            _uploadedFiles[fileName] = filePath;
+          });
+        }
       }
-      utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/file_picker/');
-    }else{
-
-      utils.showToastMessage('No Files selected', context);
+      print('Uploaded Files: $_uploadedFiles');
+    } else {
+      utils.showToastMessage('No PDF files selected', context);
     }
-
   }
-
   void viewPdfFullScreen(String? filePath, String title) {
     if (filePath != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text(title),
-            ),
-            body: PDFView(
-              filePath: filePath,
-              enableSwipe: true,
-              swipeHorizontal: false,
-              autoSpacing: false,
-              pageFling: false,
-              onRender: (pages) {
-                setState(() {});
-              },
-              onError: (error) {
-                print(error.toString());
-              },
-            ),
-          ),
+          builder: (context) => PDFScreen(filePath: filePath, title: title),
         ),
       );
     }

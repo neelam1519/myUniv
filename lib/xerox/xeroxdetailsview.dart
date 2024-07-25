@@ -6,6 +6,8 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../services/pdfscreen.dart';
+
 class XeroxDetailView extends StatefulWidget {
   final Map<String, dynamic> data;
 
@@ -116,24 +118,7 @@ class _XeroxDetailViewState extends State<XeroxDetailView> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text(title),
-            ),
-            body: PDFView(
-              filePath: filePath,
-              enableSwipe: true,
-              swipeHorizontal: false,
-              autoSpacing: false,
-              pageFling: false,
-              onRender: (pages) {
-                setState(() {});
-              },
-              onError: (error) {
-                print(error.toString());
-              },
-            ),
-          ),
+          builder: (context) => PDFScreen(filePath: filePath, title: title),
         ),
       );
     }
