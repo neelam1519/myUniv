@@ -1,5 +1,6 @@
 import 'package:findany_flutter/groupchat/chatting.dart';
 import 'package:findany_flutter/groupchat/universitychat.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -21,6 +22,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   NotificationService().showNotification(message);
 }
 
+
+
 final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 void main() async {
@@ -30,12 +33,15 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(clientId: '87807759596-d3l0pni6qqsdcj686ojllrv334134cn2.apps.googleusercontent.com');
-
-  try {
-    await _googleSignIn.signInSilently();
-  } catch (error) {
-    print('Error during Google Sign-In initialization: $error');
+  if (kIsWeb) {
+    final GoogleSignIn _googleSignIn = GoogleSignIn(
+      clientId: '87807759596-ijh25ipt7ig7bq78jl2lr70qjmhdu1m5.apps.googleusercontent.com',
+    );
+    try {
+      await _googleSignIn.signInSilently();
+    } catch (error) {
+      print('Error during Google Sign-In initialization: $error');
+    }
   }
 
   const initializationSettings = InitializationSettings(

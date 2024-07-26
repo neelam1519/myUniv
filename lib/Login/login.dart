@@ -5,6 +5,7 @@ import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
@@ -20,7 +21,15 @@ class _LoginState extends State<Login> {
   SharedPreferences sharedPreferences = SharedPreferences();
   FireStoreService fireStoreService = FireStoreService();
 
-  final GoogleSignIn googleSignIn = GoogleSignIn();
+  final GoogleSignIn googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'openid'
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -72,52 +81,120 @@ class _LoginState extends State<Login> {
     print('Handle Google Sign-In');
     try {
       loadingDialog.showDefaultLoading('Signing In...');
+      GoogleSignInAccount? googleSignInAccount;
 
-      final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
-      if (googleSignInAccount != null) {
-        final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
+      if (kIsWeb) {
+        await _webGoogleSignIn(context);
+      } else {
+        googleSignInAccount = await _mobileGoogleSignIn();
 
-        print('Access Token: ${googleSignInAuthentication.accessToken}');
-        print('ID Token: ${googleSignInAuthentication.idToken}');
-
-        if (googleSignInAuthentication.accessToken == null || googleSignInAuthentication.idToken == null) {
-          throw Exception('Google Sign-In authentication tokens are null');
-        }
-
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleSignInAuthentication.accessToken,
-          idToken: googleSignInAuthentication.idToken,
-        );
-
-        final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
-        final User? user = authResult.user;
-
-        if (user != null && mounted) {
-          final String? email = user.email;
-          print('Email: $email');
-          if (email != null && email.endsWith('@klu.ac.in')) {
-            print('User logged in with the University Email');
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-            await storeRequiredData();
-          } else {
-            await signOut();
-            loadingDialog.dismiss();
-            loadingDialog.showError('Please sign in with a valid KARE email.');
-          }
+        if (googleSignInAccount != null) {
+          await _firebaseSignIn(googleSignInAccount, context);
         } else {
-          print('User is null after signing in.');
-          await signOut();
+          print('Google Sign-In canceled.');
           loadingDialog.dismiss();
         }
-      } else {
-        print('Google Sign in canceled.');
-        loadingDialog.dismiss();
       }
     } catch (error) {
       loadingDialog.dismiss();
-      utils.showToastMessage('Error occurred while login', context);
+      utils.showToastMessage('Error occurred while logging in', context);
       print('Error signing in with Google: $error');
       await signOut();
+    }
+  }
+
+  Future<void> _webGoogleSignIn(BuildContext context) async {
+    print('Entered web sign-in');
+    try {
+      // Create an instance of the Google provider object
+      final GoogleAuthProvider provider = GoogleAuthProvider();
+
+      // Optional: Specify additional OAuth 2.0 scopes
+      provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+
+      // Sign in with pop-up method
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithPopup(provider);
+
+      // This gives you a Google Access Token and ID Token
+      final OAuthCredential? credential = userCredential.credential as OAuthCredential?;
+      final String? accessToken = credential?.accessToken;
+      final String? idToken = credential?.idToken;
+
+      print('Access Token: $accessToken');
+      print('ID Token: $idToken');
+
+      // The signed-in user info
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        final String? email = user.email;
+        print('Email: $email');
+        if (email != null && email.endsWith('@klu.ac.in')) {
+          print('User logged in with the University Email');
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+          await storeRequiredData();
+        } else {
+          await signOut();
+          loadingDialog.dismiss();
+          loadingDialog.showError('Please sign in with a valid KARE email.');
+        }
+      } else {
+        print('User is null after signing in.');
+        await signOut();
+        loadingDialog.dismiss();
+      }
+    } catch (error) {
+      // Handle Errors here
+      print('Error during web Google Sign-In: $error');
+      utils.showToastMessage('Error occurred while logging in', context);
+      await signOut();
+    }
+  }
+
+  /// Handles Google Sign-In for mobile (Android/iOS)
+  Future<GoogleSignInAccount?> _mobileGoogleSignIn() async {
+    GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
+    if (googleSignInAccount == null) {
+      googleSignInAccount = await googleSignIn.signIn();
+    }
+    return googleSignInAccount;
+  }
+
+  /// Handles Firebase authentication
+  Future<void> _firebaseSignIn(GoogleSignInAccount googleSignInAccount, BuildContext context) async {
+    final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
+
+    print('Access Token: ${googleSignInAuthentication.accessToken}');
+    print('ID Token: ${googleSignInAuthentication.idToken}');
+
+    if (googleSignInAuthentication.accessToken == null || googleSignInAuthentication.idToken == null) {
+      throw Exception('Google Sign-In authentication tokens are null');
+    }
+
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleSignInAuthentication.accessToken,
+      idToken: googleSignInAuthentication.idToken,
+    );
+
+    final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
+    final User? user = authResult.user;
+
+    if (user != null && context.mounted) {
+      final String? email = user.email;
+      print('Email: $email');
+      if (email != null && email.endsWith('@klu.ac.in')) {
+        print('User logged in with the University Email');
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+        await storeRequiredData();
+      } else {
+        await signOut();
+        loadingDialog.dismiss();
+        loadingDialog.showError('Please sign in with a valid KARE email.');
+      }
+    } else {
+      print('User is null after signing in.');
+      await signOut();
+      loadingDialog.dismiss();
     }
   }
 

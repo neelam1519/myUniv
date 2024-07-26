@@ -6,6 +6,12 @@ import 'package:path_provider/path_provider.dart';
 class FirebaseStorageHelper {
   FirebaseStorage storage = FirebaseStorage.instance;
 
+  Future<String> getCachePath(String storagePath) async {
+    Directory cacheDir = await getTemporaryDirectory();
+    return '${cacheDir.path}/$storagePath'.replaceAll(' ', '');
+  }
+
+
   Future<int> getFileCount(String folderPath) async {
     int fileCount = 0;
     try {

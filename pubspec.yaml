@@ -11,8 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.20.0
+  firebase_core: ^2.31.0
+  firebase_auth: ^4.19.5
   firebase_database: ^10.5.5
   firebase_storage: ^11.7.0
   cloud_firestore: ^4.17.3
@@ -49,9 +49,11 @@ dependencies:
   awesome_notifications: ^0.9.3+1
   pdf: ^3.11.0
   pdfrx: ^1.0.82
-  pdfx: ^2.6.0
   flutter_linkify: ^6.0.0
-  google_sign_in_web: ^0.12.4+1
+  syncfusion_flutter_pdfviewer: ^26.2.4
+  device_info_plus: ^10.1.0
+  universal_io: ^2.2.2
+
 
 dev_dependencies:
   flutter_test:

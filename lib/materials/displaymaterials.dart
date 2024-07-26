@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:findany_flutter/Firebase/storage.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:shimmer/shimmer.dart';
-
+import 'package:universal_io/io.dart';
 import '../services/pdfscreen.dart';
 
 class DisplayMaterials extends StatefulWidget {
@@ -38,8 +37,9 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
   List<File> downloadedFiles = [];
   late StreamController<List<File>> _streamController;
   String appBarText = 'PDFs';
-  String? nextFileName;
   bool isInitialized = false;
+  String? currentDownloadingFile;
+  bool firstDownloadCompleted = false;
 
   @override
   void initState() {
@@ -50,7 +50,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
       setState(() {
         isInitialized = true;
         if (pdfFileNames.isNotEmpty) {
-          downloadFiles();
+          downloadNextFile();
         } else {
           loadingDialog.dismiss();
         }
@@ -71,50 +71,72 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
     pdfFileNames = await firebaseStorageHelper.getFileNames(storagePath);
   }
 
-  Future<void> downloadFiles() async {
+  Future<void> downloadNextFile() async {
+    if (pdfFileNames.isEmpty) {
+      setState(() {
+        isDownloading = false;
+        loadingDialog.dismiss();
+      });
+      return;
+    }
+
     Directory cacheDir = await getTemporaryDirectory();
     String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}';
 
-    setState(() {
-      isDownloading = true;
-      stopDownload = false;
-      nextFileName = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
-    });
-
-    downloadedFiles.clear();
-
-    for (String fileName in pdfFileNames) {
-      if (stopDownload) break;
-      File file = File('$cachePath/${fileName.replaceAll(' ', '')}');
-
-      if (!file.existsSync()) {
-        await firebaseStorageHelper.downloadFile('$storagePath/$fileName').then((downloadedFile) {
-          if (downloadedFile != null) {
-            setState(() {
-              downloadedFiles.add(downloadedFile);
-              _streamController.add(downloadedFiles.toList());
-              nextFileName = _getNextFileName();
-            });
-          }
-        });
-      } else {
-        setState(() {
-          downloadedFiles.add(file);
-          _streamController.add(downloadedFiles.toList());
-          nextFileName = _getNextFileName();
-        });
-      }
+    if (stopDownload) {
+      setState(() {
+        isDownloading = false;
+        loadingDialog.dismiss();
+      });
+      return;
     }
 
     setState(() {
-      isDownloading = false;
-      loadingDialog.dismiss(); // Stop loading when files are processed
+      isDownloading = true;
+      currentDownloadingFile = pdfFileNames.first;
     });
-  }
 
-  String? _getNextFileName() {
-    int currentIndex = downloadedFiles.length;
-    return currentIndex < pdfFileNames.length ? pdfFileNames[currentIndex] : null;
+    File file = File('$cachePath/${currentDownloadingFile!.replaceAll(' ', '')}');
+
+    if (!file.existsSync()) {
+      await firebaseStorageHelper.downloadFile('$storagePath/$currentDownloadingFile').then((downloadedFile) {
+        if (downloadedFile != null) {
+          setState(() {
+            downloadedFiles.add(downloadedFile);
+            _streamController.add(downloadedFiles.toList());
+            pdfFileNames.removeAt(0);
+            currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
+            if (!firstDownloadCompleted) {
+              firstDownloadCompleted = true;
+              loadingDialog.dismiss(); // Stop the loading dialog after the first download
+            }
+          });
+        }
+      });
+    } else {
+      setState(() {
+        downloadedFiles.add(file);
+        _streamController.add(downloadedFiles.toList());
+        pdfFileNames.removeAt(0);
+        currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
+        if (!firstDownloadCompleted) {
+          firstDownloadCompleted = true;
+          loadingDialog.dismiss(); // Stop the loading dialog after the first download
+        }
+      });
+    }
+
+    if (pdfFileNames.isNotEmpty) {
+      downloadNextFile();
+    } else {
+      setState(() {
+        isDownloading = false;
+        if (!firstDownloadCompleted) {
+          firstDownloadCompleted = true;
+          loadingDialog.dismiss();
+        }
+      });
+    }
   }
 
   Widget buildSkeletonView() {
@@ -167,7 +189,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
         builder: (context, snapshot) {
           if (!isInitialized) {
             return buildSkeletonView();
-          } else if (isDownloading) {
+          } else if (isDownloading && !firstDownloadCompleted) {
             return buildSkeletonView();
           } else if (snapshot.hasError) {
             loadingDialog.dismiss();
@@ -181,9 +203,6 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
             );
           } else {
             List<File> filesToShow = snapshot.data!;
-            if (isDownloading && nextFileName != null) {
-              filesToShow = List.from(filesToShow)..add(File('placeholder_for_$nextFileName'));
-            }
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -193,9 +212,6 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
               ),
               itemCount: filesToShow.length,
               itemBuilder: (context, index) {
-                if (isDownloading && index == filesToShow.length - 1 && nextFileName != null) {
-                  return buildNextFilePlaceholder(nextFileName!);
-                }
                 File pdfFile = filesToShow[index];
                 return GestureDetector(
                   onTap: () {
@@ -257,7 +273,7 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
           }
           stopDownload = true;
           await initialize().then((_) {
-            downloadFiles();
+            downloadNextFile();
           });
         },
         items: [
@@ -299,7 +315,6 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
             utils.showToastMessage('No files are selected', context);
             print('No files selected');
           }
-
         },
         child: Icon(Icons.upload),
         backgroundColor: Colors.blue,
@@ -316,35 +331,5 @@ class _DisplayMaterialsState extends State<DisplayMaterials> {
         ),
       );
     }
-  }
-
-  Widget buildNextFilePlaceholder(String nextFileName) {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Card(
-        elevation: 5,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Container(color: Colors.grey[300]),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                nextFileName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

@@ -189,9 +189,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                       ],
                     ),
                   ),
-                  ListTile(
-                    title: Center(child: Text('Brand Name: FindAny', style: TextStyle(fontWeight: FontWeight.bold))),
-                  ),
                 ],
               );
             }
