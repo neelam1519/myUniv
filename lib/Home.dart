@@ -264,12 +264,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     'Bus Booking',
                     BusBookingHome(),
                   ),
-                  // _buildGridItem(
-                  //   context,
-                  //   'assets/images/LeaveForms.png',
-                  //   'Leave Forms',
-                  //   LeaveFormHome()
-                  // ),
+                  _buildGridItem(
+                    context,
+                    'assets/images/LeaveForms.png',
+                    'Leave Forms',
+                    LeaveFormHome()
+                  ),
                 ],
               ),
             ),

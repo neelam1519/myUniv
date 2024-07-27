@@ -70,7 +70,15 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
         }
 
         DocumentReference leaveFormRef = FirebaseFirestore.instance.doc("LeaveForms/$count");
-        DocumentReference userRef = FirebaseFirestore.instance.doc("UserDetails/$uid/LeaveForms/LeaveApplications");
+        DocumentReference userLeaveRef = FirebaseFirestore.instance.doc("UserDetails/$uid/LeaveForms/LeaveApplications");
+
+        DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/$uid');
+        String year = await sharedPreferences.getDataFromReference(userRef, "YEAR");
+        String branch = await sharedPreferences.getDataFromReference(userRef, "BRANCH");
+        String specialization = await sharedPreferences.getDataFromReference(userRef, "SPECIALIZATION");
+        String section = await sharedPreferences.getDataFromReference(userRef, "SECTION");
+
+        DocumentReference classRef = FirebaseFirestore.instance.doc("AcademicDetails/$year/BRANCHES/$branch/SPECIALIZATIONS/$specialization/SECTIONS/$section/LEAVEFORMS/PENDING");
 
         Map<String,dynamic> data = {
           'studentId': regNo,
@@ -91,8 +99,9 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
         };
 
         fireStoreService.uploadMapDataToFirestore(data, leaveFormRef);
-        Map<String,dynamic> reference = {count.toString():leaveFormRef};
-        fireStoreService.uploadMapDataToFirestore(reference, userRef);
+        Map<String,dynamic> leaveData = {count.toString():leaveFormRef};
+        fireStoreService.uploadMapDataToFirestore(leaveData, userLeaveRef);
+        fireStoreService.uploadMapDataToFirestore(leaveData, classRef);
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Leave form submitted successfully')));
         _clearForm();

@@ -52,8 +52,6 @@ class _LeaveFormHomeState extends State<LeaveFormHome> {
     return reversedAllData;
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;

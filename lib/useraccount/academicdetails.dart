@@ -1,3 +1,4 @@
+import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
@@ -14,6 +15,7 @@ class _AcademicDetailsState extends State<AcademicDetails> {
 
   FireStoreService fireStoreService = FireStoreService();
   LoadingDialog loadingDialog = LoadingDialog();
+  SharedPreferences sharedPreferences = SharedPreferences();
   Utils utils = Utils();
 
   String? _selectedYear;
@@ -59,7 +61,6 @@ class _AcademicDetailsState extends State<AcademicDetails> {
           _fetchSections(_selectedYear!, _selectedBranch!, _selectedSpecialization!);
         }
       } else {
-        // Handle case where user data is not found or null
         print('User details not found.');
       }
     } catch (e) {
@@ -69,11 +70,10 @@ class _AcademicDetailsState extends State<AcademicDetails> {
     }
   }
 
-
   Future<void> _fetchYears() async {
     try {
       var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').get();
-      List<String> years = snapshot.docs.map((doc) => doc.id).toList();
+      List<String> years = snapshot.docs.map((doc) => doc.id).toSet().toList();
       setState(() {
         _years = years;
         if (_years.isNotEmpty && _selectedYear == null) {
@@ -89,7 +89,8 @@ class _AcademicDetailsState extends State<AcademicDetails> {
   Future<void> _fetchBranches(String year) async {
     try {
       var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').doc(year).collection('BRANCHES').get();
-      List<String> branches = snapshot.docs.map((doc) => doc.id).toList();
+      List<String> branches = snapshot.docs.map((doc) => doc.id).toSet().toList();
+      print('Branches: $branches');
       setState(() {
         _branches = branches;
         if (_branches.isNotEmpty && _selectedBranch == null) {
@@ -105,7 +106,8 @@ class _AcademicDetailsState extends State<AcademicDetails> {
   Future<void> _fetchSpecializations(String year, String branch) async {
     try {
       var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').doc(year).collection('BRANCHES').doc(branch).collection('SPECIALIZATIONS').get();
-      List<String> specializations = snapshot.docs.map((doc) => doc.id).toList();
+      List<String> specializations = snapshot.docs.map((doc) => doc.id).toSet().toList();
+      print('specializations: $specializations');
       setState(() {
         _specializations = specializations;
         if (_specializations.isNotEmpty && _selectedSpecialization == null) {
@@ -121,7 +123,7 @@ class _AcademicDetailsState extends State<AcademicDetails> {
   Future<void> _fetchSections(String year, String branch, String specialization) async {
     try {
       var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').doc(year).collection('BRANCHES').doc(branch).collection('SPECIALIZATIONS').doc(specialization).collection('SECTIONS').get();
-      List<String> sections = snapshot.docs.map((doc) => doc.id).toList();
+      List<String> sections = snapshot.docs.map((doc) => doc.id).toSet().toList();
       setState(() {
         _sections = sections;
         if (_sections.isNotEmpty && _selectedSection == null) {
@@ -149,6 +151,7 @@ class _AcademicDetailsState extends State<AcademicDetails> {
 
       await userRef.set(data, SetOptions(merge: true));
 
+      sharedPreferences.storeMapValuesInSecureStorage(data);
       Navigator.pop(context);
       loadingDialog.dismiss();
 
@@ -161,6 +164,9 @@ class _AcademicDetailsState extends State<AcademicDetails> {
 
   @override
   Widget build(BuildContext context) {
+    print('Selected Specialization: $_selectedSpecialization');
+    print('Specializations List: $_specializations');
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Academic Details'),
@@ -286,4 +292,5 @@ class _AcademicDetailsState extends State<AcademicDetails> {
       ),
     );
   }
+
 }

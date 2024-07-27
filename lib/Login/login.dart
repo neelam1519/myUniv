@@ -160,7 +160,6 @@ class _LoginState extends State<Login> {
     return googleSignInAccount;
   }
 
-  /// Handles Firebase authentication
   Future<void> _firebaseSignIn(GoogleSignInAccount googleSignInAccount, BuildContext context) async {
     final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
 
