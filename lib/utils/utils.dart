@@ -460,6 +460,13 @@ class Utils{
     return (numberOfFiles * pagesPerFile).toDouble();
   }
 
+  bool isEmailPrefixNumeric(String email) {
+    // Extract the prefix before the '@' symbol
+    String prefix = email.split('@').first;
+
+    // Check if the prefix contains only digits
+    return RegExp(r'^\d+$').hasMatch(prefix);
+  }
 
 
 // Future<void> sendSMS(String message, String recipient) async {

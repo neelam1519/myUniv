@@ -103,6 +103,8 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
         fireStoreService.uploadMapDataToFirestore(leaveData, userLeaveRef);
         fireStoreService.uploadMapDataToFirestore(leaveData, classRef);
 
+        print('ClassRef: ${classRef.path}  ');
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Leave form submitted successfully')));
         _clearForm();
       } else {

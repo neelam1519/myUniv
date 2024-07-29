@@ -43,7 +43,6 @@ class _LeaveFormHomeState extends State<LeaveFormHome> {
         }
       }
     }
-
     // Reverse the allData map
     Map<String, Map<String, dynamic>> reversedAllData = Map.fromEntries(allData.entries.toList());
 

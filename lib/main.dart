@@ -1,5 +1,6 @@
+import 'package:findany_flutter/LecturersHome.dart';
 import 'package:findany_flutter/groupchat/chatting.dart';
-import 'package:findany_flutter/groupchat/universitychat.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,11 +10,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:in_app_update/in_app_update.dart';
+
+import 'leaveforms/leaveformprovider.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -21,8 +25,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
   NotificationService().showNotification(message);
 }
-
-
 
 final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
@@ -56,11 +58,17 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FindAny',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: AuthCheck(),
-      builder: EasyLoading.init(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => LeaveFormProvider())
+      ],
+      child:MaterialApp(
+        title: 'FindAny',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: AuthCheck(),
+        builder: EasyLoading.init(),
+      ),
+
     );
   }
 }
@@ -71,6 +79,8 @@ class AuthCheck extends StatefulWidget {
 }
 
 class _AuthCheckState extends State<AuthCheck> {
+
+  Utils utils =Utils();
   @override
   void initState() {
     super.initState();
@@ -123,7 +133,24 @@ class _AuthCheckState extends State<AuthCheck> {
           return Center(child: CircularProgressIndicator());
         } else {
           EasyLoading.dismiss();
-          return snapshot.hasData ? Home() : Login();
+
+          if (snapshot.hasData) {
+            String? email = snapshot.data?.email;
+            if (email != null && utils.isEmailPrefixNumeric(email)) {
+              print('User logged in with the Student Email');
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+              });
+            } else {
+              print('User logged in with the Lecturer Email');
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Lecturershome()));
+              });
+            }
+            return Container(); // Return an empty container while navigating
+          } else {
+            return Login();
+          }
         }
       },
     );

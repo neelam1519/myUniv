@@ -53,7 +53,7 @@ dependencies:
   syncfusion_flutter_pdfviewer: ^26.2.4
   device_info_plus: ^10.1.0
   universal_io: ^2.2.2
-
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:

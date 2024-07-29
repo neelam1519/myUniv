@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Home.dart';
+import 'package:findany_flutter/LecturersHome.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
@@ -151,7 +152,6 @@ class _LoginState extends State<Login> {
     }
   }
 
-  /// Handles Google Sign-In for mobile (Android/iOS)
   Future<GoogleSignInAccount?> _mobileGoogleSignIn() async {
     GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
     if (googleSignInAccount == null) {
@@ -181,15 +181,29 @@ class _LoginState extends State<Login> {
     if (user != null && context.mounted) {
       final String? email = user.email;
       print('Email: $email');
-      if (email != null && email.endsWith('@klu.ac.in')) {
-        print('User logged in with the University Email');
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-        await storeRequiredData();
-      } else {
-        await signOut();
-        loadingDialog.dismiss();
-        loadingDialog.showError('Please sign in with a valid KARE email.');
+
+      if(utils.isEmailPrefixNumeric(email!)){
+
+          print('User logged in with the Student Email');
+
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+          await storeRequiredData();
+      }else{
+          print('User logged in with the Lecturer Email');
+
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Lecturershome()));
+          await storeRequiredData();
       }
+      // if (email != null && email.endsWith('@klu.ac.in')) {
+      //   print('User logged in with the University Email');
+      //
+      //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+      //   await storeRequiredData();
+      // } else {
+      //   await signOut();
+      //   loadingDialog.dismiss();
+      //   loadingDialog.showError('Please sign in with a valid KARE email.');
+      // }
     } else {
       print('User is null after signing in.');
       await signOut();
