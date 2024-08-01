@@ -1,6 +1,7 @@
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Firebase/realtimedatabase.dart';
 import 'package:findany_flutter/Firebase/storage.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
   FireStoreService fireStoreService = FireStoreService();
   RealTimeDatabase realTimeDatabase = RealTimeDatabase();
   FirebaseStorageHelper firebaseStorageHelper = FirebaseStorageHelper();
+  LoadingDialog loadingDialog =LoadingDialog();
   Utils utils = Utils();
   SharedPreferences sharedPreferences  = SharedPreferences();
 
@@ -46,6 +48,7 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
 
 
   Future<void> _uploadFileAndSubmitForm() async {
+    loadingDialog.showDefaultLoading("Submitting LeaveForm...");
     if (_formKey.currentState?.validate() ?? false) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -78,7 +81,7 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
         String specialization = await sharedPreferences.getDataFromReference(userRef, "SPECIALIZATION");
         String section = await sharedPreferences.getDataFromReference(userRef, "SECTION");
 
-        DocumentReference classRef = FirebaseFirestore.instance.doc("AcademicDetails/$year/BRANCHES/$branch/SPECIALIZATIONS/$specialization/SECTIONS/$section/LEAVEFORMS/PENDING");
+        DocumentReference classRef = FirebaseFirestore.instance.doc("AcademicDetails/$year/BRANCHES/$branch/SPECIALIZATIONS/$specialization/SECTIONS/$section/FACULTY ADVISOR LEAVEFORMS/PENDING");
 
         Map<String,dynamic> data = {
           'studentId': regNo,
@@ -89,11 +92,11 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
           'fatherMobile': _fatherMobileController.text,
           'alternativeMobile': _alternativeMobileController.text,
           'proofFileUrl': fileUrl,
-          'facultyAdvisorApproval': {'status': false, 'timestamp': null},
-          'yearCoordinatorApproval': {'status': false, 'timestamp': null},
-          'hodApproval': {'status': false, 'timestamp': null},
-          'hostelWardenApproval': {'status': false, 'timestamp': null},
-          'finalApproval': {'status': false, 'timestamp': null},
+          'facultyAdvisorApproval': {'status': "PENDING" , 'timestamp': null},
+          'yearCoordinatorApproval': {'status': "PENDING" , 'timestamp': null},
+          'hodApproval': {'status': "PENDING", 'timestamp' : null},
+          'hostelWardenApproval': {'status': "PENDING" , 'timestamp': null},
+          'finalApproval': {'status': "PENDING" , 'timestamp': null},
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp()
         };
@@ -111,6 +114,7 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not logged in')));
       }
     }
+    loadingDialog.dismiss();
   }
 
   void _clearForm() {

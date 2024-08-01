@@ -165,8 +165,7 @@ class _MaterialsHomeState extends State<MaterialsHome> {
                                   getSpecialization();
                                 },
                                 isDense: true,
-                                items: branchList
-                                    .map<DropdownMenuItem<String>>((String? value) {
+                                items: branchList.map<DropdownMenuItem<String>>((String? value) {
                                   return DropdownMenuItem<String>(
                                     value: value!,
                                     child: Text(value),

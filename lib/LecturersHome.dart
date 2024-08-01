@@ -5,12 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/notification.dart';
-import 'package:findany_flutter/apis/googleDrive.dart';
-import 'package:findany_flutter/busbooking/busbookinghome.dart';
-import 'package:findany_flutter/groupchat/chatting.dart';
 import 'package:findany_flutter/groupchat/groupchathome.dart';
-import 'package:findany_flutter/groupchat/universitychat.dart';
-import 'package:findany_flutter/leaveforms/leaveformshome.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/Other/QandA.dart';
 import 'package:findany_flutter/Other/review.dart';
@@ -21,7 +16,6 @@ import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_database/firebase_database.dart' as rtdb;
@@ -30,7 +24,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import 'leaveforms/lecturerleavehome.dart';
 
 class Lecturershome extends StatefulWidget {
@@ -322,7 +315,7 @@ class _HomeState extends State<Lecturershome> with WidgetsBindingObserver {
   Future<void> loadData() async {
     loadingDialog.showDefaultLoading("Getting Details...");
     DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
-    email = await sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
+    email =await utils.getCurrentUserEmail();
     name = await sharedPreferences.getDataFromReference(documentReference, "Name") ?? '';
     imageUrl = await sharedPreferences.getDataFromReference(documentReference, 'ProfileImageURL') ?? '';
 
@@ -336,6 +329,7 @@ class _HomeState extends State<Lecturershome> with WidgetsBindingObserver {
     if (!mounted) return;
     print("Singing out user in Home");
     loadingDialog.showDefaultLoading('Signing Out...');
+
     try {
       await FirebaseAuth.instance.signOut();
       await GoogleSignIn().disconnect();

@@ -1,21 +1,70 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class LeaveFormProvider with ChangeNotifier {
-  Map<String, dynamic> _leaveData = {};
-  DocumentReference? _documentReference;
+  List<Map<String, dynamic>> _leaveData = [];
+  String? id;
 
-  Map<String, dynamic> get leaveData => _leaveData;
-  DocumentReference? get documentReference => _documentReference;
+  String? _selectedRole;
+  String? _selectedStatus;
+  String? _selectedStream;
 
-  void setLeaveData(Map<String, dynamic> data, DocumentReference reference) {
-    _leaveData = data;
-    _documentReference = reference;
+  List<String> roles = [];
+  List<String> stream = [];
+  List<String> sectionYear = [];
+
+  List<Map<String, dynamic>> get leaveData => _leaveData;
+  String? get leaveID => id;
+  String? get selectedRole => _selectedRole;
+  String? get selectedStatus => _selectedStatus;
+  String? get selectedStream => _selectedStream;
+
+  void setLeaveID(String leaveID) {
+    id = leaveID;
     notifyListeners();
   }
 
-  void updateApprovalStatus(bool isApproved) {
-    _leaveData['finalApproval']['status'] = isApproved;
+  void updateRole(String role) {
+    _selectedRole = role;
+    notifyListeners();
+  }
+
+  void updateStream(String stream) {
+    _selectedStream = stream;
+    notifyListeners();
+  }
+
+  void updateStatus(String status) {
+    _selectedStatus = status;
+    notifyListeners();
+  }
+
+  void updateDropDown(List<String> role, List<String> streams, List<String> sectionyear) {
+    roles = role;
+    stream = streams;
+    sectionYear = sectionyear;
+    _selectedRole = roles.isNotEmpty ? roles[0] : null;
+    _selectedStream = stream.isNotEmpty ? stream[0] : null;
+    _selectedStatus = sectionYear.isNotEmpty ? sectionYear[0] : null;
+    notifyListeners();
+  }
+
+  void addLeaveData(List<Map<String, dynamic>> data) {
+    _leaveData = data;
+    notifyListeners();
+  }
+
+  void clearLeaveData() {
+    _leaveData = [];
+    notifyListeners();
+  }
+
+  void updateLeaveData(int index, Map<String, dynamic> updatedData) {
+    _leaveData[index] = updatedData;
+    notifyListeners();
+  }
+
+  void removeLeaveData(int index) {
+    _leaveData.removeAt(index);
     notifyListeners();
   }
 }

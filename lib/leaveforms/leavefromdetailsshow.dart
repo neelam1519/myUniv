@@ -1,13 +1,37 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/leaveforms/leaveformprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class LeaveFormDetailsShow extends StatelessWidget {
+class LeaveFormDetailsShow extends StatefulWidget {
+  final int index;
+
+  LeaveFormDetailsShow({required this.index});
+
+  @override
+  _LeaveFormDetailsShowState createState() => _LeaveFormDetailsShowState();
+}
+
+class _LeaveFormDetailsShowState extends State<LeaveFormDetailsShow> {
 
   @override
   Widget build(BuildContext context) {
-    final leaveData = Provider.of<LeaveFormProvider>(context).leaveData;
+    final leaveFormProvider = Provider.of<LeaveFormProvider>(context);
+    final List<Map<String, dynamic>> leaveData = leaveFormProvider.leaveData;
+
+    if (widget.index >= leaveData.length) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Leave Form Details'),
+        ),
+        body: Center(
+          child: Text('Leave form not found.'),
+        ),
+      );
+    }
+
+    final Map<String, dynamic> leaveDetails = leaveData[widget.index];
+    final String docId = leaveDetails.keys.first;
+    final Map<String, dynamic> data = leaveDetails[docId];
 
     return Scaffold(
       appBar: AppBar(
@@ -25,77 +49,34 @@ class LeaveFormDetailsShow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Student ID:', leaveData['studentId']),
-                _buildInfoRow('Student Name:', leaveData['studentName']),
+                _buildInfoRow('Student ID:', data['studentId'] ?? 'N/A'),
+                _buildInfoRow('Student Name:', data['studentName'] ?? 'N/A'),
                 Row(
                   children: [
-                    Text(
-                      'From Date: ${leaveData['fromDate']}',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    _buildDateInfo('From Date:', data['fromDate'] ?? 'N/A'),
                     SizedBox(width: 20),
-                    Text(
-                      'To Date: ${leaveData['toDate']}',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    _buildDateInfo('To Date:', data['toDate'] ?? 'N/A'),
                   ],
                 ),
                 Divider(height: 20, thickness: 1),
-                _buildInfoRow('Father Mobile:', leaveData['fatherMobile']),
-                _buildInfoRow('Alternative Mobile:', leaveData['alternativeMobile']),
+                _buildInfoRow('Father Mobile:', data['fatherMobile'] ?? 'N/A'),
+                _buildInfoRow('Alternative Mobile:', data['alternativeMobile'] ?? 'N/A'),
                 Divider(height: 20, thickness: 1),
-                _buildInfoRow('Reason:', leaveData['reason']),
+                _buildInfoRow('Reason:', data['reason'] ?? 'N/A'),
                 Divider(height: 20, thickness: 1),
-                _buildInfoRow('Proof File URL:', leaveData['proofFileUrl']),
+                _buildInfoRow('Proof File URL:', data['proofFileUrl'] ?? 'N/A'),
                 Divider(height: 20, thickness: 1),
-                _buildApprovalRow(
-                  'Faculty Advisor Approval:',
-                  leaveData['facultyAdvisorApproval']['status'] ? 'Approved' : 'Not Approved',
-                ),
-                _buildApprovalRow(
-                  'Year Coordinator Approval:',
-                  leaveData['yearCoordinatorApproval']['status'] ? 'Approved' : 'Not Approved',
-                ),
-                _buildApprovalRow(
-                  'HOD Approval:',
-                  leaveData['hodApproval']['status'] ? 'Approved' : 'Not Approved',
-                ),
-                _buildApprovalRow(
-                  'Hostel Warden Approval:',
-                  leaveData['hostelWardenApproval']['status'] ? 'Approved' : 'Not Approved',
-                ),
+                _buildApprovalRow('Faculty Advisor Approval:', data['facultyAdvisorApproval']?['status']),
+                _buildApprovalRow('Year Coordinator Approval:', data['yearCoordinatorApproval']?['status']),
+                _buildApprovalRow('HOD Approval:', data['hodApproval']?['status']),
+                _buildApprovalRow('Hostel Warden Approval:', data['hostelWardenApproval']?['status']),
                 Divider(height: 20, thickness: 1),
-                _buildApprovalRow(
-                  'Final Approval:',
-                  leaveData['finalApproval']['status'] ? 'Approved' : 'Not Approved',
-                  isBold: true,
-                ),
+                _buildApprovalRow('Final Approval:', data['finalApproval']?['status'], isBold: true),
+                SizedBox(height: 20),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildApprovalRow(String label, String status, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.bold : FontWeight.normal),
-          ),
-          Expanded(
-            child: Text(
-              status,
-              textAlign: TextAlign.end,
-              style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.bold : FontWeight.normal),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -113,6 +94,35 @@ class LeaveFormDetailsShow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
+              style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.bold : FontWeight.normal),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateInfo(String label, String date) {
+    return Text(
+      '$label $date',
+      style: TextStyle(fontSize: 16),
+    );
+  }
+
+  Widget _buildApprovalRow(String label, String status, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.bold : FontWeight.normal),
+          ),
+          Expanded(
+            child: Text(
+              status,
+              textAlign: TextAlign.end,
               style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.bold : FontWeight.normal),
             ),
           ),

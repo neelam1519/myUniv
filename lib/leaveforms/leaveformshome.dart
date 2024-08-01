@@ -43,7 +43,6 @@ class _LeaveFormHomeState extends State<LeaveFormHome> {
         }
       }
     }
-    // Reverse the allData map
     Map<String, Map<String, dynamic>> reversedAllData = Map.fromEntries(allData.entries.toList());
 
     print("Reversed All Data: $reversedAllData");
@@ -85,7 +84,7 @@ class _LeaveFormHomeState extends State<LeaveFormHome> {
               final fromDate = leaveForm['fromDate'] ?? 'Unknown';
               final toDate = leaveForm['toDate'] ?? 'Unknown';
               final reason = leaveForm['reason'] ?? 'No reason provided';
-              final approvalStatus = leaveForm['finalApproval']['status'] == true ? 'Approved' : 'Pending';
+              final approvalStatus = leaveForm['finalApproval']['status'];
               final createdAt = leaveForm['createdAt'] != null
                   ? (leaveForm['createdAt'] as Timestamp).toDate()
                   : null;
@@ -118,8 +117,6 @@ class _LeaveFormHomeState extends State<LeaveFormHome> {
       ),
     );
   }
-
-
 
   @override
   void dispose() {
