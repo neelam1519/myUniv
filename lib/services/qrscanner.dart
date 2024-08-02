@@ -76,6 +76,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       setState(() {
         result = scanData;
       });
+      // Return the scanned QR code data to the previous screen
+      Navigator.pop(context, result!.code);
     }, onError: (error) {
       print('Error: $error');
     });

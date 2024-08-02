@@ -1,6 +1,8 @@
 import 'package:findany_flutter/LecturersHome.dart';
 import 'package:findany_flutter/groupchat/chatting.dart';
+import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:findany_flutter/watchmenHome.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -125,34 +127,37 @@ class _AuthCheckState extends State<AuthCheck> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          EasyLoading.show(status: 'Loading...');
-          return Center(child: CircularProgressIndicator());
-        } else {
-          EasyLoading.dismiss();
+    Utils utils = Utils();
 
-          if (snapshot.hasData) {
-            String? email = snapshot.data?.email;
-            if (email != null && utils.isEmailPrefixNumeric(email)) {
-              print('User logged in with the Student Email');
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-              });
-            } else {
-              print('User logged in with the Lecturer Email');
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Lecturershome()));
-              });
-            }
-            return Container(); // Return an empty container while navigating
-          } else {
-            return Login();
-          }
+    Future<void> checkUserEmail() async {
+      String? email = await utils.getCurrentUserEmail();
+      if (email != null && utils.isEmailPrefixNumeric(email)) {
+        print('User logged in with the Student Email');
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+      } else {
+        SharedPreferences sharedPreferences = SharedPreferences();
+        String value = await sharedPreferences.getSecurePrefsValue("LoginType");
+
+        print('LoginType: $value');
+
+        if (value == "WATCHMEN") {
+          print('User logged in with the Lecturer Email');
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => Watchmenhome()));
+        } else {
+          print('User logged in with the Lecturer Email');
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => Lecturershome()));
         }
-      },
-    );
+      }
+    }
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      checkUserEmail();
+      return Container();
+    } else {
+      return Login();
+    }
   }
+
 }

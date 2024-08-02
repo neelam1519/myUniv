@@ -162,72 +162,69 @@ class _LoginState extends State<Login> {
   }
 
   Future<void> _firebaseSignIn(GoogleSignInAccount googleSignInAccount, BuildContext context) async {
-    final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
+    try {
+      final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
 
-    print('Access Token: ${googleSignInAuthentication.accessToken}');
-    print('ID Token: ${googleSignInAuthentication.idToken}');
+      print('Access Token: ${googleSignInAuthentication.accessToken}');
+      print('ID Token: ${googleSignInAuthentication.idToken}');
 
-    if (googleSignInAuthentication.accessToken == null || googleSignInAuthentication.idToken == null) {
-      throw Exception('Google Sign-In authentication tokens are null');
-    }
+      if (googleSignInAuthentication.accessToken == null || googleSignInAuthentication.idToken == null) {
+        throw Exception('Google Sign-In authentication tokens are null');
+      }
 
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleSignInAuthentication.accessToken,
-      idToken: googleSignInAuthentication.idToken,
-    );
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleSignInAuthentication.accessToken,
+        idToken: googleSignInAuthentication.idToken,
+      );
 
-    final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
-    final User? user = authResult.user;
+      final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? user = authResult.user;
 
-    FireStoreService fireStoreService = FireStoreService();
-    if (user != null && context.mounted) {
-      final String? email = user.email;
-      print('Email: $email');
+      FireStoreService fireStoreService = FireStoreService();
+      if (user != null && context.mounted) {
+        final String? email = user.email;
+        SharedPreferences sharedPreferences = SharedPreferences();
+        print('Email: $email');
 
-      if(utils.isEmailPrefixNumeric(email!)){
-
+        if (email != null && utils.isEmailPrefixNumeric(email)) {
           print('User logged in with the Student Email');
-
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-          await storeRequiredData();
-      }else{
+        } else {
           print('User logged in with the Lecturer Email');
           DocumentReference documentReference = FirebaseFirestore.instance.doc("/AcademicDetails/STAFFDETAILS/ROLES/$email");
           Map<String, dynamic>? roleData = await fireStoreService.getDocumentDetails(documentReference);
+          print('RoleData: $roleData');
 
-          if (roleData!.containsKey('ROLES') && roleData['ROLES'].contains('WATCHMEN')) {
+          if (roleData != null && roleData.containsKey('ROLES') && roleData['ROLES'].contains('WATCHMEN')) {
             print('Watchmen Login');
-            // Navigate to Watchmen home
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => Watchmenhome()),
             );
+            await sharedPreferences.storeValueInSecurePrefs("LoginType", "WATCHMEN");
           } else {
-            print('roleData: $roleData');
+            print('Role Data: $roleData');
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => Lecturershome()),
             );
+            await sharedPreferences.storeValueInSecurePrefs("LoginType", "LECTURER");
           }
-          await storeRequiredData();
 
+        }
+        await storeRequiredData();
+      } else {
+        print('User is null after signing in.');
+        await signOut();
+        loadingDialog.dismiss();
       }
-      // if (email != null && email.endsWith('@klu.ac.in')) {
-      //   print('User logged in with the University Email');
-      //
-      //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-      //   await storeRequiredData();
-      // } else {
-      //   await signOut();
-      //   loadingDialog.dismiss();
-      //   loadingDialog.showError('Please sign in with a valid KARE email.');
-      // }
-    } else {
-      print('User is null after signing in.');
+    } catch (e) {
+      print('Error during sign-in: $e');
       await signOut();
       loadingDialog.dismiss();
     }
   }
+
 
   Future<void> storeRequiredData() async {
     try {
