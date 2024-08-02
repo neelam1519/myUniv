@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class QRScannerScreen extends StatefulWidget {
   @override
@@ -10,23 +13,71 @@ class QRScannerScreen extends StatefulWidget {
 class _QRScannerScreenState extends State<QRScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
-  Barcode? result;
+  String? scannedData;
+  Map<String, dynamic>? documentData = {};
+  bool isLoading = false;
+
+  LoadingDialog loadingDialog = LoadingDialog();
+  Utils utils = Utils();
+  FireStoreService fireStoreService = FireStoreService();
 
   @override
-  void initState() {
-    super.initState();
-    _checkCameraPermission();
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
   }
 
-  Future<void> _checkCameraPermission() async {
-    var status = await Permission.camera.status;
-    if (status.isDenied) {
-      // Request permission
-      await Permission.camera.request();
-    } else if (status.isPermanentlyDenied) {
-      // Open settings if the permission is permanently denied
-      openAppSettings();
+  void _onQRViewCreated(QRViewController controller) {
+    this.controller = controller;
+    controller.scannedDataStream.listen((scanData) async {
+      if (!isLoading) {
+        setState(() {
+          scannedData = scanData.code;
+          isLoading = true;
+        });
+        await _fetchDataFromFirestore(scanData.code);
+        setState(() {
+          isLoading = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _fetchDataFromFirestore(String? docId) async {
+    loadingDialog.showDefaultLoading('Getting Details');
+    if (docId == null) return;
+
+    DocumentReference documentReference = FirebaseFirestore.instance.doc("LeaveForms/$docId");
+    print('Document Reference: ${documentReference.path}');
+
+    Map<String, dynamic>? leaveData = await fireStoreService.getDocumentDetails(documentReference);
+
+    String? email = await utils.getCurrentUserEmail();
+    String? uid = await utils.getUidByEmail(email!);
+
+    DocumentReference userRef = FirebaseFirestore.instance.doc("UserDetails/$uid");
+    Map<String, dynamic>? userData = await fireStoreService.getDocumentDetails(userRef);
+
+    documentData!.addAll({
+      "APPROVAL STATUS": leaveData!["finalApproval"]["status"],
+      "FROM": leaveData["fromDate"],
+      "TO": leaveData["toDate"],
+      "REGISTRATION NUMBER": userData!['Registration Number'],
+      "PROFILE IMAGE": userData["ProfileImageURL"]
+    });
+
+    print('LeaveData: $leaveData');
+    print("UserData: $userData");
+    print('DocumentData: $documentData');
+
+    try {
+      setState(() {
+        documentData;
+      });
+    } catch (e) {
+      print(e);
     }
+    loadingDialog.dismiss();
   }
 
   @override
@@ -43,7 +94,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         child: Column(
           children: <Widget>[
             Expanded(
-              flex: 5,
+              flex: 2,
               child: QRView(
                 key: qrKey,
                 onQRViewCreated: _onQRViewCreated,
@@ -52,16 +103,69 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   borderRadius: 10,
                   borderLength: 30,
                   borderWidth: 10,
-                  cutOutSize: 300,
+                  cutOutSize: 250,
                 ),
               ),
             ),
             Expanded(
               flex: 1,
-              child: Center(
-                child: (result != null)
-                    ? Text('Barcode Type: ${formatToString(result!.format)}   Data: ${result!.code}')
-                    : Text('Scan a code'),
+              child: documentData == null
+                  ? Center(child: Text('Scan a QR code'))
+                  : Column(
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        flex: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Approval Status: ${documentData!["APPROVAL STATUS"] ?? 'CHECKING'}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: documentData!["APPROVAL STATUS"] == 'APPROVED'
+                                      ? Colors.green
+                                      : documentData!["APPROVAL STATUS"] == 'PENDING'
+                                      ? Colors.red
+                                      : Colors.black,
+                                ),
+                              ),
+                              Text(
+                                'From: ${documentData!["FROM"] ?? 'No from date found'}',
+                                style: TextStyle(fontSize: 15),
+                              ),
+                              Text(
+                                'To: ${documentData!["TO"] ?? 'No to date found'}',
+                                style: TextStyle(fontSize: 15),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 150,
+                        height: 150,
+                        child: Image.network(
+                          documentData!["PROFILE IMAGE"] ??
+                              'https://firebasestorage.googleapis.com/v0/b/findany-84c36.appspot.com/o/Logo%20Imgae%2Ftransperentlogo.png?alt=media&token=025da46c-07c9-43ae-93f5-e46a509e5ab5',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  // Add your button action here
+
+                },
+                child: Text('APPROVED'),
               ),
             ),
           ],
@@ -70,55 +174,5 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        result = scanData;
-      });
-      // Return the scanned QR code data to the previous screen
-      Navigator.pop(context, result!.code);
-    }, onError: (error) {
-      print('Error: $error');
-    });
-  }
 
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
-}
-
-String formatToString(BarcodeFormat format) {
-  switch (format) {
-    case BarcodeFormat.aztec:
-      return 'Aztec';
-    case BarcodeFormat.codabar:
-      return 'Codabar';
-    case BarcodeFormat.code128:
-      return 'Code 128';
-    case BarcodeFormat.code39:
-      return 'Code 39';
-    case BarcodeFormat.code93:
-      return 'Code 93';
-    case BarcodeFormat.dataMatrix:
-      return 'Data Matrix';
-    case BarcodeFormat.ean13:
-      return 'EAN 13';
-    case BarcodeFormat.ean8:
-      return 'EAN 8';
-    case BarcodeFormat.itf:
-      return 'ITF';
-    case BarcodeFormat.pdf417:
-      return 'PDF 417';
-    case BarcodeFormat.qrcode:
-      return 'QR Code';
-    case BarcodeFormat.upcA:
-      return 'UPC A';
-    case BarcodeFormat.upcE:
-      return 'UPC E';
-    default:
-      return 'Unknown';
-  }
 }

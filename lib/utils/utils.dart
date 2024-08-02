@@ -468,6 +468,25 @@ class Utils{
     return RegExp(r'^\d+$').hasMatch(prefix);
   }
 
+  Future<String?> getUidByEmail(String email) async {
+    final url = Uri.parse('https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['uid'];
+      } else {
+        print('Error fetching UID: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching UID: $error');
+      return null;
+    }
+  }
+
 
 // Future<void> sendSMS(String message, String recipient) async {
   //   final url = Uri.parse('https://www.fast2sms.com/dev/bulkV2');

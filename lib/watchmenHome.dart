@@ -71,6 +71,7 @@ class _HomeState extends State<Watchmenhome> {
   }
 
   Future<void> _fetchAnnouncementText() async {
+
     final DatabaseReference announcementRef = _database.ref('Home');
     _announcementSubscription = announcementRef.onValue.listen((event) {
       if (!mounted) return;

@@ -32,9 +32,11 @@ class _LeaveFormHomeState extends State<LeaveFormHome> {
 
   Future<void> getLeaveDetails() async {
     loadingDialog.showDefaultLoading("Getting Leave Data...");
-
-    String uid = utils.getCurrentUserUID();
+    String? email = await utils.getCurrentUserEmail();
+    String? uid = await utils.getUidByEmail(email!);
+    print("UID: $uid");
     DocumentReference documentReference = FirebaseFirestore.instance.doc("/UserDetails/$uid/LeaveForms/LeaveApplications");
+    print("Document Reference: $documentReference");
     Map<String, dynamic>? data = await fireStoreService.getDocumentDetails(documentReference);
 
     final leaveFormProvider = Provider.of<LeaveFormProvider>(context, listen: false);
@@ -72,6 +74,7 @@ class _LeaveFormHomeState extends State<LeaveFormHome> {
   Widget build(BuildContext context) {
     final leaveFormProvider = Provider.of<LeaveFormProvider>(context);
     final leaveData = leaveFormProvider.leaveData;
+    print("LeaveData: $leaveData");
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(

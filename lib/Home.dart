@@ -76,6 +76,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   }
 
   Future<void> _fetchAnnouncementText() async {
+    //get UID
+
     final DatabaseReference announcementRef = _database.ref('Home');
     _announcementSubscription = announcementRef.onValue.listen((event) {
       if (!mounted) return;

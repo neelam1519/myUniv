@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
-
 import '../services/qrscanner.dart';
 
 class WatchmenLeavehome extends StatefulWidget {
