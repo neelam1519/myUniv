@@ -11,6 +11,10 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
+import 'package:provider/provider.dart';
+
+import 'leaveformprovider.dart';
+
 class LeaveApplicationForm extends StatefulWidget {
   @override
   _LeaveApplicationFormState createState() => _LeaveApplicationFormState();
@@ -49,6 +53,8 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
 
   Future<void> _uploadFileAndSubmitForm() async {
     loadingDialog.showDefaultLoading("Submitting LeaveForm...");
+    final leaveFormProvider = Provider.of<LeaveFormProvider>(context, listen: false);
+
     if (_formKey.currentState?.validate() ?? false) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -101,6 +107,8 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
           'updatedAt': FieldValue.serverTimestamp()
         };
 
+        leaveFormProvider.addOneLeaveData({count.toString(): data});
+
         fireStoreService.uploadMapDataToFirestore(data, leaveFormRef);
         Map<String,dynamic> leaveData = {count.toString():leaveFormRef};
         fireStoreService.uploadMapDataToFirestore(leaveData, userLeaveRef);
@@ -114,6 +122,7 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not logged in')));
       }
     }
+    Navigator.pop(context);
     loadingDialog.dismiss();
   }
 

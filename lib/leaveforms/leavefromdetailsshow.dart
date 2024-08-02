@@ -1,6 +1,7 @@
 import 'package:findany_flutter/leaveforms/leaveformprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class LeaveFormDetailsShow extends StatefulWidget {
   final int index;
@@ -30,8 +31,15 @@ class _LeaveFormDetailsShowState extends State<LeaveFormDetailsShow> {
     }
 
     final Map<String, dynamic> leaveDetails = leaveData[widget.index];
+    print('Leave Details: $leaveDetails');
+
     final String docId = leaveDetails.keys.first;
+    print('Document ID: $docId');
+
     final Map<String, dynamic> data = leaveDetails[docId];
+    print('Data: $data');
+
+    print('Final Approval $data');
 
     return Scaffold(
       appBar: AppBar(
@@ -73,6 +81,14 @@ class _LeaveFormDetailsShowState extends State<LeaveFormDetailsShow> {
                 Divider(height: 20, thickness: 1),
                 _buildApprovalRow('Final Approval:', data['finalApproval']?['status'], isBold: true),
                 SizedBox(height: 20),
+                if (data['finalApproval']['status'] == 'APPROVED')
+                  Center(
+                    child: QrImageView(
+                      data: docId,
+                      version: QrVersions.auto,
+                      size: 200.0,
+                    ),
+                  ),
               ],
             ),
           ),

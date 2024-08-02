@@ -53,6 +53,11 @@ class LeaveFormProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void addOneLeaveData(Map<String, dynamic> newLeaveData) {
+    _leaveData.insert(0, newLeaveData);
+    notifyListeners();
+  }
+
   void clearLeaveData() {
     _leaveData = [];
     notifyListeners();

@@ -35,8 +35,8 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
   List<String> streams = [];
   List<String> sectionYears = [];
 
-  String streamText="STREAM";
-  String sectionYearText="SECTION/YEAR";
+  String streamText = "STREAM";
+  String sectionYearText = "SECTION/YEAR";
 
   Map<String, dynamic>? rolesData = {};
 
@@ -61,6 +61,7 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
     } else {
       updateDropdown(selectedRole!);
     }
+
     print('Roles Data: $rolesData');
     fetchAllLeaveForms('PENDING', selectedRole!, selectedStatus!, rolesData!["BRANCH"], selectedStream!);
   }
@@ -68,18 +69,17 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
   Future<void> fetchAllLeaveForms(String status, String role, String sectionYear, String branch, String stream) async {
     loadingDialog.showDefaultLoading("Getting LeaveForms");
     final leaveFormProvider = Provider.of<LeaveFormProvider>(context, listen: false);
-    CollectionReference collectionReference = FirebaseFirestore.instance.collection("AcademicDetails");
 
     DocumentReference documentReference = FirebaseFirestore.instance.doc("AcademicDetails/ErrorLeaveForms");
 
     if (role == 'FACULTY ADVISOR') {
       documentReference = FirebaseFirestore.instance.doc('/AcademicDetails/${rolesData!["FACULTY ADVISOR YEAR"]}/BRANCHES/$branch/SPECIALIZATIONS/$stream/SECTIONS/$sectionYear/$role LEAVEFORMS/$status');
-    } else if(role=="YEAR COORDINATOR"){
+    } else if (role == "YEAR COORDINATOR") {
       documentReference = FirebaseFirestore.instance.doc('/AcademicDetails/$sectionYear/BRANCHES/$branch/SPECIALIZATIONS/$stream/LEAVEFORMS/$status');
-    }else if(role == "HOD"){
+    } else if (role == "HOD") {
       documentReference = FirebaseFirestore.instance.doc('/AcademicDetails/$sectionYear/BRANCHES/$branch/LEAVEFORMS/$status');
-    }else if(role == "HOSTEL WARDEN"){
-      documentReference = FirebaseFirestore.instance.doc("HostelDetails/BHATGHAT SINGH HOSTEL/LEAVEFORMS/$status");
+    } else if (role == "HOSTEL WARDEN") {
+      documentReference = FirebaseFirestore.instance.doc("HostelDetails/BHAGHAT SINGH HOSTEL/LEAVEFORMS/$status");
     }
 
     print("Document Reference: ${documentReference.path}");
@@ -96,7 +96,19 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
       }
     }
 
-    allLeaveData.sort((a, b) => int.parse(a.keys.first).compareTo(int.parse(b.keys.first)));
+    if(status == "PENDING") {
+      allLeaveData.sort((a, b) {
+        final idA = a.keys.first;
+        final idB = b.keys.first;
+        return idA.compareTo(idB);
+      });
+    }else{
+      allLeaveData.sort((a, b) {
+        final idA = a.keys.first;
+        final idB = b.keys.first;
+        return idB.compareTo(idA);
+      });
+    }
 
     setState(() {
       leaveData.clear();
@@ -114,14 +126,14 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
     if (role == "FACULTY ADVISOR") {
       streams = List<String>.from(rolesData!["FACULTY ADVISOR STREAM"]);
       sectionYears = List<String>.from(rolesData!["FACULTY ADVISOR SECTION"]);
-      sectionYearText="SECTION";
-    } else if (role == "YEAR COORDINATOR" || role =="H0D") {
+      sectionYearText = "SECTION";
+    } else if (role == "YEAR COORDINATOR" || role == "HOD") {
       streams = List<String>.from(rolesData!["YEAR COORDINATOR STREAM"]);
       sectionYears = List<String>.from(rolesData!["YEAR COORDINATOR YEAR"]);
-      sectionYearText="YEAR";
-    }else if(role == "HOSTEL WARDEN"){
+      sectionYearText = "YEAR";
+    } else if (role == "HOSTEL WARDEN") {
       streamText = "HOSTEL NAME";
-      streams =['BHAGHATH SINGH HOSTEL'];
+      streams = ['BHAGHAT SINGH HOSTEL'];
     }
 
     leaveFormProvider.updateRole(role);
@@ -245,9 +257,10 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
     );
   }
 
-
   Future<void> acceptAllForms() async {
-    loadingDialog.showDefaultLoading('Accept all Forms of $selectedStatus');
+    loadingDialog.showDefaultLoading('Accepting all');
+
+    final leaveFormProvider = Provider.of<LeaveFormProvider>(context, listen: false);
 
     String acceptName = "";
     if (selectedRole == "FACULTY ADVISOR") {
@@ -258,19 +271,102 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
       acceptName = "hodApproval";
     }
 
-    for (Map<String, dynamic> form in leaveData) {
-      String key = form.keys.first;
-      DocumentReference documentReference = FirebaseFirestore.instance.doc("LeaveForms/$key");
+    CollectionReference collectionReference;
+    if (selectedRole == 'YEAR COORDINATOR') {
+      collectionReference = FirebaseFirestore.instance.collection(
+          '/AcademicDetails/$selectedStatus/BRANCHES/${rolesData!["BRANCH"]}/SPECIALIZATIONS/${selectedStream}/LEAVEFORMS');
+    } else if (selectedRole == "HOD") {
+      collectionReference = FirebaseFirestore.instance.collection(
+          '/AcademicDetails/${selectedStatus}/BRANCHES/${rolesData!["BRANCH"]}/LEAVEFORMS');
+    } else if (selectedRole == "HOSTEL WARDEN") {
+      collectionReference = FirebaseFirestore.instance.collection(
+          "HostelDetails/BHATGHAT SINGH HOSTEL/LEAVEFORMS");
+    } else {
+      throw Exception('Invalid Role');
+    }
 
-      await documentReference.update({
-        '$acceptName.status': "ACCEPTED",
-      }).then((_) {
-        print('Form $key accepted.');
-      }).catchError((error) {
-        print('Failed to update form $key: $error');
+    List<String> fieldNames = [];
+
+    for(var map in leaveData) {
+      map.forEach((key, value) {
+        fieldNames.add(key);
       });
     }
+
+    fireStoreService.deleteFieldsFromDocument(collectionReference.doc("PENDING"), fieldNames);
+
+    print('Field Names: $fieldNames');
+    print('Collection Reference: ${collectionReference.path}');
+
+    for (var map in leaveData) {
+      for (var entry in map.entries) {
+        print("Entry: $entry");
+        String key = entry.key;
+
+        DocumentReference reference = FirebaseFirestore.instance.doc("LeaveForms/$key");
+        print('Reference: $reference');
+        Map<String, dynamic> uploadData = {key: reference};
+        await reference.update({'$acceptName.status': "APPROVED"});
+        await fireStoreService.uploadMapDataToFirestore(uploadData, collectionReference.doc('ACCEPTED'));
+      }
+    }
+
+    leaveFormProvider.clearLeaveData();
     loadingDialog.dismiss();
+  }
+
+
+
+  Future<Map<String, dynamic>> getAllAcceptedLeaveForms() async {
+    DocumentReference acceptedLeaveForm = FirebaseFirestore.instance.doc("LeaveForms/FINAL APPROVED");
+
+    Map<String, dynamic>? allAcceptedForms = await fireStoreService.getDocumentDetails(acceptedLeaveForm);
+    print('LeaveForms: ${allAcceptedForms}');
+
+    Map<String, dynamic> allLeaveData = {};
+    if (allAcceptedForms != null) {
+      for (var entry in allAcceptedForms.entries) {
+        DocumentReference ref = entry.value as DocumentReference;
+        DocumentSnapshot doc = await ref.get();
+        allLeaveData[doc.id] = doc.data()!;
+      }
+    }
+
+    print("All LEAVE DATA: $allLeaveData");
+    return allLeaveData;
+  }
+
+  Widget buildAcceptedLeaveFormsList() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: getAllAcceptedLeaveForms(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else if (snapshot.hasData) {
+          final leaveForms = snapshot.data!;
+          return Column(
+            children: [
+              Text('Total Approved Students: ${leaveForms.length}'),
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: leaveForms.length,
+                itemBuilder: (context, index) {
+                  final studentId = leaveForms.keys.elementAt(index);
+                  final studentData = leaveForms[studentId];
+                  return ListTile(
+                    title: Text('Student ID: ${studentData["studentId"]}'),
+                  );
+                },
+              ),
+            ],
+          );
+        } else {
+          return Text('No Data');
+        }
+      },
+    );
   }
 
   @override
@@ -293,6 +389,15 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
       body: IndexedStack(
         index: _selectedIndex,
         children: _collectionNames.map((status) {
+          if (status == "STATS") {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+
+                buildAcceptedLeaveFormsList(),
+              ],
+            );
+          }
           final leaveFormProvider = Provider.of<LeaveFormProvider>(context);
           final providerData = leaveFormProvider.leaveData;
 
@@ -377,23 +482,24 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
         }).toList(),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
+        items: <BottomNavigationBarItem>[
+          const BottomNavigationBarItem(
             icon: Icon(Icons.hourglass_empty),
             label: 'Pending',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.check),
             label: 'Accepted',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.close),
             label: 'Rejected',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assessment),
-            label: 'Stats',
-          ),
+          if (selectedRole == "HOD")
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.assessment),
+              label: 'Stats',
+            ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue, // Set the color for the selected item
@@ -401,20 +507,17 @@ class _LecturerLeaveHomeState extends State<LecturerLeaveHome> {
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
-            if(_collectionNames[_selectedIndex] == "STATS"){
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Leaveformstats()
-                ),
-              );
-              return;
-            }
-            fetchAllLeaveForms(_collectionNames[_selectedIndex], selectedRole!, selectedStatus!, rolesData!["BRANCH"], selectedStream!);
+            fetchAllLeaveForms(
+              _collectionNames[_selectedIndex],
+              selectedRole!,
+              selectedStatus!,
+              rolesData!["BRANCH"],
+              selectedStream!,
+            );
           });
         },
       ),
-    );
 
+    );
   }
 }

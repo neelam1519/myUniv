@@ -9,6 +9,8 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import '../services/pdfscreen.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
 
 class LeaveFormDetails extends StatefulWidget {
   final int index;
@@ -24,7 +26,7 @@ class LeaveFormDetails extends StatefulWidget {
   _LeaveFormDetailsState createState() => _LeaveFormDetailsState();
 }
 
-class _LeaveFormDetailsState extends State<LeaveFormDetails> {
+class _LeaveFormDetailsState extends State  <LeaveFormDetails> {
   final FireStoreService fireStoreService = FireStoreService();
   LoadingDialog loadingDialog = LoadingDialog();
   Dio dio = Dio();
@@ -59,7 +61,7 @@ class _LeaveFormDetailsState extends State<LeaveFormDetails> {
     }else if(role == "HOD"){
       collectionReference = FirebaseFirestore.instance.collection('/AcademicDetails/${widget.sectionYear}/BRANCHES/${widget.branch}/LEAVEFORMS');
     }else if(role =="HOSTEL WARDEN"){
-      collectionReference = FirebaseFirestore.instance.collection("HostelDetails/BHATGHAT SINGH HOSTEL/LEAVEFORMS");
+      collectionReference = FirebaseFirestore.instance.collection("HostelDetails/BHAGHAT SINGH HOSTEL/LEAVEFORMS");
     }
 
     List<String> fieldNames = [docId];
@@ -72,7 +74,7 @@ class _LeaveFormDetailsState extends State<LeaveFormDetails> {
     } else if (role == "YEAR COORDINATOR") {
       nextRef = FirebaseFirestore.instance.doc("AcademicDetails/${widget.faYear}/BRANCHES/${widget.branch}/LEAVEFORMS/PENDING");
     }else if(role == "HOD"){
-      nextRef = FirebaseFirestore.instance.doc("HostelDetails/BHATGHAT SINGH HOSTEL/LEAVEFORMS/PENDING");
+      nextRef = FirebaseFirestore.instance.doc("HostelDetails/BHAGHAT SINGH HOSTEL/LEAVEFORMS/PENDING");
     }
 
     print('Next Ref: ${nextRef.path}');
@@ -81,7 +83,7 @@ class _LeaveFormDetailsState extends State<LeaveFormDetails> {
       if(role == "HOSTEL WARDEN"){
         ref.update({'$acceptName.status': "APPROVED"});
         ref.update({'finalApproval.status': "APPROVED"});
-
+        fireStoreService.uploadMapDataToFirestore(uploadData, collectionReference.doc("ACCEPTED"));
       }else{
         fireStoreService.uploadMapDataToFirestore(uploadData, collectionReference.doc("ACCEPTED"));
         ref.update({'$acceptName.status': "APPROVED"});
@@ -221,6 +223,8 @@ class _LeaveFormDetailsState extends State<LeaveFormDetails> {
       ),
     );
   }
+
+
 
   Widget _buildInfoRow(String label, String value, {bool isBold = false}) {
     return Padding(

@@ -54,6 +54,8 @@ dependencies:
   device_info_plus: ^10.1.0
   universal_io: ^2.2.2
   provider: ^6.1.2
+  qr_flutter: ^4.1.0
+  qr_code_scanner: ^1.0.1
 
 dev_dependencies:
   flutter_test:
