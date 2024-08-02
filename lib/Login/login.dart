@@ -5,6 +5,7 @@ import 'package:findany_flutter/LecturersHome.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:findany_flutter/watchmenHome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -178,6 +179,7 @@ class _LoginState extends State<Login> {
     final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
     final User? user = authResult.user;
 
+    FireStoreService fireStoreService = FireStoreService();
     if (user != null && context.mounted) {
       final String? email = user.email;
       print('Email: $email');
@@ -190,9 +192,25 @@ class _LoginState extends State<Login> {
           await storeRequiredData();
       }else{
           print('User logged in with the Lecturer Email');
+          DocumentReference documentReference = FirebaseFirestore.instance.doc("/AcademicDetails/STAFFDETAILS/ROLES/$email");
+          Map<String, dynamic>? roleData = await fireStoreService.getDocumentDetails(documentReference);
 
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Lecturershome()));
+          if (roleData!.containsKey('ROLES') && roleData['ROLES'].contains('WATCHMEN')) {
+            print('Watchmen Login');
+            // Navigate to Watchmen home
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => Watchmenhome()),
+            );
+          } else {
+            print('roleData: $roleData');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => Lecturershome()),
+            );
+          }
           await storeRequiredData();
+
       }
       // if (email != null && email.endsWith('@klu.ac.in')) {
       //   print('User logged in with the University Email');
