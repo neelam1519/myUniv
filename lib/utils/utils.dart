@@ -487,6 +487,19 @@ class Utils{
     }
   }
 
+  String getCurrentTime() {
+    // Get the current date and time
+    DateTime now = DateTime.now();
+
+    // Define the format for the date and time
+    String formattedDate = "${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}";
+    String formattedTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
+    // Combine the date and time
+    return "$formattedDate $formattedTime";
+  }
+
+
 
 // Future<void> sendSMS(String message, String recipient) async {
   //   final url = Uri.parse('https://www.fast2sms.com/dev/bulkV2');

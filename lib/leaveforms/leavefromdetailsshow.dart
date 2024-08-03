@@ -59,6 +59,7 @@ class _LeaveFormDetailsShowState extends State<LeaveFormDetailsShow> {
               children: [
                 _buildInfoRow('Student ID:', data['studentId'] ?? 'N/A'),
                 _buildInfoRow('Student Name:', data['studentName'] ?? 'N/A'),
+                Divider(height: 20, thickness: 1),
                 Row(
                   children: [
                     _buildDateInfo('From Date:', data['fromDate'] ?? 'N/A'),
@@ -73,6 +74,11 @@ class _LeaveFormDetailsShowState extends State<LeaveFormDetailsShow> {
                 _buildInfoRow('Reason:', data['reason'] ?? 'N/A'),
                 Divider(height: 20, thickness: 1),
                 _buildInfoRow('Proof File URL:', data['proofFileUrl'] ?? 'N/A'),
+                Divider(height: 20, thickness: 1),
+                if (data['OUT TIME']?.isNotEmpty ?? false)
+                  _buildInfoRow('OUT TIME:', data['OUT TIME'] ?? 'N/A'),
+                if (data['IN TIME']?.isNotEmpty ?? false)
+                  _buildInfoRow('IN TIME:', data['IN TIME'] ?? 'N/A'),
                 Divider(height: 20, thickness: 1),
                 _buildApprovalRow('Faculty Advisor Approval:', data['facultyAdvisorApproval']?['status']),
                 _buildApprovalRow('Year Coordinator Approval:', data['yearCoordinatorApproval']?['status']),
@@ -96,6 +102,7 @@ class _LeaveFormDetailsShowState extends State<LeaveFormDetailsShow> {
       ),
     );
   }
+
 
   Widget _buildInfoRow(String label, String value, {bool isBold = false}) {
     return Padding(

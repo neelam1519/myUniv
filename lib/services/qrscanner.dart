@@ -2,8 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+
+import '../leaveforms/leaveformprovider.dart';
 
 class QRScannerScreen extends StatefulWidget {
   @override
@@ -15,7 +19,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   QRViewController? controller;
   String? scannedData;
   Map<String, dynamic>? documentData = {};
+  Map<String, dynamic>? leaveData={};
   bool isLoading = false;
+  String leaveID ="";
 
   LoadingDialog loadingDialog = LoadingDialog();
   Utils utils = Utils();
@@ -47,10 +53,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     loadingDialog.showDefaultLoading('Getting Details');
     if (docId == null) return;
 
+    leaveID= docId;
     DocumentReference documentReference = FirebaseFirestore.instance.doc("LeaveForms/$docId");
     print('Document Reference: ${documentReference.path}');
 
-    Map<String, dynamic>? leaveData = await fireStoreService.getDocumentDetails(documentReference);
+    leaveData = await fireStoreService.getDocumentDetails(documentReference);
 
     String? email = await utils.getCurrentUserEmail();
     String? uid = await utils.getUidByEmail(email!);
@@ -60,8 +67,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
     documentData!.addAll({
       "APPROVAL STATUS": leaveData!["finalApproval"]["status"],
-      "FROM": leaveData["fromDate"],
-      "TO": leaveData["toDate"],
+      "FROM": leaveData!["fromDate"],
+      "TO": leaveData!["toDate"],
       "REGISTRATION NUMBER": userData!['Registration Number'],
       "PROFILE IMAGE": userData["ProfileImageURL"]
     });
@@ -162,8 +169,22 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton(
                 onPressed: () {
+                  loadingDialog.showDefaultLoading("uploading Data");
                   // Add your button action here
 
+                  DocumentReference reference = FirebaseFirestore.instance.doc("LeaveForms/$leaveID");
+                  Map<String,dynamic> data = {leaveID:reference};
+                  Map<String,dynamic> outData = {"OUT TIME":utils.getCurrentTime()};
+                  fireStoreService.uploadMapDataToFirestore(outData,reference);
+
+                  DocumentReference leaveRef = FirebaseFirestore.instance.doc("/AcademicDetails/WATCHMEN APPROVED FORMS");
+                  fireStoreService.uploadMapDataToFirestore(data,leaveRef);
+
+                  final leaveFormProvider = Provider.of<LeaveFormProvider>(context, listen: false);
+                  Map<String,dynamic> redirectData ={leaveID:leaveData};
+                  leaveFormProvider.addOneLeaveData(redirectData);
+                  loadingDialog.dismiss();
+                  Navigator.pop(context);
                 },
                 child: Text('APPROVED'),
               ),
