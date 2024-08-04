@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Home.dart';
-import 'package:findany_flutter/LecturersHome.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:findany_flutter/watchmenHome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -186,32 +184,16 @@ class _LoginState extends State<Login> {
         SharedPreferences sharedPreferences = SharedPreferences();
         print('Email: $email');
 
-        if (email != null && utils.isEmailPrefixNumeric(email)) {
+        if (email != null) {
           print('User logged in with the Student Email');
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-        } else {
-          print('User logged in with the Lecturer Email');
-          DocumentReference documentReference = FirebaseFirestore.instance.doc("/AcademicDetails/STAFFDETAILS/ROLES/$email");
-          Map<String, dynamic>? roleData = await fireStoreService.getDocumentDetails(documentReference);
-          print('RoleData: $roleData');
-
-          if (roleData != null && roleData.containsKey('ROLES') && roleData['ROLES'].contains('WATCHMEN')) {
-            print('Watchmen Login');
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => Watchmenhome()),
-            );
-            await sharedPreferences.storeValueInSecurePrefs("LoginType", "WATCHMEN");
-          } else {
-            print('Role Data: $roleData');
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => Lecturershome()),
-            );
-            await sharedPreferences.storeValueInSecurePrefs("LoginType", "LECTURER");
-          }
-
         }
+        // else{
+        //   await signOut();
+        //   loadingDialog.dismiss();
+        //   loadingDialog.showError('Please sign in with a valid KARE email.');
+        // }
+
         await storeRequiredData();
       } else {
         print('User is null after signing in.');

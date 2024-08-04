@@ -5,12 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/Other/notification.dart';
-import 'package:findany_flutter/apis/googleDrive.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
-import 'package:findany_flutter/groupchat/chatting.dart';
 import 'package:findany_flutter/groupchat/groupchathome.dart';
-import 'package:findany_flutter/groupchat/universitychat.dart';
-import 'package:findany_flutter/leaveforms/leaveformshome.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/Other/QandA.dart';
 import 'package:findany_flutter/Other/review.dart';
@@ -236,12 +232,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     'Let\'s Talk',
                     GroupChatHome(),
                   ),
-                  _buildGridItem(
-                    context,
-                    'assets/images/xerox.png',
-                    'Get Xerox',
-                    XeroxHome(),
-                  ),
+                  // _buildGridItem(
+                  //   context,
+                  //   'assets/images/xerox.png',
+                  //   'Get Xerox',
+                  //   XeroxHome(),
+                  // ),
                   _buildGridItem(
                     context,
                     'assets/images/materials.png',
@@ -265,12 +261,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     'assets/images/busbooking.png',
                     'Bus Booking',
                     BusBookingHome(),
-                  ),
-                  _buildGridItem(
-                    context,
-                    'assets/images/LeaveForms.png',
-                    'Leave Forms',
-                    LeaveFormHome()
                   ),
                 ],
               ),

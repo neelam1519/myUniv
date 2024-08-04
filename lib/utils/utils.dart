@@ -63,15 +63,6 @@ class Utils{
     );
   }
 
-  String getCurrentUserUID() {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      return user.uid;
-    } else {
-      return "";
-    }
-  }
-
   Future<String?> getCurrentUserEmail() async {
     FirebaseAuth auth = FirebaseAuth.instance;
     User? user = auth.currentUser;
@@ -468,7 +459,8 @@ class Utils{
     return RegExp(r'^\d+$').hasMatch(prefix);
   }
 
-  Future<String?> getUidByEmail(String email) async {
+  Future<String?> getCurrentUserUID() async {
+    String? email = await getCurrentUserEmail();
     final url = Uri.parse('https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
 
     try {

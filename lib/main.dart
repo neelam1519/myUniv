@@ -1,8 +1,6 @@
-import 'package:findany_flutter/LecturersHome.dart';
 import 'package:findany_flutter/groupchat/chatting.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:findany_flutter/watchmenHome.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,14 +10,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 import 'package:in_app_update/in_app_update.dart';
-
-import 'leaveforms/leaveformprovider.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -60,17 +55,11 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => LeaveFormProvider())
-      ],
-      child:MaterialApp(
-        title: 'FindAny',
-        theme: ThemeData(primarySwatch: Colors.blue),
-        home: AuthCheck(),
-        builder: EasyLoading.init(),
-      ),
-
+    return MaterialApp(
+      title: 'FindAny',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: AuthCheck(),
+      builder: EasyLoading.init(),
     );
   }
 }
@@ -82,7 +71,7 @@ class AuthCheck extends StatefulWidget {
 
 class _AuthCheckState extends State<AuthCheck> {
 
-  Utils utils =Utils();
+  Utils utils = Utils();
   @override
   void initState() {
     super.initState();
@@ -127,37 +116,11 @@ class _AuthCheckState extends State<AuthCheck> {
 
   @override
   Widget build(BuildContext context) {
-    Utils utils = Utils();
-
-    Future<void> checkUserEmail() async {
-      String? email = await utils.getCurrentUserEmail();
-      if (email != null && utils.isEmailPrefixNumeric(email)) {
-        print('User logged in with the Student Email');
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-      } else {
-        SharedPreferences sharedPreferences = SharedPreferences();
-        String value = await sharedPreferences.getSecurePrefsValue("LoginType");
-
-        print('LoginType: $value');
-
-        if (value == "WATCHMEN") {
-          print('User logged in with the Lecturer Email');
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => Watchmenhome()));
-        } else {
-          print('User logged in with the Lecturer Email');
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => Lecturershome()));
-        }
-      }
-    }
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      checkUserEmail();
-      return Container();
+      return Container(); // Replace with a loading indicator if needed
     } else {
       return Login();
     }
   }
-
 }

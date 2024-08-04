@@ -38,7 +38,7 @@ class _AcademicDetailsState extends State<AcademicDetails> {
 
   Future<void> _fetchUserDetails() async {
     try {
-      String userUID = await utils.getCurrentUserUID();
+      String? userUID = await utils.getCurrentUserUID();
       DocumentReference userRef = FirebaseFirestore.instance.doc("UserDetails/$userUID");
 
       Map<String, dynamic>? userData = await fireStoreService.getDocumentDetails(userRef);
@@ -137,7 +137,7 @@ class _AcademicDetailsState extends State<AcademicDetails> {
 
   Future<void> _updateDetails() async {
     try {
-      String userUID = await utils.getCurrentUserUID();
+      String? userUID = await utils.getCurrentUserUID();
       loadingDialog.showDefaultLoading('Updating Details...');
 
       DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/$userUID');

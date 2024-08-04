@@ -2,12 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-
-import '../leaveforms/leaveformprovider.dart';
 
 class QRScannerScreen extends StatefulWidget {
   @override
@@ -59,8 +55,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
     leaveData = await fireStoreService.getDocumentDetails(documentReference);
 
-    String? email = await utils.getCurrentUserEmail();
-    String? uid = await utils.getUidByEmail(email!);
+    String? uid = await utils.getCurrentUserUID();
 
     DocumentReference userRef = FirebaseFirestore.instance.doc("UserDetails/$uid");
     Map<String, dynamic>? userData = await fireStoreService.getDocumentDetails(userRef);
@@ -180,9 +175,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   DocumentReference leaveRef = FirebaseFirestore.instance.doc("/AcademicDetails/WATCHMEN APPROVED FORMS");
                   fireStoreService.uploadMapDataToFirestore(data,leaveRef);
 
-                  final leaveFormProvider = Provider.of<LeaveFormProvider>(context, listen: false);
-                  Map<String,dynamic> redirectData ={leaveID:leaveData};
-                  leaveFormProvider.addOneLeaveData(redirectData);
                   loadingDialog.dismiss();
                   Navigator.pop(context);
                 },

@@ -25,7 +25,7 @@ class _BusBookedHistoryState extends State<BusBookedHistory> {
 
   Future<void> _fetchBookingHistory() async {
     try {
-      String userUID = await utils.getCurrentUserUID();
+      String? userUID = await utils.getCurrentUserUID();
       DocumentReference ref = FirebaseFirestore.instance.doc('UserDetails/$userUID/BusBooking/BookedTickets');
       DocumentSnapshot snapshot = await ref.get();
       if (snapshot.exists) {
