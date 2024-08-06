@@ -178,7 +178,6 @@ class _LoginState extends State<Login> {
       final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
       final User? user = authResult.user;
 
-      FireStoreService fireStoreService = FireStoreService();
       if (user != null && context.mounted) {
         final String? email = user.email;
         SharedPreferences sharedPreferences = SharedPreferences();
@@ -187,12 +186,11 @@ class _LoginState extends State<Login> {
         if (email != null) {
           print('User logged in with the Student Email');
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+        } else{
+          await signOut();
+          loadingDialog.dismiss();
+          loadingDialog.showError('Please sign in with a valid KARE email.');
         }
-        // else{
-        //   await signOut();
-        //   loadingDialog.dismiss();
-        //   loadingDialog.showError('Please sign in with a valid KARE email.');
-        // }
 
         await storeRequiredData();
       } else {

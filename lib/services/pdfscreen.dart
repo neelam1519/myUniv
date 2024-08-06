@@ -28,6 +28,9 @@ class _PDFScreenState extends State<PDFScreen> {
   void _onSearchPressed() {
     setState(() {
       _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+      }
     });
   }
 
@@ -52,30 +55,26 @@ class _PDFScreenState extends State<PDFScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: _isSearching
+            ? TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Search...',
+            border: InputBorder.none,
+          ),
+          onSubmitted: _performSearch,
+        )
+            : Text(widget.title),
         actions: [
           IconButton(
-            icon: Icon(Icons.search),
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: _onSearchPressed,
           ),
         ],
       ),
       body: Column(
         children: [
-          if (_isSearching)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search...',
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.search),
-                    onPressed: () => _performSearch(_searchController.text),
-                  ),
-                ),
-              ),
-            ),
           Expanded(
             child: SfPdfViewer.file(
               File(widget.filePath),
