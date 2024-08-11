@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SharedPreferences{
-  final storage = FlutterSecureStorage();
+  final storage = const FlutterSecureStorage();
 
   Future<dynamic> getDataFromReference(DocumentReference documentReference, String key) async {
     String? data = await getSecurePrefsValue(key);
@@ -93,7 +93,7 @@ class SharedPreferences{
       return await storage.write(key: key, value: value);
     } catch (error) {
       print('Error retrieving value from secure storage: $error');
-      return null;
+      return;
     }
   }
 

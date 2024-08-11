@@ -2,7 +2,7 @@ import 'package:findany_flutter/utils/utils.dart';
 import 'package:gsheets/gsheets.dart';
 
 class BusBookingGSheet {
-  Utils utils = new Utils();
+  Utils utils = Utils();
   static const credentials = r'''{
     "type": "service_account",
     "project_id": "findany-419304",
@@ -17,14 +17,14 @@ class BusBookingGSheet {
     "universe_domain": "googleapis.com"
   }''';
 
-  static final spreadsheetId = '16P-xDvhVkayNOvD9Az9Z_i8S_6KE_yWDTXyLWGQAzwU';
+  static const spreadsheetId = '16P-xDvhVkayNOvD9Az9Z_i8S_6KE_yWDTXyLWGQAzwU';
   static final gsheets = GSheets(credentials);
   static late Worksheet sheet;
 
   Future<void> main(String title) async {
     final ss = await gsheets.spreadsheet(spreadsheetId);
 
-    Worksheet? existingSheet = await ss.worksheetByTitle(title);
+    Worksheet? existingSheet = ss.worksheetByTitle(title);
 
     if (existingSheet == null) {
       existingSheet = await ss.addWorksheet(title);

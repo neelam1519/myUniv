@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -20,7 +19,7 @@ import 'package:http/http.dart' as http;
 class Utils{
 
   FirebaseAuth auth = FirebaseAuth.instance;
-  FireStoreService fireStoreService = new FireStoreService();
+  FireStoreService fireStoreService = FireStoreService();
 
 
   Future<void> clearCache() async {
@@ -51,7 +50,7 @@ class Utils{
     return urlRegex.hasMatch(str);
   }
 
-  Future<void> showToastMessage(String message, BuildContext context) async {
+  Future<void> showToastMessage(String message) async {
     Fluttertoast.showToast(
         msg: message,
         toastLength: Toast.LENGTH_SHORT,  // or Toast.LENGTH_LONG

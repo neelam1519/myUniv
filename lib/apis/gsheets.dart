@@ -1,13 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:gsheets/gsheets.dart';
 
 class UserSheetsApi {
-  Utils utils = new Utils();
+  Utils utils = Utils();
   static late GSheets gsheets;
-  static final spreadsheetId = '1Jdc6EDIewHSglogg3NqHA0XHeax_kVFIdg2NifBXtfs';
+  static const spreadsheetId = '1Jdc6EDIewHSglogg3NqHA0XHeax_kVFIdg2NifBXtfs';
   static late Worksheet sheet;
 
   // Load credentials from assets
@@ -28,7 +27,7 @@ class UserSheetsApi {
     String todayDate = utils.getTodayDate();
     final ss = await gsheets.spreadsheet(spreadsheetId);
 
-    Worksheet? existingSheet = await ss.worksheetByTitle(todayDate);
+    Worksheet? existingSheet = ss.worksheetByTitle(todayDate);
 
     if (existingSheet == null) {
       existingSheet = await ss.addWorksheet(todayDate);

@@ -5,10 +5,10 @@ class Units extends StatefulWidget {
   final String path;
   final String subject;
 
-  Units({required this.path,required this.subject});
+  const Units({super.key, required this.path, required this.subject});
 
   @override
-  _UnitsState createState() => _UnitsState();
+  State<Units> createState() => _UnitsState();
 }
 
 class _UnitsState extends State<Units> {
@@ -28,7 +28,11 @@ class _UnitsState extends State<Units> {
             child: ListTile(
               title: Text('UNIT ${index + 1}'),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => DisplayMaterials(path: '${widget.path}', unit: 'UNIT ${index+1}',subject: widget.subject)));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            DisplayMaterials(path: widget.path, unit: 'UNIT ${index + 1}', subject: widget.subject)));
               },
             ),
           );

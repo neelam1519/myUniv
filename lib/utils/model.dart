@@ -1,4 +1,4 @@
-class GroupChatsView{
+class GroupChatsView {
   final String groupName;
   final String imageUrl;
 
@@ -6,5 +6,4 @@ class GroupChatsView{
     required this.groupName,
     required this.imageUrl,
   });
-
 }
