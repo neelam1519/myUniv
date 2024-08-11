@@ -62,15 +62,6 @@ class Utils{
     );
   }
 
-  String getCurrentUserUID() {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      return user.uid;
-    } else {
-      return "";
-    }
-  }
-
   Future<String?> getCurrentUserEmail() async {
     FirebaseAuth auth = FirebaseAuth.instance;
     User? user = auth.currentUser;
@@ -457,6 +448,46 @@ class Utils{
 
   double calculatePages(int numberOfFiles, int pagesPerFile) {
     return (numberOfFiles * pagesPerFile).toDouble();
+  }
+
+  bool isEmailPrefixNumeric(String email) {
+    // Extract the prefix before the '@' symbol
+    String prefix = email.split('@').first;
+
+    // Check if the prefix contains only digits
+    return RegExp(r'^\d+$').hasMatch(prefix);
+  }
+
+  Future<String?> getCurrentUserUID() async {
+    String? email = await getCurrentUserEmail();
+    final url = Uri.parse('https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['uid'];
+      } else {
+        print('Error fetching UID: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching UID: $error');
+      return null;
+    }
+  }
+
+  String getCurrentTime() {
+    // Get the current date and time
+    DateTime now = DateTime.now();
+
+    // Define the format for the date and time
+    String formattedDate = "${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}";
+    String formattedTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
+    // Combine the date and time
+    return "$formattedDate $formattedTime";
   }
 
 
