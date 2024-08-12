@@ -33,9 +33,9 @@ class GoogleDriveService {
       print('File List Response: ${fileList.files}');
       if (fileList.files != null && fileList.files!.isNotEmpty) {
         print('Files found:');
-        fileList.files!.forEach((file) {
+        for (var file in fileList.files!) {
           print('Name: ${file.name}, ID: ${file.id}');
-        });
+        }
       } else {
         print('No files found in the folder.');
       }

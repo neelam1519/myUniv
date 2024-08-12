@@ -52,7 +52,7 @@ class FirebaseStorageHelper {
   Future<String> uploadFile(File file, String folderName, String fileName) async {
     try {
       print('File: ${file.toString()}');
-      print('Folder Name: ${folderName}');
+      print('Folder Name: $folderName');
       print('File Name: ${fileName.toString()}');
 
       // Get a reference to the file location (including the folder path)

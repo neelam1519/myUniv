@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -15,12 +14,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 
 class Utils{
 
   FirebaseAuth auth = FirebaseAuth.instance;
-  FireStoreService fireStoreService = new FireStoreService();
+  FireStoreService fireStoreService = FireStoreService();
 
 
   Future<void> clearCache() async {
@@ -51,7 +51,7 @@ class Utils{
     return urlRegex.hasMatch(str);
   }
 
-  Future<void> showToastMessage(String message, BuildContext context) async {
+  Future<void> showToastMessage(String message) async {
     Fluttertoast.showToast(
         msg: message,
         toastLength: Toast.LENGTH_SHORT,  // or Toast.LENGTH_LONG
@@ -61,6 +61,26 @@ class Utils{
         textColor: Colors.white,          // text color of the toast
         fontSize: 16.0                    // text size
     );
+  }
+
+  Future<String?> getCurrentUserUID() async {
+    String? email = await getCurrentUserEmail();
+    final url = Uri.parse('https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['uid'];
+      } else {
+        print('Error fetching UID: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching UID: $error');
+      return null;
+    }
   }
 
   Future<String?> getCurrentUserEmail() async {
@@ -451,45 +471,19 @@ class Utils{
     return (numberOfFiles * pagesPerFile).toDouble();
   }
 
-  bool isEmailPrefixNumeric(String email) {
-    // Extract the prefix before the '@' symbol
-    String prefix = email.split('@').first;
-
-    // Check if the prefix contains only digits
-    return RegExp(r'^\d+$').hasMatch(prefix);
-  }
-
-  Future<String?> getCurrentUserUID() async {
-    String? email = await getCurrentUserEmail();
-    final url = Uri.parse('https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
-
-    try {
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['uid'];
-      } else {
-        print('Error fetching UID: ${response.reasonPhrase}');
-        return null;
-      }
-    } catch (error) {
-      print('Error fetching UID: $error');
-      return null;
-    }
-  }
-
   String getCurrentTime() {
-    // Get the current date and time
-    DateTime now = DateTime.now();
+    // Get the current UTC time
+    DateTime now = DateTime.now().toUtc();
 
-    // Define the format for the date and time
-    String formattedDate = "${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}";
-    String formattedTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+    // Convert UTC time to Indian Standard Time (UTC+5:30)
+    DateTime istTime = now.add(Duration(hours: 5, minutes: 30));
 
-    // Combine the date and time
-    return "$formattedDate $formattedTime";
+    // Format the time to a readable string
+    String formattedTime = "${istTime.hour}:${istTime.minute.toString().padLeft(2, '0')}:${istTime.second.toString().padLeft(2, '0')}";
+
+    return formattedTime;
   }
+
 
 
 
