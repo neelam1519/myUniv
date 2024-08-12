@@ -1,5 +1,3 @@
-// lib/provider/pdfscreen_provider.dart
-
 import 'package:flutter/cupertino.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
