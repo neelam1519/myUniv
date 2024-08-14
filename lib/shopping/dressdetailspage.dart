@@ -223,13 +223,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     // Handle add to cart
                     loadingDialog.showDefaultLoading("Adding to your cart");
                     String? uid = await utils.getCurrentUserUID();
+                    print("UserID: $uid");
                     DocumentReference dressRef = FirebaseFirestore.instance.doc("/UserDetails/$uid/DressShop/Cart");
-                    Map<String,dynamic> data = {"productIDs":product['productId']};
-
+                    Map<String,dynamic> data = {"productIDs":[widget.documentSnapshot.reference]};
                     fireStoreService.uploadMapDataToFirestore(data, dressRef);
 
                     loadingDialog.dismiss();
-
                   },
                   child: Text('Add to Cart'),
                   style: ElevatedButton.styleFrom(

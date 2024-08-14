@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/shopping/cartpage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -49,6 +50,46 @@ class _DressHomeState extends State<DressHome> {
         .snapshots();
   }
 
+  Future<void> _deleteProduct(DocumentReference productRef) async {
+    try {
+      await productRef.delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Product deleted successfully")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete product")),
+      );
+    }
+  }
+
+  void _confirmDeleteProduct(DocumentReference productRef) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Delete Product"),
+          content: Text("Are you sure you want to delete this product permanently?"),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text("Delete"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteProduct(productRef);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +108,14 @@ class _DressHomeState extends State<DressHome> {
           ),
           IconButton(
             icon: Icon(Icons.shopping_cart),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CartDetailsPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -178,33 +226,58 @@ class _DressHomeState extends State<DressHome> {
         );
       },
       child: Card(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Center(
-                  child: CircularProgressIndicator(),
+            // Product Image
+            CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Center(
+                child: CircularProgressIndicator(),
+              ),
+              errorWidget: (context, url, error) => Image.asset('assets/images/shop.png', fit: BoxFit.cover),
+              height: 200.0, // Adjust the height as needed
+              width: double.infinity, // Fill the width of the container
+            ),
+            // Delete Button
+            if (_isOwner)
+              Positioned(
+                top: 8.0,
+                right: 8.0,
+                child: IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red, size: 24.0),
+                  onPressed: () {
+                    _confirmDeleteProduct(doc.reference);
+                  },
                 ),
-                errorWidget: (context, url, error) => Image.asset('assets/images/shop.png', fit: BoxFit.cover),
+              ),
+            // Product Details
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.all(8.0),
+                color: Colors.white.withOpacity(0.7), // Background color with transparency
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      doc['name'] ?? 'Product Name',
+                      style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '\₹${(doc['price'] ?? 0).toInt()}',
+                      style: TextStyle(color: Colors.green, fontSize: 16.0),
+                    ),
+                  ],
+                ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                doc['name'] ?? 'Product Name',
-                style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-              ),
-            ),
-            Text(
-              '\₹${(doc['price'] ?? 0).toInt()}',
-              style: TextStyle(color: Colors.green, fontSize: 16.0),
-            ),
-            SizedBox(height: 8.0),
           ],
         ),
       ),
     );
   }
+
 }
