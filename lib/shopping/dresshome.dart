@@ -198,7 +198,7 @@ class _DressHomeState extends State<DressHome> {
               ),
             ),
             Text(
-              '\$${doc['price'] ?? 0}',
+              '\₹${(doc['price'] ?? 0).toInt()}',
               style: TextStyle(color: Colors.green, fontSize: 16.0),
             ),
             SizedBox(height: 8.0),

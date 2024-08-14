@@ -1,10 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
-
 import '../services/FullScreenImageGallery.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -19,6 +19,22 @@ class ProductDetailPage extends StatefulWidget {
 class _ProductDetailPageState extends State<ProductDetailPage> {
   int _currentIndex = 0;
 
+  Utils utils = Utils();
+  FireStoreService fireStoreService = FireStoreService();
+  LoadingDialog loadingDialog = LoadingDialog();
+
+  void _openGallery(BuildContext context, List<String> media) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullScreenImageGallery(
+          media: media,
+          initialIndex: _currentIndex,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var product = widget.documentSnapshot.data() as Map<String, dynamic>;
@@ -28,6 +44,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     List<Color> colors = (product['colors'] as List<dynamic>)
         .map((color) => Color(int.parse(color)))
         .toList();
+
+    // Calculate the discounted price
+    double price = product['price'] ?? 0.0;
+    double discount = product['discount'] ?? 0.0;
+    double discountedPrice = price * (1 - discount / 100);
+
+    // Convert the discounted price to an integer
+    int discountedPriceInt = discountedPrice.toInt();
 
     return Scaffold(
       appBar: AppBar(
@@ -99,13 +123,23 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: Row(
                 children: [
                   Text(
-                    '\$${product['price'] ?? 0.0}',
+                    '\₹${discountedPriceInt}',
                     style: TextStyle(
                       fontSize: 20.0,
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  SizedBox(width: 10),
+                  if (discount > 0)
+                    Text(
+                      '\₹${price.toInt()}',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        color: Colors.grey,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
                   SizedBox(width: 10),
                   Row(
                     children: [
@@ -182,30 +216,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             SizedBox(height: 20.0),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  // Handle add to cart
-                },
-                child: Text('Add to Cart'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  padding: EdgeInsets.symmetric(vertical: 15.0),
-                  textStyle: TextStyle(fontSize: 18.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    // Handle add to cart
+                    loadingDialog.showDefaultLoading("Adding to your cart");
+                    String? uid = await utils.getCurrentUserUID();
+                    DocumentReference dressRef = FirebaseFirestore.instance.doc("/UserDetails/$uid/DressShop/Cart");
+                    Map<String,dynamic> data = {"productIDs":product['productId']};
+
+                    fireStoreService.uploadMapDataToFirestore(data, dressRef);
+
+                    loadingDialog.dismiss();
+
+                  },
+                  child: Text('Add to Cart'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: EdgeInsets.symmetric(vertical: 15.0),
+                    textStyle: TextStyle(fontSize: 18.0),
+                  ),
                 ),
               ),
             ),
-            SizedBox(height: 20.0),
           ],
         ),
-      ),
-    );
-  }
-
-  void _openGallery(BuildContext context, List<String> media) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FullScreenImageGallery(media: media, initialIndex: _currentIndex),
       ),
     );
   }
