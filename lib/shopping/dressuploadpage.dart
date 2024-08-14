@@ -58,13 +58,10 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
     if (_formKey.currentState!.validate()) {
       loadingDialog.showDefaultLoading("Uploading product");
       _formKey.currentState!.save();
-
       // Create a unique product ID
       productId = _uuid.v4();
-
       // Upload images to Firebase Storage and get the download URLs
       List<String> imageUrls = await _uploadImagesToStorage();
-
       // Save product details to Firestore
       Map<String,dynamic> data = {
         'name': _name,
@@ -78,10 +75,8 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
         'category': _selectedCategory,
         'subCategory': _selectedSubCategory,
       };
-
       DocumentReference documentReference= FirebaseFirestore.instance.doc("/SHOPS/DRESSSHOP/$_selectedCategory/$productId");
       await fireStoreService.uploadMapDataToFirestore(data, documentReference);
-
       // Clear the form
       _formKey.currentState!.reset();
       setState(() {
@@ -97,17 +92,14 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
       );
     }
   }
-
 // Upload images to Firebase Storage
   Future<List<String>> _uploadImagesToStorage() async {
     List<String> imageUrls = [];
     int count = 1;
-
     for (File image in _images) {
       String filePath = "DressShopImages/$productId/";
       // Use the helper method to upload the file
       String downloadUrl = await firebaseStorageHelper.uploadFile(image, filePath, count.toString());
-
       // Add the download URL to the list
       if (downloadUrl.isNotEmpty) {
         imageUrls.add(downloadUrl);
@@ -115,10 +107,8 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
         // Handle error if necessary
         print('Error uploading image $count');
       }
-
       count++;
     }
-
     return imageUrls;
   }
 
