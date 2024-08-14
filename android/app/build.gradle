@@ -76,7 +76,7 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation "com.google.android.gms:play-services-ads:23.2.0"
+    implementation "com.google.android.gms:play-services-ads:23.3.0"
 }
 
 apply plugin: 'com.google.gms.google-services'

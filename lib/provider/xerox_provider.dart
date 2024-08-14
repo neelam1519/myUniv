@@ -16,7 +16,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdfrx/pdfrx.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../services/pdfscreen.dart';
@@ -392,8 +392,23 @@ class XeroxProvider with ChangeNotifier {
   }
 
   Future<int> countPdfPages(File file) async {
-    final pdfDocument = await PdfDocument.openFile(file.path);
-    return pdfDocument.pages.length;
+    // Create a PdfViewerController
+    final PdfViewerController pdfViewerController = PdfViewerController();
+
+    // Load the PDF using SfPdfViewer
+    final SfPdfViewer pdfViewer = SfPdfViewer.file(
+      file,
+      controller: pdfViewerController,
+    );
+
+    // Wait until the document is fully loaded
+    await pdfViewerController.pageCount;
+
+    // Get the total page count
+    final int pageCount = pdfViewerController.pageCount;
+
+    // Return the page count
+    return pageCount;
   }
 
 

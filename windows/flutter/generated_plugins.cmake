@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   awesome_notifications
   cloud_firestore
   connectivity_plus
+  file_selector_windows
   firebase_auth
   firebase_core
   firebase_storage
@@ -16,7 +17,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
-  pdfrx
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

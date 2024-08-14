@@ -49,14 +49,15 @@ class FirebaseStorageHelper {
     }
   }
 
-  Future<String> uploadFile(File file, String folderName, String fileName) async {
+// Helper method to upload a single file to Firebase Storage
+  Future<String> uploadFile(File file, String filePath, String fileName) async {
     try {
       print('File: ${file.toString()}');
-      print('Folder Name: $folderName');
-      print('File Name: ${fileName.toString()}');
+      print('File Path: $filePath');
+      print('File Name: $fileName');
 
       // Get a reference to the file location (including the folder path)
-      Reference storageRef = storage.ref().child(folderName).child(fileName);
+      Reference storageRef = FirebaseStorage.instance.ref().child(filePath).child(fileName);
 
       // Upload the file
       UploadTask uploadTask = storageRef.putFile(file);

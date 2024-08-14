@@ -1,4 +1,5 @@
 import 'package:findany_flutter/provider/home_provider.dart';
+import 'package:findany_flutter/shopping/dresshome.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/utils/grid_item.dart';
 import 'package:flutter/material.dart';
@@ -93,36 +94,41 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16.0,
                     mainAxisSpacing: 16.0,
-                    children: const [
-                      GridItem(
+                    children: [
+                      const GridItem(
                         imagePath: 'assets/images/groupchat.png',
                         title: 'Let\'s Talk',
                         destination: GroupChatHome(),
                       ),
-                      GridItem(
+                      const GridItem(
                         imagePath: 'assets/images/xerox.png',
                         title: 'Get Xerox',
                         destination: XeroxHome(),
                       ),
-                      GridItem(
+                      const GridItem(
                         imagePath: 'assets/images/materials.png',
                         title: 'Materials',
                         destination: MaterialsHome(),
                       ),
-                      GridItem(
+                      const GridItem(
                         imagePath: 'assets/images/navigation.png',
                         title: 'Navigation',
                         destination: MapScreen(),
                       ),
-                      GridItem(
+                      const GridItem(
                         imagePath: 'assets/images/universitynews.jpeg',
                         title: 'University News',
                         destination: NewsListScreen(),
                       ),
-                      GridItem(
+                      const GridItem(
                         imagePath: 'assets/images/busbooking.png',
                         title: 'Bus Booking',
                         destination: BusBookingHome(),
+                      ),
+                      GridItem(
+                        imagePath: 'assets/images/shop.png',
+                        title: 'Shopping',
+                        destination: DressHome(),
                       ),
                     ],
                   ),

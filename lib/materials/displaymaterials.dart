@@ -8,7 +8,6 @@ import 'package:shimmer/shimmer.dart';
 import 'package:universal_io/io.dart';
 import '../provider/display_materials_provider.dart';
 import '../services/pdfscreen.dart';
-
 import 'package:provider/provider.dart';
 
 class DisplayMaterials extends StatelessWidget {
