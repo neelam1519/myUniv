@@ -495,8 +495,9 @@ class _DressHomeState extends State<DressHome> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MerchantUploadPage(),
+        builder: (context) => MerchantUploadPage(documentSnapshot: null),
       ),
     );
   }
+
 }

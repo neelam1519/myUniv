@@ -7,6 +7,7 @@ import 'package:findany_flutter/utils/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/FullScreenImageGallery.dart';
+import 'dressuploadpage.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final DocumentSnapshot documentSnapshot;
@@ -99,7 +100,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             IconButton(
               icon: Icon(Icons.edit),
               onPressed: () {
-
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MerchantUploadPage(documentSnapshot: widget.documentSnapshot),
+                  ),
+                );
               },
             ),
         ],
