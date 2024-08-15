@@ -98,3 +98,6 @@ flutter:
     - assets/googleDrive.json
     - assets/images/LeaveForms.png
     - assets/images/shop.png
+    - assets/images/mendress.png
+    - assets/images/kidsdress.png
+    - assets/images/womendress.png
