@@ -93,6 +93,7 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
   }
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Your Cart"),
@@ -111,6 +112,27 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
           double price = product['price'] ?? 0.0;
           double discount = product['discount'] ?? 0.0;
           double discountedPrice = price * (1 - discount / 100);
+
+          // Extract the color IDs from the 'colors' array
+          List<String> colorIds = List<String>.from(product['colors'] ?? []);
+
+          // Select the first color ID
+          String? firstColorId = colorIds.isNotEmpty ? colorIds[0] : null;
+
+          // Get the media map
+          Map<String, dynamic> mediaMap = product['media'] ?? {};
+
+
+          // Get the first image URL of the first color, or fallback to the first image in media
+          String? mediaUrl = firstColorId != null && mediaMap.containsKey(firstColorId)
+              ? (mediaMap[firstColorId] as List<dynamic>?)?.isNotEmpty == true
+              ? mediaMap[firstColorId][0]
+              : null
+              : mediaMap.values.isNotEmpty
+              ? (mediaMap.values.first as List<dynamic>?)?.isNotEmpty == true
+              ? mediaMap.values.first[0]
+              : null
+              : null;
 
           return GestureDetector(
             onTap: () {
@@ -133,7 +155,7 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
                 child: Row(
                   children: [
                     Image.network(
-                      product['media'][0],
+                      mediaUrl!,
                       width: 80.0,
                       height: 80.0,
                       fit: BoxFit.cover,

@@ -407,13 +407,31 @@ class _DressHomeState extends State<DressHome> {
     );
   }
 
-
-
   Widget _buildProductItem(DocumentSnapshot document) {
     Map<String, dynamic> data = document.data() as Map<String, dynamic>;
     String name = data['name'] ?? 'No Name';
     String price = data['price']?.toString() ?? 'No Price';
-    String? mediaUrl = data['media']?[0]; // Get the first image URL
+
+    // Extract the color IDs from the 'colors' array
+    List<String> colorIds = List<String>.from(data['colors'] ?? []);
+
+    // Select the first color ID
+    String? firstColorId = colorIds.isNotEmpty ? colorIds[0] : null;
+
+    // Get the media map
+    Map<String, dynamic> mediaMap = data['media'] ?? {};
+
+
+    // Get the first image URL of the first color, or fallback to the first image in media
+    String? mediaUrl = firstColorId != null && mediaMap.containsKey(firstColorId)
+        ? (mediaMap[firstColorId] as List<dynamic>?)?.isNotEmpty == true
+        ? mediaMap[firstColorId][0]
+        : null
+        : mediaMap.values.isNotEmpty
+        ? (mediaMap.values.first as List<dynamic>?)?.isNotEmpty == true
+        ? mediaMap.values.first[0]
+        : null
+        : null;
 
     return GestureDetector(
       onTap: () {

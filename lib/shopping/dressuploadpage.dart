@@ -18,7 +18,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   final _picker = ImagePicker();
   final _uuid = Uuid();
   FireStoreService fireStoreService = FireStoreService();
-  FirebaseStorageHelper firebaseStorageHelper= FirebaseStorageHelper();
+  FirebaseStorageHelper firebaseStorageHelper = FirebaseStorageHelper();
 
   LoadingDialog loadingDialog = LoadingDialog();
 
@@ -29,7 +29,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   double _discount = 0.0;
   List<String> _sizes = [];
   List<Color> _colors = [];
-  List<File> _images = [];
+  Map<Color, List<File>> _colorImages = {};
 
   String productId = "";
 
@@ -43,14 +43,54 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
     'Kids': ['Shirt', 'Pants', 'Shorts']
   };
 
-  // Pick images from gallery
-  Future<void> _pickImages() async {
-    final pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles != null) {
+  // Pick a color and then pick images for that color
+  Future<void> _pickColorAndImages() async {
+    Color? pickedColor = await _pickColor(context);
+    if (pickedColor != null && !_colors.contains(pickedColor)) {
+      List<File> pickedImages = await _pickImagesForColor(pickedColor);
       setState(() {
-        _images = pickedFiles.map((file) => File(file.path)).toList();
+        _colors.add(pickedColor);
+        _colorImages[pickedColor] = pickedImages;
       });
     }
+  }
+
+  // Pick a single color
+  Future<Color?> _pickColor(BuildContext context) async {
+    Color? selectedColor;
+    return showDialog<Color?>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pick a color'),
+          content: SingleChildScrollView(
+            child: BlockPicker(
+              pickerColor: Colors.white,
+              onColorChanged: (color) {
+                selectedColor = color;
+              },
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Select'),
+              onPressed: () {
+                Navigator.of(context).pop(selectedColor);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Pick images for a specific color
+  Future<List<File>> _pickImagesForColor(Color color) async {
+    final pickedFiles = await _picker.pickMultiImage();
+    if (pickedFiles != null) {
+      return pickedFiles.map((file) => File(file.path)).toList();
+    }
+    return [];
   }
 
   // Save product to Firestore
@@ -60,29 +100,29 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
       _formKey.currentState!.save();
       // Create a unique product ID
       productId = _uuid.v4();
-      // Upload images to Firebase Storage and get the download URLs
-      List<String> imageUrls = await _uploadImagesToStorage();
+      // Upload images for each color to Firebase Storage and get the download URLs
+      Map<String, List<String>> colorImageUrls = await _uploadImagesToStorage();
       // Save product details to Firestore
-      Map<String,dynamic> data = {
+      Map<String, dynamic> data = {
         'name': _name,
         'description': _description,
         'price': _price,
         'discount': _discount,
         'sizes': _sizes,
         'colors': _colors.map((color) => color.value.toString()).toList(),
-        'media': imageUrls,
+        'media': colorImageUrls,  // Storing image URLs for each color
         'productId': productId,
         'category': _selectedCategory,
         'subCategory': _selectedSubCategory,
       };
-      DocumentReference documentReference= FirebaseFirestore.instance.doc("/SHOPS/DRESSSHOP/$_selectedCategory/$productId");
+      DocumentReference documentReference = FirebaseFirestore.instance.doc("/SHOPS/DRESSSHOP/$_selectedCategory/$productId");
       await fireStoreService.uploadMapDataToFirestore(data, documentReference);
       // Clear the form
       _formKey.currentState!.reset();
       setState(() {
-        _images.clear();
-        _sizes.clear();
         _colors.clear();
+        _colorImages.clear();
+        _sizes.clear();
         _selectedCategory = null;
         _selectedSubCategory = null;
       });
@@ -92,24 +132,42 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
       );
     }
   }
-// Upload images to Firebase Storage
-  Future<List<String>> _uploadImagesToStorage() async {
-    List<String> imageUrls = [];
-    int count = 1;
-    for (File image in _images) {
-      String filePath = "DressShopImages/$productId/";
-      // Use the helper method to upload the file
-      String downloadUrl = await firebaseStorageHelper.uploadFile(image, filePath, count.toString());
-      // Add the download URL to the list
-      if (downloadUrl.isNotEmpty) {
-        imageUrls.add(downloadUrl);
-      } else {
-        // Handle error if necessary
-        print('Error uploading image $count');
+
+  // Upload images for each color to Firebase Storage
+  Future<Map<String, List<String>>> _uploadImagesToStorage() async {
+    Map<String, List<String>> colorImageUrls = {};
+    for (Color color in _colors) {
+      List<String> imageUrls = [];
+      if (_colorImages[color] != null) {
+        int count = 1;
+        for (File image in _colorImages[color]!) {
+          String filePath = "DressShopImages/$productId/${color.value}/$count";
+          // Use the helper method to upload the file
+          String downloadUrl = await firebaseStorageHelper.uploadFile(image, filePath, count.toString());
+          // Add the download URL to the list
+          if (downloadUrl.isNotEmpty) {
+            imageUrls.add(downloadUrl);
+          } else {
+            // Handle error if necessary
+            print('Error uploading image $count for color ${color.value}');
+          }
+          count++;
+        }
       }
-      count++;
+      colorImageUrls[color.value.toString()] = imageUrls;
     }
-    return imageUrls;
+    return colorImageUrls;
+  }
+
+  // Remove an image from the list
+  void _removeImage(Color color, int index) {
+    setState(() {
+      _colorImages[color]?.removeAt(index);
+      if (_colorImages[color]?.isEmpty ?? true) {
+        _colorImages.remove(color);
+        _colors.remove(color);
+      }
+    });
   }
 
   @override
@@ -202,6 +260,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                   _description = value!;
                 },
               ),
+
               // Product Price
               TextFormField(
                 decoration: InputDecoration(labelText: 'Price'),
@@ -232,7 +291,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                 },
               ),
 
-              // Product Sizes
+              // Available Sizes
               TextFormField(
                 decoration: InputDecoration(labelText: 'Available Sizes (comma separated)'),
                 validator: (value) {
@@ -246,93 +305,69 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                 },
               ),
 
-              // Product Colors
+              // Color Picker with Image Uploader
               SizedBox(height: 20),
-              Text('Available Colors'),
-              Wrap(
-                spacing: 10.0,
-                children: _colors.map((color) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _colors.remove(color);
-                      });
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black),
-                      ),
-                    ),
-                  );
-                }).toList()
-                  ..add(
-                    GestureDetector(
-                      onTap: () async {
-                        // Pick a color
-                        List<Color>? pickedColors = await _pickColors(context);
-                        if (pickedColors != null) {
-                          setState(() {
-                            _colors.addAll(pickedColors.where((color) => !_colors.contains(color)));
-                          });
-                        }
-                      },
-                      child: Container(
+              Text('Colors & Images'),
+              SizedBox(height: 10),
+              ..._colors.map((color) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      leading: Container(
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: color,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.black),
                         ),
-                        child: Icon(Icons.add),
                       ),
+                      title: Text('Images for this color:'),
+                      subtitle: Text('${_colorImages[color]?.length ?? 0} image(s) selected'),
                     ),
-                  ),
-              ),
-
-              // Product Images
-              SizedBox(height: 20),
-              Text('Product Images'),
-              Wrap(
-                spacing: 10.0,
-                children: _images.map((image) {
-                  return Stack(
-                    children: [
-                      Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _images.remove(image);
-                            });
-                          },
-                          child: Icon(Icons.remove_circle, color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList()
-                  ..add(
-                    Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: _pickImages,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            color: Colors.grey[300],
-                            child: Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey[700]),
-                          ),
-                        ),
-                      ],
+                    Wrap(
+                      spacing: 8.0,
+                      children: _colorImages[color]?.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        File imageFile = entry.value;
+                        return Stack(
+                          children: [
+                            Image.file(
+                              imageFile,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                            Positioned(
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () => _removeImage(color, index),
+                                child: Icon(
+                                  Icons.cancel,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList() ??
+                          [],
                     ),
+                  ],
+                );
+              }).toList(),
+              SizedBox(height: 10),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _pickColorAndImages,
+                  child: Text('Add Color & Images'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[300],
+                    padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 30.0),
+                    textStyle: TextStyle(fontSize: 18.0),
                   ),
+                ),
               ),
 
               // Submit Button
@@ -354,38 +389,4 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
       ),
     );
   }
-
-// Pick multiple colors
-  Future<List<Color>?> _pickColors(BuildContext context) async {
-    List<Color> selectedColors = [];
-
-    return showDialog<List<Color>>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Pick colors'),
-          content: SingleChildScrollView(
-            child: MultipleChoiceBlockPicker(
-              pickerColors: _colors,
-              onColorsChanged: (colors) {
-                selectedColors = colors;
-              },
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Select'),
-              onPressed: () {
-                // Close the color picker and prevent the keyboard from showing
-                FocusScope.of(context).requestFocus(FocusNode()); // Unfocus text fields
-                Navigator.of(context).pop(selectedColors);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-
 }
