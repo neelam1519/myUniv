@@ -18,6 +18,9 @@ class _DressHomeState extends State<DressHome> {
   FireStoreService fireStoreService = FireStoreService();
   String category = "Men";
   late Stream<QuerySnapshot> _dressStream;
+  String _searchQuery = "";
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -47,6 +50,8 @@ class _DressHomeState extends State<DressHome> {
   Stream<QuerySnapshot> _getDressStream() {
     return FirebaseFirestore.instance
         .collection('/SHOPS/DRESSSHOP/$category')
+        .where('name', isGreaterThanOrEqualTo: _searchQuery)
+        .where('name', isLessThan: _searchQuery + 'z')
         .snapshots();
   }
 
@@ -95,16 +100,47 @@ class _DressHomeState extends State<DressHome> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: Text('FindAny'),
+        title: _isSearching
+            ? TextField(
+          controller: _searchController,
+          autofocus: true,
+          onChanged: (query) {
+            setState(() {
+              _searchQuery = query;
+              _dressStream = _getDressStream(); // Update the stream when search query changes
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search...',
+            border: InputBorder.none,
+          ),
+        )
+            : Text('FindAny'),
         actions: [
-          if (_isOwner)
+          if (_isSearching)
+            IconButton(
+              icon: Icon(Icons.close),
+              onPressed: () {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _searchQuery = "";
+                  _dressStream = _getDressStream(); // Reset the stream
+                });
+              },
+            )
+          else if (_isOwner)
             IconButton(
               icon: Icon(Icons.upload_file),
               onPressed: _navigateToUploadPage,
             ),
           IconButton(
-            icon: Icon(Icons.notifications),
-            onPressed: () {},
+            icon: Icon(Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = true;
+              });
+            },
           ),
           IconButton(
             icon: Icon(Icons.shopping_cart),
@@ -121,18 +157,6 @@ class _DressHomeState extends State<DressHome> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search for products, brands and more',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-            ),
-          ),
           Padding(
             padding: EdgeInsets.all(8.0),
             child: Container(
@@ -258,7 +282,7 @@ class _DressHomeState extends State<DressHome> {
               right: 0,
               child: Container(
                 padding: EdgeInsets.all(8.0),
-                color: Colors.white.withOpacity(0.7), // Background color with transparency
+                color: Colors.white.withOpacity(0.7),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -279,5 +303,4 @@ class _DressHomeState extends State<DressHome> {
       ),
     );
   }
-
 }

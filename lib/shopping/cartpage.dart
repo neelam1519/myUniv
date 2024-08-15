@@ -91,7 +91,6 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,46 +112,63 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
           double discount = product['discount'] ?? 0.0;
           double discountedPrice = price * (1 - discount / 100);
 
-          return Card(
-            margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            elevation: 4.0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Row(
-                children: [
-                  Image.network(
-                    product['media'][0],
-                    width: 80.0,
-                    height: 80.0,
-                    fit: BoxFit.cover,
-                  ),
-                  SizedBox(width: 12.0),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product['name'],
-                          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 4.0),
-                        Text(
-                          "\₹${discountedPrice.toStringAsFixed(2)}",
-                          style: TextStyle(fontSize: 14.0, color: Colors.green),
-                        ),
-                      ],
+          return GestureDetector(
+            onTap: () {
+              // Define the action when the card is tapped
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailPage(documentSnapshot: products[index]),
+                ),
+              );
+            },
+            child: Card(
+              margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              elevation: 4.0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(12.0),
+                child: Row(
+                  children: [
+                    Image.network(
+                      product['media'][0],
+                      width: 80.0,
+                      height: 80.0,
+                      fit: BoxFit.cover,
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      _confirmRemoveFromCart(products[index].reference);
-                    },
-                  ),
-                ],
+                    SizedBox(width: 12.0),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product['name'],
+                            style: TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4.0),
+                          Text(
+                            "\₹${discountedPrice.toStringAsFixed(2)}",
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        _confirmRemoveFromCart(products[index].reference);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -160,4 +176,5 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
       ),
     );
   }
+
 }
