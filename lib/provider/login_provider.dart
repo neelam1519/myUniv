@@ -1,3 +1,4 @@
+import 'package:findany_flutter/xerox/otherHome.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -168,9 +169,8 @@ class LoginProvider with ChangeNotifier {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
         await storeRequiredData(context);
       } else {
-        await signOut();
-        loadingDialog.dismiss();
-        loadingDialog.showError('Please sign in with a valid KARE email.');
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Otherhome()));
+        await storeRequiredData(context);
       }
     } else {
       if (kDebugMode) {

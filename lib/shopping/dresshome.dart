@@ -4,7 +4,9 @@ import 'package:findany_flutter/shopping/cartpage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import '../provider/productdetails_provider.dart';
 import 'dressdetailspage.dart';
 import 'dressuploadpage.dart';
 
@@ -27,6 +29,9 @@ class _DressHomeState extends State<DressHome> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
+  late ProductDetailsProvider productDetailsProvider;
+
+
   Map<String, List<String>> subcategories = {
     'Men': ['Shirts', 'Short', 'Shoes', 'T-shirt'],
     'Women': ['Dresses', 'Tops', 'Shoes'],
@@ -40,7 +45,15 @@ class _DressHomeState extends State<DressHome> {
     _fetchInitialProducts();
   }
 
-  void _checkIfOwner() async {
+  @override
+  void didChangeDependencies() {
+    // TODO: implement didChangeDependencies
+    super.didChangeDependencies();
+    productDetailsProvider = Provider.of<ProductDetailsProvider>(context);
+
+  }
+
+    void _checkIfOwner() async {
     bool isOwner = await isUserOwner();
     setState(() {
       _isOwner = isOwner;
@@ -435,10 +448,11 @@ class _DressHomeState extends State<DressHome> {
 
     return GestureDetector(
       onTap: () {
+        productDetailsProvider.updateDetailsSnapshot(document);
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(documentSnapshot: document),
+            builder: (context) => ProductDetailPage(),
           ),
         );
       },
@@ -492,10 +506,11 @@ class _DressHomeState extends State<DressHome> {
   }
 
   void _navigateToUploadPage() {
+    productDetailsProvider.updateDetailsSnapshot(null);
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MerchantUploadPage(documentSnapshot: null),
+        builder: (context) => MerchantUploadPage(),
       ),
     );
   }

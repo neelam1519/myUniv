@@ -6,14 +6,12 @@ import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../provider/productdetails_provider.dart';
 import '../services/FullScreenImageGallery.dart';
 import 'dressuploadpage.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final DocumentSnapshot documentSnapshot;
-
-  ProductDetailPage({required this.documentSnapshot});
-
   @override
   _ProductDetailPageState createState() => _ProductDetailPageState();
 }
@@ -26,37 +24,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Utils utils = Utils();
   FireStoreService fireStoreService = FireStoreService();
   LoadingDialog loadingDialog = LoadingDialog();
-
-  void _openGallery(BuildContext context, List<String> media) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FullScreenImageGallery(
-          media: media,
-          initialIndex: _currentIndex,
-        ),
-      ),
-    );
-  }
+  late ProductDetailsProvider productDetailsProvider;
 
   @override
-  void initState() {
-    super.initState();
-    var product = widget.documentSnapshot.data() as Map<String, dynamic>;
-    List<String> colorIds = List<String>.from(product['colors'] ?? []);
-    _checkIfOwner();
-    if (colorIds.isNotEmpty) {
-      _selectedColorId = colorIds[0];
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    productDetailsProvider = Provider.of<ProductDetailsProvider>(context);
+    var snapshot = productDetailsProvider.getDetailsSnapshot();
+    if (snapshot != null && snapshot.exists) {
+      var productDetails = snapshot.data() as Map<String, dynamic>;
+
+      List<String> colorIds = List<String>.from(productDetails['colors'] ?? []);
+      if (colorIds.isNotEmpty) {
+        _selectedColorId = colorIds[0];
+      }
+
+      _checkIfOwner(productDetails);
     }
   }
 
-
-
-  void _checkIfOwner() async {
+  Future<void> _checkIfOwner(Map<String, dynamic> productDetails) async {
     bool isOwner = await isUserOwner();
-    setState(() {
-      _isOwner = isOwner;
-    });
+    if (mounted) {
+      setState(() {
+        _isOwner = isOwner;
+      });
+    }
   }
 
   Future<bool> isUserOwner() async {
@@ -72,12 +65,36 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return false;
   }
 
+  void _openGallery(BuildContext context, List<String> media) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullScreenImageGallery(
+          media: media,
+          initialIndex: _currentIndex,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    var product = widget.documentSnapshot.data() as Map<String, dynamic>;
+    var snapshot = productDetailsProvider.getDetailsSnapshot();
+    if (snapshot == null || !snapshot.exists) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text("Product Details"),
+        ),
+        body: Center(
+          child: Text("Product details not found."),
+        ),
+      );
+    }
 
-    List<String> sizes = List<String>.from(product['sizes'] ?? []);
-    Map<String, List<String>> colorImages = (product['media'] as Map<String, dynamic>).map(
+    var productDetails = snapshot.data() as Map<String, dynamic>;
+
+    List<String> sizes = List<String>.from(productDetails['sizes'] ?? []);
+    Map<String, List<String>> colorImages = (productDetails['media'] as Map<String, dynamic>).map(
           (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
     );
 
@@ -85,8 +102,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     List<String> media = colorImages[_selectedColorId] ?? colorImages.values.first;
 
     // Calculate the discounted price
-    double price = (product['price'] as num?)?.toDouble() ?? 0.0;
-    double discount = (product['discount'] as num?)?.toDouble() ?? 0.0;
+    double price = (productDetails['price'] as num?)?.toDouble() ?? 0.0;
+    double discount = (productDetails['discount'] as num?)?.toDouble() ?? 0.0;
     double discountedPrice = price * (1 - discount / 100);
 
     // Convert the discounted price to an integer
@@ -94,7 +111,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(product['name'] ?? "Product Details"),
+        title: Text(productDetails['name'] ?? "Product Details"),
         actions: [
           if (_isOwner)
             IconButton(
@@ -103,7 +120,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MerchantUploadPage(documentSnapshot: widget.documentSnapshot),
+                    builder: (context) => MerchantUploadPage(),
                   ),
                 );
               },
@@ -163,7 +180,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                product['name'] ?? 'Product Name',
+                productDetails['name'] ?? 'Product Name',
                 style: TextStyle(
                   fontSize: 22.0,
                   fontWeight: FontWeight.bold,
@@ -175,7 +192,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: Row(
                 children: [
                   Text(
-                    '\₹${discountedPriceInt}',
+                    '\₹$discountedPriceInt',
                     style: TextStyle(
                       fontSize: 20.0,
                       color: Colors.green,
@@ -192,20 +209,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         decoration: TextDecoration.lineThrough,
                       ),
                     ),
-                  SizedBox(width: 10),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.yellow, size: 18),
-                      SizedBox(width: 5),
-                      Text(
-                        '${product['rating'] ?? 0.0}',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                productDetails['description'] ?? 'No description available',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.grey[700],
+                ),
               ),
             ),
             Padding(
@@ -262,7 +276,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     onSelected: (selected) {
                       setState(() {
                         _selectedColorId = colorId;
-                        media = colorImages[_selectedColorId] ?? [];
                       });
                     },
                   );
@@ -290,38 +303,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     // Reference to the user's cart document
                     DocumentReference cartRef = FirebaseFirestore.instance.doc("/UserDetails/$uid/DressShop/Cart");
 
-                    // Fetch the current data from the cart document
-                    DocumentSnapshot cartSnapshot = await cartRef.get();
+                    // Get current cart details
+                    Map<String, dynamic>? currentCartDetails = await fireStoreService.getDocumentDetails(cartRef);
 
-                    // Initialize the list of product IDs
-                    List<dynamic> productIDs = [];
+                    // Initialize cart items map if it's null
+                    Map<String, dynamic> cartItems = currentCartDetails?['items'] ?? {};
 
-                    // Check if the cart document exists and if it contains data
-                    if (cartSnapshot.exists) {
-                      // Safely cast the data to Map<String, dynamic>
-                      final data = cartSnapshot.data() as Map<String, dynamic>;
-
-                      // Get the existing list of product IDs or initialize an empty list
-                      productIDs = List<dynamic>.from(data['productIDs'] ?? []);
+                    // Update cart item quantity
+                    if (cartItems.containsKey(productDetails['id'])) {
+                      cartItems[productDetails['id']]['quantity'] += 1;
+                    } else {
+                      cartItems[productDetails['id']] = {
+                        'productId': productDetails['id'],
+                        'quantity': 1,
+                      };
                     }
 
-                    // Add the new product ID to the list if it's not already present
-                    if (!productIDs.contains(widget.documentSnapshot.reference)) {
-                      productIDs.add(widget.documentSnapshot.reference);
-                    }
+                    // Update the cart document
+                    await cartRef.set({
+                      'items': cartItems,
+                    });
 
-                    // Update the cart document with the new list of product IDs
-                    await cartRef.update({'productIDs': productIDs});
-
-                    // Dismiss the loading dialog
+                    // Dismiss loading dialog
                     loadingDialog.dismiss();
                   },
                   child: Text('Add to Cart'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: EdgeInsets.symmetric(vertical: 15.0),
-                    textStyle: TextStyle(fontSize: 18.0),
-                  ),
                 ),
               ),
             ),

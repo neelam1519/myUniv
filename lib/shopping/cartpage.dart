@@ -56,11 +56,11 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
     });
   }
 
-  void _navigateToProductDetailPage(DocumentSnapshot product) {
+  void _navigateToProductDetailPage() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProductDetailPage(documentSnapshot: product),
+        builder: (context) => ProductDetailPage(),
       ),
     );
   }
@@ -140,7 +140,7 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ProductDetailPage(documentSnapshot: products[index]),
+                  builder: (context) => ProductDetailPage(),
                 ),
               );
             },

@@ -90,6 +90,43 @@ class FirebaseStorageHelper {
     }
   }
 
+  // Helper method to upload a single file to Firebase Storage
+  Future<String> setFile(File file, String filePath, String fileName) async {
+    try {
+      // Get a reference to the file location (including the folder path)
+      Reference storageRef = FirebaseStorage.instance.ref().child(filePath).child(fileName);
+      await deleteFolder("$filePath");
+      // Upload the file
+      UploadTask uploadTask = storageRef.putFile(file);
+
+      // Listen for state changes, errors, and completion of the upload task
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        print('Upload task state: ${snapshot.state}');
+        if (snapshot.state == TaskState.running) {
+          print('Upload task in progress');
+        } else if (snapshot.state == TaskState.success) {
+          print('Upload task completed successfully');
+        }
+      }, onError: (error) {
+        print('Upload task error: $error');
+      });
+
+      // Wait for the upload task to complete
+      TaskSnapshot taskSnapshot = await uploadTask;
+      print('TaskSnapshot: $taskSnapshot');
+
+      // Retrieve the download URL
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+
+      print('File uploaded successfully. Download URL: $downloadUrl');
+
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading file: $e');
+      return '';
+    }
+  }
+
   Future<File?> downloadFile(String fullPath) async {
     try {
       Reference ref = storage.ref(fullPath);
@@ -114,6 +151,39 @@ class FirebaseStorageHelper {
     } catch (e) {
       print('Error downloading file: $e');
       return null;
+    }
+  }
+  Future<void> deleteFile(String filePath) async {
+    try {
+      // Create a reference to the file to be deleted
+      Reference fileRef = storage.ref().child(filePath);
+
+      // Delete the file
+      await fileRef.delete();
+
+      print('File deleted successfully from path: $filePath');
+    } catch (e) {
+      print('Failed to delete file: $e');
+      throw e;
+    }
+  }
+  // Method to delete a folder and its contents
+  Future<void> deleteFolder(String folderPath) async {
+    try {
+      // List all files and subfolders in the folder
+      final ListResult result = await storage.ref(folderPath).listAll();
+
+      // Delete all files in the folder
+      for (Reference ref in result.items) {
+        await ref.delete();
+      }
+
+      // Recursively delete subfolders
+      for (Reference ref in result.prefixes) {
+        await deleteFolder(ref.fullPath);
+      }
+    } catch (e) {
+      print('Error deleting folder: $e');
     }
   }
 }

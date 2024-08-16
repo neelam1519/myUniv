@@ -21,6 +21,7 @@ import 'package:findany_flutter/provider/newslist_provider.dart';
 import 'package:findany_flutter/provider/notificationhome_provider.dart';
 import 'package:findany_flutter/provider/pdfscreen_provider.dart';
 import 'package:findany_flutter/provider/personaldetails_provider.dart';
+import 'package:findany_flutter/provider/productdetails_provider.dart';
 import 'package:findany_flutter/provider/qanda_provider.dart';
 import 'package:findany_flutter/provider/review_provider.dart';
 import 'package:findany_flutter/provider/showfiles_provider.dart';
@@ -115,6 +116,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => UniversityChatProvider()),
         ChangeNotifierProvider(create: (_) => XeroxHistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ProductDetailsProvider()),
       ],
       child: MaterialApp(
         title: 'FindAny',

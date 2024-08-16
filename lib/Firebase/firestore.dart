@@ -8,14 +8,36 @@ class FireStoreService {
       return true;
     } on FirebaseException catch (e) {
       print('Firestore Error: ${e.code} - ${e.message}');
-      // Handle specific Firestore error
+      // Handle specific Firestore errors
       if (e.code == 'permission-denied') {
+        print('Permission denied: You do not have the necessary permissions to perform this action.');
       } else {
         // Handle other Firestore errors
       }
       return false;
     } catch (e) {
       print('Error uploading map data to Firestore: $e');
+      // Handle generic error
+      return false;
+    }
+  }
+
+  Future<bool> setMapDataToFirestore(Map<String, dynamic> data, DocumentReference documentReference) async {
+    try {
+      await documentReference.set(data, SetOptions(merge: false));
+      print('Map data set successfully in Firestore!');
+      return true;
+    } on FirebaseException catch (e) {
+      print('Firestore Error: ${e.code} - ${e.message}');
+      // Handle specific Firestore errors
+      if (e.code == 'permission-denied') {
+        print('Permission denied: You do not have the necessary permissions to perform this action.');
+      } else {
+        // Handle other Firestore errors
+      }
+      return false;
+    } catch (e) {
+      print('Error setting map data in Firestore: $e');
       // Handle generic error
       return false;
     }
