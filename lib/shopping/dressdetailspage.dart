@@ -18,7 +18,7 @@ class ProductDetailPage extends StatefulWidget {
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
   int _currentIndex = 0;
-  String _selectedColorId = ''; // To store the selected color ID
+  String _selectedColorId = '';
   bool _isOwner = false;
 
   Utils utils = Utils();
@@ -92,11 +92,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
 
     var productDetails = snapshot.data() as Map<String, dynamic>;
-
+    print("DressDetails: $productDetails");
     List<String> sizes = List<String>.from(productDetails['sizes'] ?? []);
-    Map<String, List<String>> colorImages = (productDetails['media'] as Map<String, dynamic>).map(
-          (key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)),
-    );
+    Map<String, List<String>> colorImages = (productDetails['media'] as Map<String, dynamic>).map((key, value) => MapEntry(key, List<String>.from(value as List<dynamic>)));
 
     // Get the media list for the selected color, or fallback to the first color or default media
     List<String> media = colorImages[_selectedColorId] ?? colorImages.values.first;
@@ -318,12 +316,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         'quantity': 1,
                       };
                     }
-
                     // Update the cart document
                     await cartRef.set({
                       'items': cartItems,
                     });
-
                     // Dismiss loading dialog
                     loadingDialog.dismiss();
                   },

@@ -8,6 +8,10 @@ class ProductDetailsProvider extends ChangeNotifier {
 
   void updateDetailsSnapshot(DocumentSnapshot? docSnapshot) {
     documentSnapshot = docSnapshot;
+    if(docSnapshot == null){
+      print('Doc ');
+
+    }
     notifyListeners();
   }
 

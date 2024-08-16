@@ -12,6 +12,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:http/http.dart' as http;
 
 import '../provider/productdetails_provider.dart';
+import '../utils/utils.dart';
 
 class MerchantUploadPage extends StatefulWidget {
   @override
@@ -25,6 +26,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   FireStoreService fireStoreService = FireStoreService();
   FirebaseStorageHelper firebaseStorageHelper = FirebaseStorageHelper();
   LoadingDialog loadingDialog = LoadingDialog();
+  Utils utils = Utils();
 
   // Form fields
   String _name = '';
@@ -219,11 +221,11 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
         for (var entry in _colorImages.entries) {
           String color = entry.key.value.toString();
           List<File> images = entry.value;
-
-          // Upload images and get URLs
-          List<String> imageUrls = await Future.wait(
-            images.map((image) => firebaseStorageHelper.setFile(image, 'DressShopImages/$productId/$color/', image.path.split('/').last)),
-          );
+          List<String> imageUrls = [];
+          for(File file in images){
+            String downloadUrl =await firebaseStorageHelper.uploadFile(file, 'DressShopImages/$productId/$color/', file.path.split('/').last);
+            imageUrls.add(downloadUrl);
+          }
           if (imageUrls.isNotEmpty) {
             media[color] = imageUrls;
           }
@@ -252,6 +254,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
 
         productDetailsProvider.updateDetailsSnapshot(documentSnapshot);
 
+        utils.clearCache();
         Navigator.pop(context);
 
         loadingDialog.dismiss();
