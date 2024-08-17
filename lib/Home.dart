@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:findany_flutter/Other/notification.dart';
 import 'package:findany_flutter/groupchat/groupchathome.dart';
 import 'package:findany_flutter/materials/materialshome.dart';
-import 'package:findany_flutter/xerox/xeroxhome.dart';
 import 'package:findany_flutter/navigation/navigationhome.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
@@ -100,11 +99,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         title: 'Let\'s Talk',
                         destination: GroupChatHome(),
                       ),
-                      const GridItem(
-                        imagePath: 'assets/images/xerox.png',
-                        title: 'Get Xerox',
-                        destination: XeroxHome(),
-                      ),
+                      // const GridItem(
+                      //   imagePath: 'assets/images/xerox.png',
+                      //   title: 'Get Xerox',
+                      //   destination: XeroxHome(),
+                      // ),
                       const GridItem(
                         imagePath: 'assets/images/materials.png',
                         title: 'Materials',

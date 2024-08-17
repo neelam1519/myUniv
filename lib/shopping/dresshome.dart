@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/shopping/cartpage.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -30,20 +31,45 @@ class _DressHomeState extends State<DressHome> {
   final TextEditingController _searchController = TextEditingController();
 
   late ProductDetailsProvider productDetailsProvider;
-
+  LoadingDialog loadingDialog = LoadingDialog();
 
   Map<String, List<String>> subcategories = {
-    'Men': ['Shirts', 'Short', 'Shoes', 'T-shirt'],
-    'Women': ['Dresses', 'Tops', 'Shoes'],
-    'Kids': ['T-Shirts', 'Pants', 'Shoes'],
+    'Men': [],
+    'Women': [],
+    'Kids': [],
   };
 
   @override
   void initState() {
     super.initState();
+    getSubcategory();
     _checkIfOwner();
     _fetchInitialProducts();
   }
+  Future<void> getSubcategory() async {
+    loadingDialog.showDefaultLoading("Getting Details");
+    CollectionReference collectionReference = FirebaseFirestore.instance.collection("SHOPS/DRESSSHOP/Category");
+    List<String> documents = await fireStoreService.getDocumentNames(collectionReference);
+
+    for (String str in documents) {
+      DocumentReference documentReference = FirebaseFirestore.instance.doc("SHOPS/DRESSSHOP/Category/$str");
+      Map<String, dynamic>? data = await fireStoreService.getDocumentDetails(documentReference);
+
+      if (data != null && data.isNotEmpty) {
+        List<String> allValues = [];
+        for (var value in data.values) {
+            allValues.add(value);
+        }
+        // Update the subcategories map
+        subcategories[str] = allValues;
+      }
+    }
+    setState(() {
+
+    });
+    print('subCategory: $subcategories');
+  }
+
 
   @override
   void didChangeDependencies() {
@@ -89,6 +115,7 @@ class _DressHomeState extends State<DressHome> {
       isLoading = false;
       hasMoreProducts = querySnapshot.docs.length == 4;
     });
+    loadingDialog.dismiss();
   }
 
   Future<void> _fetchMoreProducts() async {
@@ -513,6 +540,13 @@ class _DressHomeState extends State<DressHome> {
         builder: (context) => MerchantUploadPage(),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    loadingDialog.dismiss();
   }
 
 }

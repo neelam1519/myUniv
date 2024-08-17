@@ -44,9 +44,9 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   String? _selectedSubCategory;
 
   final Map<String, List<String>> _categoryOptions = {
-    'Men': ['T-shirt', 'Short', 'Nightpant'],
-    'Women': ['Dress', 'Blouse', 'Skirt'],
-    'Kids': ['Shirt', 'Pants', 'Shorts']
+    'Men': [],
+    'Women': [],
+    'Kids': []
   };
 
   // Controllers for text fields
@@ -58,25 +58,53 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
 
   late ProductDetailsProvider productDetailsProvider;
 
+  DocumentSnapshot? snapshot;
 
   @override
   void initState() {
     super.initState();
-    _initializeProductDetails();
+    getSubcategory();
+  }
+
+  Future<void> getSubcategory() async {
+    CollectionReference collectionReference = FirebaseFirestore.instance.collection("SHOPS/DRESSSHOP/Category");
+    List<String> documents = await fireStoreService.getDocumentNames(collectionReference);
+
+    for (String str in documents) {
+      DocumentReference documentReference = FirebaseFirestore.instance.doc("SHOPS/DRESSSHOP/Category/$str");
+      Map<String, dynamic>? data = await fireStoreService.getDocumentDetails(documentReference);
+
+      if (data != null && data.isNotEmpty) {
+        List<String> allValues = [];
+        for (var value in data.values) {
+          allValues.add(value);
+        }
+        // Update the subcategories map
+        _categoryOptions[str] = allValues;
+      }
+    }
+    setState(() {
+
+    });
+    print('subCategory: $_categoryOptions');
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     productDetailsProvider = Provider.of<ProductDetailsProvider>(context);
+    snapshot = context.read<ProductDetailsProvider>().getDetailsSnapshot();
+    if(snapshot !=null){
+      _initializeProductDetails();
+    }
+
   }
 
   Future<void> _initializeProductDetails() async {
     loadingDialog.showDefaultLoading("Getting Product Details...");
-    DocumentSnapshot? snapshot = context.read<ProductDetailsProvider>().getDetailsSnapshot();
 
-    if (snapshot != null && snapshot.exists) {
-      var productDetails = snapshot.data() as Map<String, dynamic>;
+    if (snapshot != null && snapshot!.exists) {
+      var productDetails = snapshot!.data() as Map<String, dynamic>;
       print("Product Details: $productDetails");
       setState(() {
         _name = productDetails['name'] ?? 'N/A';
@@ -465,6 +493,13 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    loadingDialog.dismiss();
   }
 
 }
