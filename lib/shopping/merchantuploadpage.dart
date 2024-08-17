@@ -39,17 +39,15 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
 
   String productId = "";
 
-  // Dropdown fields
   String? _selectedCategory;
   String? _selectedSubCategory;
 
   final Map<String, List<String>> _categoryOptions = {
-    'Men': [],
-    'Women': [],
-    'Kids': []
+    'Men': [" "],
+    'Women': [" "],
+    'Kids': [" "]
   };
 
-  // Controllers for text fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
@@ -266,7 +264,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
           'price': _price,
           'discount': _discount,
           'sizes': _sizes,
-          'colors': media.keys,
+          'colors': media.keys.toList(),
           'media': media,
           'productId': productId,
           'category': _selectedCategory,
@@ -275,7 +273,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
         print("Data: $data");
         print("ProductID: $productId");
         DocumentReference documentReference = FirebaseFirestore.instance.doc('/SHOPS/DRESSSHOP/$_selectedCategory/$productId');
-        await fireStoreService.setMapDataToFirestore(data, documentReference);
+        await fireStoreService.uploadMapDataToFirestore(data, documentReference);
 
         DocumentSnapshot documentSnapshot = await documentReference.get();
         print("Document Snapshot: ${documentSnapshot.data()}");
@@ -301,9 +299,6 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Upload Product'),
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.all(16.0),

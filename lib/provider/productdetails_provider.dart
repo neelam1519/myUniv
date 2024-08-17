@@ -8,10 +8,6 @@ class ProductDetailsProvider extends ChangeNotifier {
 
   void updateDetailsSnapshot(DocumentSnapshot? docSnapshot) {
     documentSnapshot = docSnapshot;
-    if(docSnapshot == null){
-      print('Doc ');
-
-    }
     notifyListeners();
   }
 
@@ -23,5 +19,4 @@ class ProductDetailsProvider extends ChangeNotifier {
     }
     return documentSnapshot;
   }
-
 }

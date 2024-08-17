@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/productdetails_provider.dart';
 import '../services/FullScreenImageGallery.dart';
-import 'dressuploadpage.dart';
+import 'merchantuploadpage.dart';
 
 class ProductDetailPage extends StatefulWidget {
   @override
@@ -25,12 +25,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   FireStoreService fireStoreService = FireStoreService();
   LoadingDialog loadingDialog = LoadingDialog();
   late ProductDetailsProvider productDetailsProvider;
+  var snapshot;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     productDetailsProvider = Provider.of<ProductDetailsProvider>(context);
-    var snapshot = productDetailsProvider.getDetailsSnapshot();
+    snapshot = productDetailsProvider.getDetailsSnapshot();
     if (snapshot != null && snapshot.exists) {
       var productDetails = snapshot.data() as Map<String, dynamic>;
 
@@ -297,32 +298,24 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       loadingDialog.dismiss();
                       return;
                     }
+                    print("UID: $uid");
 
                     // Reference to the user's cart document
                     DocumentReference cartRef = FirebaseFirestore.instance.doc("/UserDetails/$uid/DressShop/Cart");
 
-                    // Get current cart details
-                    Map<String, dynamic>? currentCartDetails = await fireStoreService.getDocumentDetails(cartRef);
-
-                    // Initialize cart items map if it's null
-                    Map<String, dynamic> cartItems = currentCartDetails?['items'] ?? {};
-
-                    // Update cart item quantity
-                    if (cartItems.containsKey(productDetails['id'])) {
-                      cartItems[productDetails['id']]['quantity'] += 1;
-                    } else {
-                      cartItems[productDetails['id']] = {
-                        'productId': productDetails['id'],
-                        'quantity': 1,
-                      };
+                    try {
+                      // Add the new productID to the list without retrieving the current data
+                      await cartRef.update({
+                        "productIDs": FieldValue.arrayUnion([snapshot.reference])
+                      });
+                    } catch (e) {
+                      print("Error adding product to cart: $e");
+                    } finally {
+                      // Dismiss loading dialog
+                      loadingDialog.dismiss();
                     }
-                    // Update the cart document
-                    await cartRef.set({
-                      'items': cartItems,
-                    });
-                    // Dismiss loading dialog
-                    loadingDialog.dismiss();
                   },
+
                   child: Text('Add to Cart'),
                 ),
               ),
@@ -332,10 +325,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       ),
     );
   }
+
   @override
   void dispose() {
     // TODO: implement dispose
-    super.dispose();
     loadingDialog.dismiss();
+    super.dispose();
   }
+
 }

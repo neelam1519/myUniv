@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'dressdetailspage.dart';
+import 'package:provider/provider.dart';
+import '../provider/productdetails_provider.dart';
+import 'productdetailspage.dart';
 
 class CartDetailsPage extends StatefulWidget {
   @override
@@ -12,6 +14,16 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
   List<DocumentSnapshot> products = [];
   bool isLoading = true;
   Utils utils = Utils();
+
+  late ProductDetailsProvider productDetailsProvider;
+
+  @override
+  void didChangeDependencies() {
+    // TODO: implement didChangeDependencies
+    super.didChangeDependencies();
+    productDetailsProvider = Provider.of<ProductDetailsProvider>(context);
+
+  }
 
   @override
   void initState() {
@@ -56,15 +68,6 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
     });
   }
 
-  void _navigateToProductDetailPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetailPage(),
-      ),
-    );
-  }
-
   void _confirmRemoveFromCart(DocumentReference productRef) {
     showDialog(
       context: context,
@@ -95,10 +98,7 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Your Cart"),
-        backgroundColor: Colors.orange,
-      ),
+
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : products.isEmpty
@@ -136,6 +136,7 @@ class _CartDetailsPageState extends State<CartDetailsPage> {
 
           return GestureDetector(
             onTap: () {
+              productDetailsProvider.updateDetailsSnapshot(products[index]);
               // Define the action when the card is tapped
               Navigator.push(
                 context,

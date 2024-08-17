@@ -6,6 +6,7 @@ import 'package:findany_flutter/provider/busbooking_home_provider.dart';
 import 'package:findany_flutter/provider/chatting_provider.dart';
 import 'package:findany_flutter/provider/creategroupchat_provider.dart';
 import 'package:findany_flutter/provider/display_materials_provider.dart';
+import 'package:findany_flutter/provider/dress_provider.dart';
 import 'package:findany_flutter/provider/fetch_buslist_provider.dart';
 import 'package:findany_flutter/provider/group_chat_provider.dart';
 import 'package:findany_flutter/provider/history_provider.dart';
@@ -117,6 +118,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UniversityChatProvider()),
         ChangeNotifierProvider(create: (_) => XeroxHistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProductDetailsProvider()),
+        ChangeNotifierProvider(create: (_) => DressProvider()),
       ],
       child: MaterialApp(
         title: 'FindAny',

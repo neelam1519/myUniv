@@ -22,9 +22,9 @@ class FireStoreService {
     }
   }
 
-  Future<bool> setMapDataToFirestore(Map<String, dynamic> data, DocumentReference documentReference) async {
+  Future<bool> updateMapDataToFirestore(Map<String, dynamic> data, DocumentReference documentReference) async {
     try {
-      await documentReference.set(data, SetOptions(merge: false));
+      await documentReference.update(data);
       print('Map data set successfully in Firestore!');
       return true;
     } on FirebaseException catch (e) {
