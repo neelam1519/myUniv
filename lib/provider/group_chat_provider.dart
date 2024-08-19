@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -14,10 +15,13 @@ class GroupChatProvider with ChangeNotifier {
   List<Map<String, dynamic>> _chatGroups = [];
   bool shouldRefresh = true;
 
+  LoadingDialog loadingDialog = LoadingDialog();
   List<Map<String, dynamic>> get chatGroups => _chatGroups;
 
   Future<void> fetchChatGroups() async {
+    loadingDialog.showDefaultLoading("Getting Group...");
     try {
+
       _chatGroups = [];
 
       final chatGroupsSnapshot = await FirebaseFirestore.instance.collection('ChatGroups').get();
@@ -29,9 +33,9 @@ class GroupChatProvider with ChangeNotifier {
         final data = document.data();
         final groupName = data['GroupName'];
 
-        if (groupName == 'App Testing') {
-          return null;
-        }
+        // if (groupName == 'App Testing') {
+        //   return null;
+        // }
 
         final chatRef = rtdb.FirebaseDatabase.instance.ref().child("Chat/$groupName");
 
@@ -76,6 +80,7 @@ class GroupChatProvider with ChangeNotifier {
         print('Error fetching chat groups: $e');
       }
     }
+    loadingDialog.dismiss();
   }
 
   Future<void> _isFirstTime(String chatName) async {

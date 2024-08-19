@@ -151,7 +151,6 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     stopDownload = false; // Allow downloads to start again
     loadingDialog.showDefaultLoading('Loading files...');
 
-    // Re-initialize and start downloading files from the new storage path
     await initialize("", ""); // Re-initialize with new storage path
   }
 

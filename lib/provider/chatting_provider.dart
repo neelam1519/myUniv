@@ -138,7 +138,6 @@ class ChatProvider extends ChangeNotifier {
     await _sendMessageAndNotify(message);
   }
 
-
   Future<void> _sendMessageAndNotify(ChatMessage message) async {
     if (_tokens.isEmpty) {
       print('Tokens: $_tokens');
@@ -146,14 +145,17 @@ class ChatProvider extends ChangeNotifier {
         _tokens = await utils.getAllTokens();
       } else {
         List<dynamic> members = await getSubscribers();
+        print("Members: $members");
         members.remove(_regNo);
         _tokens = await getTokensForMembers(members);
       }
+    }else{
+      print("Tokens are not empty");
     }
 
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
-    await notificationService.sendNotification(_tokens, chatName, message.text, {"source": "Group Chat"});
+    //await notificationService.sendNotification(_tokens, chatName, message.text, {"source": "Group Chat"});
 
     print('Tokens: $_tokens');
   }
