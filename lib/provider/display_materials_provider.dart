@@ -133,11 +133,13 @@ class DisplayMaterialsProvider extends ChangeNotifier {
 
   Future<void> updateIndex(int index, String path, String unit) async {
     print("UpdateIndex Provider: $index  $path/$unit");
-    loadingDialog.showDefaultLoading('Loading files...');
-    currentIndex = index;
-    stopDownload = true; // Stop any ongoing downloads before changing tabs
+
+    // Stop ongoing downloads and clear data
+    stopDownload = true; // Stop any ongoing downloads
     clearScreenData(); // Clear existing data
 
+    // Update the current index and app bar text based on the new index
+    currentIndex = index;
     if (index == 0) {
       appBarText = 'PDFs';
       storagePath = '$path/$unit';
@@ -145,7 +147,11 @@ class DisplayMaterialsProvider extends ChangeNotifier {
       appBarText = 'QUESTION PAPERS';
       storagePath = '$path/QUESTION PAPERS';
     }
-    stopDownload = false;
+
+    stopDownload = false; // Allow downloads to start again
+    loadingDialog.showDefaultLoading('Loading files...');
+
+    // Re-initialize and start downloading files from the new storage path
     await initialize("", ""); // Re-initialize with new storage path
   }
 
