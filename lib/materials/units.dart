@@ -1,5 +1,7 @@
 import 'package:findany_flutter/materials/displaymaterials.dart';
+import 'package:findany_flutter/provider/display_materials_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class Units extends StatefulWidget {
   final String path;
@@ -12,6 +14,13 @@ class Units extends StatefulWidget {
 }
 
 class _UnitsState extends State<Units> {
+  late DisplayMaterialsProvider displayMaterialsProvider;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    displayMaterialsProvider = Provider.of<DisplayMaterialsProvider>(context);
+
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,6 +37,8 @@ class _UnitsState extends State<Units> {
             child: ListTile(
               title: Text('UNIT ${index + 1}'),
               onTap: () {
+                String storagePath = "${widget.path}/UNIT ${index+1}";
+                displayMaterialsProvider.setStoragePath(storagePath);
                 Navigator.push(
                     context,
                     MaterialPageRoute(

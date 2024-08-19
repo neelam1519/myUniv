@@ -29,6 +29,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   void didChangeDependencies() {
+    print("Product details page");
     super.didChangeDependencies();
     productDetailsProvider = Provider.of<ProductDetailsProvider>(context);
     snapshot = productDetailsProvider.getDetailsSnapshot();
@@ -130,7 +131,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Carousel with zoom and swipe functionality
             GestureDetector(
               onTap: () {
                 _openGallery(context, media);
@@ -288,7 +288,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    // Show loading dialog
                     loadingDialog.showDefaultLoading("Adding to your cart");
 
                     // Get current user ID
@@ -311,7 +310,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     } catch (e) {
                       print("Error adding product to cart: $e");
                     } finally {
-                      // Dismiss loading dialog
                       loadingDialog.dismiss();
                     }
                   },
@@ -328,7 +326,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     loadingDialog.dismiss();
     super.dispose();
   }

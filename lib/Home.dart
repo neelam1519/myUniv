@@ -124,11 +124,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         title: 'Bus Booking',
                         destination: BusBookingHome(),
                       ),
-                      GridItem(
-                        imagePath: 'assets/images/shop.png',
-                        title: 'Shopping',
-                        destination: DressHome(),
-                      ),
+                      // GridItem(
+                      //   imagePath: 'assets/images/shop.png',
+                      //   title: 'Shopping',
+                      //   destination: DressHome(),
+                      // ),
                     ],
                   ),
                 ),

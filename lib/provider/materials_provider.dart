@@ -118,6 +118,7 @@ class MaterialsProvider with ChangeNotifier {
       }
       return indexA.compareTo(indexB);
     });
+    notifyListeners();
   }
 
   Future<void> updateSharedPrefsValues() async {

@@ -106,19 +106,7 @@ class MaterialsHome extends StatelessWidget {
                                           );
                                         }).toList(),
                                       ),
-                                      const SizedBox(height: 20.0),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          if (!await materialProvider.utils.checkInternetConnection()) {
-                                            provider.utils.showToastMessage('Connect to the Internet');
-                                            return;
-                                          }
-                                          Navigator.pop(context);
-                                          materialProvider.getSubjects();
-                                          materialProvider.updateSharedPrefsValues();
-                                        },
-                                        child: const Text('Submit'),
-                                      ),
+                                      SizedBox(height: 15.0),
                                     ],
                                   ),
                                 ),
@@ -166,6 +154,9 @@ class MaterialsHome extends StatelessWidget {
                               provider.utils.showToastMessage('Connect to the Internet');
                               return;
                             }
+                            provider.selectedSubjects.remove(selectedSubject);
+                            provider.selectedSubjects.insert(0, selectedSubject);
+                            provider.sortSubjects();
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -174,11 +165,7 @@ class MaterialsHome extends StatelessWidget {
                                   subject: selectedSubject,
                                 ),
                               ),
-                            ).then((_) {
-                              provider.selectedSubjects.remove(selectedSubject);
-                              provider.selectedSubjects.insert(0, selectedSubject);
-                              provider.sortSubjects();
-                            });
+                            );
                           },
                         ),
                       );

@@ -17,8 +17,6 @@ class DisplayMaterials extends StatelessWidget {
 
   const DisplayMaterials({super.key, required this.path, required this.subject, required this.unit});
 
-
-
   Widget buildSkeletonView() {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -55,7 +53,6 @@ class DisplayMaterials extends StatelessWidget {
     );
   }
 
-
   void viewPdfFullScreen(String? filePath, String title, BuildContext context) {
     if (filePath != null) {
       Navigator.push(
@@ -67,9 +64,6 @@ class DisplayMaterials extends StatelessWidget {
     }
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -78,9 +72,10 @@ class DisplayMaterials extends StatelessWidget {
         loadingDialog: LoadingDialog(),
         notificationService: NotificationService(),
         utils: Utils(),
-      )..initialize(path, unit),
+      )..initialize(path,unit),
       child: Consumer<DisplayMaterialsProvider>(
         builder: (context, provider, child) {
+          print("StoragePath: ${provider.storagePath}");
           return Scaffold(
             appBar: AppBar(
               title: FittedBox(
@@ -91,6 +86,7 @@ class DisplayMaterials extends StatelessWidget {
             body: StreamBuilder<List<File>>(
               stream: provider.streamController.stream,
               builder: (context, snapshot) {
+                print("Snapshot Data: ${snapshot.data}");
                 if (!provider.isInitialized) {
                   return buildSkeletonView();
                 } else if (provider.isDownloading && !provider.firstDownloadCompleted) {
@@ -162,7 +158,7 @@ class DisplayMaterials extends StatelessWidget {
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: provider.currentIndex,
               onTap: (int index) async {
-                provider.updateIndex(index);
+                provider.updateIndex(index,path,unit);
               },
               items: const [
                 BottomNavigationBarItem(

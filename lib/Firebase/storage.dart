@@ -90,32 +90,36 @@ class FirebaseStorageHelper {
     }
   }
 
-  Future<File?> downloadFile(String fullPath) async {
+  Future<File?> downloadFile(String fullPath, String localDirectory) async {
     try {
+      // Get a reference to the file in Firebase Storage
       Reference ref = storage.ref(fullPath);
       String fileName = ref.name;
-      print('Downloading file: $fileName');
 
-      Directory cacheDir = await getTemporaryDirectory();
-      String cachePath = '${cacheDir.path}/${fullPath.replaceAll(' ', '')}';
-      print('Download Cache1: $cachePath');
-      String cacheDirPath = cachePath.substring(0, cachePath.lastIndexOf('/'));
 
-      await Directory(cacheDirPath).create(recursive: true);
+      // Ensure the local directory exists, and create it if it doesn't
+      await Directory(localDirectory).create(recursive: true);
 
-      File tempFile = File(cachePath);
-      await ref.writeToFile(tempFile);
+      // Construct the full local file path by combining the directory with the file name
+      String filePath = '$localDirectory/$fileName';
+      File localFile = File(filePath);
 
-      print('File downloaded to: ${tempFile.path}');
-      return tempFile;
+      print("Downloading File: $fullPath");
+      // Download the file from Firebase Storage and save it locally
+      await ref.writeToFile(localFile);
+
+      print('File downloaded to: ${localFile.path}');
+      return localFile;
     } on FirebaseException catch (e) {
-      print('Error downloading file: $e');
+      print('Firebase error downloading file: $e');
       return null;
     } catch (e) {
-      print('Error downloading file: $e');
+      print('General error downloading file: $e');
       return null;
     }
   }
+
+
   Future<void> deleteFile(String filePath) async {
     try {
       // Create a reference to the file to be deleted

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Firebase/storage.dart';
+import 'package:findany_flutter/provider/dress_provider.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:http/http.dart' as http;
-
 import '../provider/productdetails_provider.dart';
 import '../utils/utils.dart';
 
@@ -42,11 +42,8 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   String? _selectedCategory;
   String? _selectedSubCategory;
 
-  final Map<String, List<String>> _categoryOptions = {
-    'Men': [" "],
-    'Women': [" "],
-    'Kids': [" "]
-  };
+  List<String> categories = [];
+  Map<String,List<String>> subCategories ={};
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -55,43 +52,25 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   final TextEditingController _sizesController = TextEditingController();
 
   late ProductDetailsProvider productDetailsProvider;
+  late DressProvider dressProvider;
+
 
   DocumentSnapshot? snapshot;
 
   @override
   void initState() {
+    print('Materials upload page');
     super.initState();
-    getSubcategory();
-  }
-
-  Future<void> getSubcategory() async {
-    CollectionReference collectionReference = FirebaseFirestore.instance.collection("SHOPS/DRESSSHOP/Category");
-    List<String> documents = await fireStoreService.getDocumentNames(collectionReference);
-
-    for (String str in documents) {
-      DocumentReference documentReference = FirebaseFirestore.instance.doc("SHOPS/DRESSSHOP/Category/$str");
-      Map<String, dynamic>? data = await fireStoreService.getDocumentDetails(documentReference);
-
-      if (data != null && data.isNotEmpty) {
-        List<String> allValues = [];
-        for (var value in data.values) {
-          allValues.add(value);
-        }
-        // Update the subcategories map
-        _categoryOptions[str] = allValues;
-      }
-    }
-    setState(() {
-
-    });
-    print('subCategory: $_categoryOptions');
   }
 
   @override
-  void didChangeDependencies() {
+  void didChangeDependencies() async{
     super.didChangeDependencies();
     productDetailsProvider = Provider.of<ProductDetailsProvider>(context);
-    snapshot = context.read<ProductDetailsProvider>().getDetailsSnapshot();
+    dressProvider = Provider.of<DressProvider>(context);
+
+    snapshot = productDetailsProvider.documentSnapshot;
+
     if(snapshot !=null){
       _initializeProductDetails();
     }
@@ -99,9 +78,12 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
   }
 
   Future<void> _initializeProductDetails() async {
+
     loadingDialog.showDefaultLoading("Getting Product Details...");
 
     if (snapshot != null && snapshot!.exists) {
+      print("Snapshot is not null");
+
       var productDetails = snapshot!.data() as Map<String, dynamic>;
       print("Product Details: $productDetails");
       setState(() {
@@ -144,6 +126,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
     } else {
       productId = _uuid.v4();
     }
+    print("ProductID: $productId");
     loadingDialog.dismiss();
   }
 
@@ -256,6 +239,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
             media[color] = imageUrls;
           }
         }
+
         print("Media: $media");
 
         Map<String, dynamic> data = {
@@ -278,10 +262,10 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
         DocumentSnapshot documentSnapshot = await documentReference.get();
         print("Document Snapshot: ${documentSnapshot.data()}");
 
-        productDetailsProvider.updateDetailsSnapshot(documentSnapshot);
-
-        utils.clearCache();
-        Navigator.pop(context);
+        // Delay the update until after the build phase
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          productDetailsProvider.addOrUpdateProductSnapshot(documentSnapshot);
+        });
 
         loadingDialog.dismiss();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -298,6 +282,9 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
 
   @override
   Widget build(BuildContext context) {
+    dressProvider.getCategories();
+    categories = dressProvider.categories;
+    subCategories = dressProvider.subCategories;
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -307,6 +294,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                SizedBox(height: 16.0),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(labelText: 'Product Name'),
@@ -345,10 +333,18 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                   controller: _discountController,
                   decoration: InputDecoration(labelText: 'Discount'),
                   keyboardType: TextInputType.number,
+                  validator: (value) {
+                    double? discount = double.tryParse(value!);
+                    if (discount == null || discount < 0 || discount > 100) {
+                      return 'Please enter a valid discount (0-100)';
+                    }
+                    return null;
+                  },
                   onSaved: (value) {
                     _discount = double.tryParse(value!) ?? 0.0;
                   },
                 ),
+
                 TextFormField(
                   controller: _sizesController,
                   decoration: InputDecoration(labelText: 'Sizes (comma-separated)'),
@@ -365,8 +361,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: InputDecoration(labelText: 'Category'),
-                  items: _categoryOptions.keys
-                      .map((category) => DropdownMenuItem(
+                  items: categories.map((category) => DropdownMenuItem(
                     value: category,
                     child: Text(category),
                   ))
@@ -388,7 +383,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                   DropdownButtonFormField<String>(
                     value: _selectedSubCategory,
                     decoration: InputDecoration(labelText: 'Subcategory'),
-                    items: _categoryOptions[_selectedCategory]!
+                    items: subCategories[_selectedCategory]!
                         .map((subcategory) => DropdownMenuItem(
                       value: subcategory,
                       child: Text(subcategory),
@@ -407,7 +402,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                     },
                   ),
                 SizedBox(height: 16.0),
-                Text('Select Colors and Upload Images:'),
+                Text('Select Colors and Images:'),
                 SizedBox(height: 8.0),
                 Wrap(
                   spacing: 8.0,
@@ -479,7 +474,7 @@ class _MerchantUploadPageState extends State<MerchantUploadPage> {
                 Center(
                   child: ElevatedButton(
                     onPressed: _submitForm,
-                    child: Text('Upload Product'),
+                    child: Text('Save product'),
                   ),
                 ),
               ],

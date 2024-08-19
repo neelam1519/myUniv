@@ -31,6 +31,8 @@ import 'package:findany_flutter/provider/useraccount_provider.dart';
 import 'package:findany_flutter/provider/xerox_provider.dart';
 import 'package:findany_flutter/provider/xeroxdetailsview_provider.dart';
 import 'package:findany_flutter/provider/xeroxhistory_provider.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -40,6 +42,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
+import 'Firebase/storage.dart';
 import 'auth_check_screen.dart';
 import 'firebase_options.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
@@ -119,6 +122,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => XeroxHistoryProvider()),
         ChangeNotifierProvider(create: (_) => ProductDetailsProvider()),
         ChangeNotifierProvider(create: (_) => DressProvider()),
+        ChangeNotifierProvider(create: (_) => DisplayMaterialsProvider(firebaseStorageHelper: FirebaseStorageHelper(),
+            loadingDialog: LoadingDialog(),
+            notificationService: NotificationService(),
+            utils: Utils(),
+          ),
+        ),
+
       ],
       child: MaterialApp(
         title: 'FindAny',

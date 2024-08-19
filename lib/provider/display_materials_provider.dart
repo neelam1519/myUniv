@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
-
 import '../Firebase/storage.dart';
 import '../services/sendnotification.dart';
 import '../utils/LoadingDialog.dart';
@@ -36,15 +35,39 @@ class DisplayMaterialsProvider extends ChangeNotifier {
   bool firstDownloadCompleted = false;
 
   Future<void> initialize(String path, String unit) async {
-    storagePath = '$path/$unit';
+    if (path.isNotEmpty && unit.isNotEmpty) {
+      storagePath = "$path/$unit";
+    }
+    print("Initialization Path: $storagePath");
     pdfFileNames = await firebaseStorageHelper.getFileNames(storagePath);
     isInitialized = true;
     notifyListeners();
     if (pdfFileNames.isNotEmpty) {
+      print("PdfFile List:$pdfFileNames");
       downloadNextFile();
     } else {
+      print("Pdf File Names are empty");
+      downloadedFiles.clear();
+      isDownloading = false;
       loadingDialog.dismiss();
+      notifyListeners();
     }
+  }
+
+  void clearScreenData() {
+    downloadedFiles.clear();
+    streamController.add([]);
+    currentDownloadingFile = null;
+    isDownloading = false;
+    firstDownloadCompleted = false;
+    stopDownload = true;
+    notifyListeners();
+  }
+
+  void setStoragePath(String path) {
+    storagePath = path;
+    print("setStoragePath: $storagePath");
+    notifyListeners();
   }
 
   Future<void> downloadNextFile() async {
@@ -56,9 +79,10 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     }
 
     Directory cacheDir = await getTemporaryDirectory();
-    String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}';
+    String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}/$appBarText';
 
     if (stopDownload) {
+      print("Download Stopped");
       isDownloading = false;
       loadingDialog.dismiss();
       notifyListeners();
@@ -71,56 +95,58 @@ class DisplayMaterialsProvider extends ChangeNotifier {
 
     File file = File('$cachePath/${currentDownloadingFile!.replaceAll(' ', '')}');
 
-    if (!file.existsSync()) {
-      await firebaseStorageHelper.downloadFile('$storagePath/$currentDownloadingFile').then((downloadedFile) {
+    print("File: ${file.path}");
+
+    if (file.existsSync()) {
+      print("File already exists, skipping download.");
+      downloadedFiles.add(file);
+      streamController.add(downloadedFiles.toList());
+      pdfFileNames.removeAt(0);
+      currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
+
+      if (!firstDownloadCompleted) {
+        firstDownloadCompleted = true;
+        loadingDialog.dismiss(); // Stop the loading dialog after the first download
+      }
+
+      notifyListeners();
+      downloadNextFile(); // Ensure continuation of the download process
+    } else {
+      await firebaseStorageHelper.downloadFile('$storagePath/$currentDownloadingFile', cachePath).then((downloadedFile) {
         if (downloadedFile != null) {
           downloadedFiles.add(downloadedFile);
           streamController.add(downloadedFiles.toList());
           pdfFileNames.removeAt(0);
           currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
+
           if (!firstDownloadCompleted) {
             firstDownloadCompleted = true;
             loadingDialog.dismiss(); // Stop the loading dialog after the first download
           }
+
           notifyListeners();
+          downloadNextFile(); // Ensure continuation of the download process
         }
       });
-    } else {
-      downloadedFiles.add(file);
-      streamController.add(downloadedFiles.toList());
-      pdfFileNames.removeAt(0);
-      currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
-      if (!firstDownloadCompleted) {
-        firstDownloadCompleted = true;
-        loadingDialog.dismiss(); // Stop the loading dialog after the first download
-      }
-      notifyListeners();
-    }
-
-    if (pdfFileNames.isNotEmpty) {
-      downloadNextFile();
-    } else {
-      isDownloading = false;
-      if (!firstDownloadCompleted) {
-        firstDownloadCompleted = true;
-        loadingDialog.dismiss();
-      }
-      notifyListeners();
     }
   }
 
-  void updateIndex(int index) async {
+  Future<void> updateIndex(int index, String path, String unit) async {
+    print("UpdateIndex Provider: $index  $path/$unit");
     loadingDialog.showDefaultLoading('Loading files...');
     currentIndex = index;
+    stopDownload = true; // Stop any ongoing downloads before changing tabs
+    clearScreenData(); // Clear existing data
+
     if (index == 0) {
       appBarText = 'PDFs';
-      storagePath = '${storagePath.split('/').first}/${storagePath.split('/')[1]}';
+      storagePath = '$path/$unit';
     } else if (index == 1) {
       appBarText = 'QUESTION PAPERS';
-      storagePath = '${storagePath.split('/').first}/QUESTION PAPERS';
+      storagePath = '$path/QUESTION PAPERS';
     }
-    stopDownload = true;
-    await initialize(storagePath.split('/').first, storagePath.split('/')[1]);
+    stopDownload = false;
+    await initialize("", ""); // Re-initialize with new storage path
   }
 
   Future<void> uploadFiles() async {
@@ -130,12 +156,9 @@ class DisplayMaterialsProvider extends ChangeNotifier {
       loadingDialog.showDefaultLoading('Uploading Files...');
       for (PlatformFile platformFile in result.files) {
         String fileName = platformFile.name;
-        String fileExtension = fileName
-            .split('.')
-            .last;
+        String fileExtension = fileName.split('.').last;
 
-        String path = 'userUploadedMaterials/"${storagePath.replaceAll('/', '-')}-${storagePath.split('/')[1]}"/${utils
-            .getTodayDate().replaceAll('/', '-')}';
+        String path = 'userUploadedMaterials/"${storagePath.replaceAll('/', '-')}-${storagePath.split('/')[1]}"/${utils.getTodayDate().replaceAll('/', '-')}';
         File file = File(platformFile.path!);
         await firebaseStorageHelper.uploadFile(
             file, path, '${await utils.getCurrentUserEmail()}-$fileName.$fileExtension');
@@ -160,12 +183,4 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     loadingDialog.dismiss();
     super.dispose();
   }
-
-
 }
-
-
-
-
-
-

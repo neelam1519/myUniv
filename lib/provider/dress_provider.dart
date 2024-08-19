@@ -29,10 +29,10 @@ class DressProvider extends ChangeNotifier {
   }
 
   Future<void> getCategories() async {
+    print("Getting categories");
     CollectionReference collectionReference =
     FirebaseFirestore.instance.collection("SHOPS/DRESSSHOP/Category");
-    List<String> documents =
-    await fireStoreService.getDocumentNames(collectionReference);
+    List<String> documents = await fireStoreService.getDocumentNames(collectionReference);
 
     for (String str in documents) {
       _category.add(str);
