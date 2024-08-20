@@ -39,19 +39,49 @@ class DisplayMaterialsProvider extends ChangeNotifier {
       storagePath = "$path/$unit";
     }
     print("Initialization Path: $storagePath");
-    pdfFileNames = await firebaseStorageHelper.getFileNames(storagePath);
-    isInitialized = true;
-    notifyListeners();
-    if (pdfFileNames.isNotEmpty) {
-      print("PdfFile List:$pdfFileNames");
-      downloadNextFile();
-    } else {
-      print("Pdf File Names are empty");
-      downloadedFiles.clear();
-      isDownloading = false;
-      loadingDialog.dismiss();
+
+    Directory cacheDir = await getTemporaryDirectory();
+    String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}/$appBarText';
+
+    print("Cache Path: $cachePath");
+    await getCachedPDFFiles(cachePath);
+
+    if (await utils.checkInternetConnection()) {
+      pdfFileNames = await firebaseStorageHelper.getFileNames(storagePath);
+
+      isInitialized = true;
       notifyListeners();
+
+      if (pdfFileNames.isNotEmpty) {
+        print("PdfFile List: $pdfFileNames");
+        downloadNextFile();
+      } else {
+        print("Pdf File Names are empty");
+        downloadedFiles.clear();
+        isDownloading = false;
+        loadingDialog.dismiss();
+        notifyListeners();
+      }
+    } else {
+      print("No internet connection, using cached files");
+      isInitialized = true;
     }
+    notifyListeners();
+  }
+
+  Future<void> getCachedPDFFiles(String cachePath) async {
+    Directory cacheDir = Directory(cachePath);
+
+    if (cacheDir.existsSync()) {
+      List<FileSystemEntity> files = cacheDir.listSync();
+
+      for (var file in files) {
+        if (file is File && file.path.endsWith('.pdf')) {
+          downloadedFiles.add(file);
+        }
+      }
+    }
+    streamController.add(downloadedFiles.toList());
   }
 
   void clearScreenData() {
@@ -99,8 +129,14 @@ class DisplayMaterialsProvider extends ChangeNotifier {
 
     if (file.existsSync()) {
       print("File already exists, skipping download.");
-      downloadedFiles.add(file);
-      streamController.add(downloadedFiles.toList());
+
+      // Check if the file is already in the downloadedFiles list
+      bool alreadyDownloaded = downloadedFiles.any((f) => f.path == file.path);
+      if (!alreadyDownloaded) {
+        downloadedFiles.add(file);
+        streamController.add(downloadedFiles.toList());
+      }
+
       pdfFileNames.removeAt(0);
       currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
 
@@ -114,8 +150,14 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     } else {
       await firebaseStorageHelper.downloadFile('$storagePath/$currentDownloadingFile', cachePath).then((downloadedFile) {
         if (downloadedFile != null) {
-          downloadedFiles.add(downloadedFile);
-          streamController.add(downloadedFiles.toList());
+
+          // Check if the downloaded file is already in the downloadedFiles list
+          bool alreadyDownloaded = downloadedFiles.any((f) => f.path == downloadedFile.path);
+          if (!alreadyDownloaded) {
+            downloadedFiles.add(downloadedFile);
+            streamController.add(downloadedFiles.toList());
+          }
+
           pdfFileNames.removeAt(0);
           currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
 

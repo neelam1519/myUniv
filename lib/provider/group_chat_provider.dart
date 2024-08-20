@@ -33,9 +33,9 @@ class GroupChatProvider with ChangeNotifier {
         final data = document.data();
         final groupName = data['GroupName'];
 
-        // if (groupName == 'App Testing') {
-        //   return null;
-        // }
+        if (groupName == 'App Testing') {
+          return null;
+        }
 
         final chatRef = rtdb.FirebaseDatabase.instance.ref().child("Chat/$groupName");
 
@@ -71,7 +71,7 @@ class GroupChatProvider with ChangeNotifier {
         }
       }).toList();
 
-      _chatGroups = (await Future.wait(chatFutures)).where((group) => group != null).map((group) => group).toList();
+      _chatGroups = (await Future.wait(chatFutures)).where((group) => group != null).map((group) => group!).toList();
       _chatGroups.sort((a, b) => b['createdAt'].compareTo(a['createdAt']));
 
       notifyListeners();

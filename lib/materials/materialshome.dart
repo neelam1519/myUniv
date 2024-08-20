@@ -150,10 +150,6 @@ class MaterialsHome extends StatelessWidget {
                           title: Text(provider.availableSubjects[index].toString()),
                           onTap: () async {
                             final selectedSubject = provider.availableSubjects[index].toString();
-                            if (!await provider.utils.checkInternetConnection()) {
-                              provider.utils.showToastMessage('Connect to the Internet');
-                              return;
-                            }
                             provider.selectedSubjects.remove(selectedSubject);
                             provider.selectedSubjects.insert(0, selectedSubject);
                             provider.sortSubjects();

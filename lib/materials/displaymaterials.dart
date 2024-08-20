@@ -72,7 +72,7 @@ class DisplayMaterials extends StatelessWidget {
         loadingDialog: LoadingDialog(),
         notificationService: NotificationService(),
         utils: Utils(),
-      )..initialize(path,unit),
+      )..initialize(path, unit),
       child: Consumer<DisplayMaterialsProvider>(
         builder: (context, provider, child) {
           print("StoragePath: ${provider.storagePath}");
@@ -80,7 +80,7 @@ class DisplayMaterials extends StatelessWidget {
             appBar: AppBar(
               title: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text("$subject>$unit"),
+                child: Text("$subject > $unit"),
               ),
             ),
             body: StreamBuilder<List<File>>(
@@ -113,6 +113,7 @@ class DisplayMaterials extends StatelessWidget {
                     itemCount: filesToShow.length,
                     itemBuilder: (context, index) {
                       File pdfFile = filesToShow[index];
+                      print("PDF FILE: $pdfFile");
                       return GestureDetector(
                         onTap: () {
                           viewPdfFullScreen(pdfFile.path, pdfFile.path.split('/').last, context);
@@ -158,7 +159,7 @@ class DisplayMaterials extends StatelessWidget {
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: provider.currentIndex,
               onTap: (int index) async {
-                provider.updateIndex(index,path,unit);
+                provider.updateIndex(index, path, unit);
               },
               items: const [
                 BottomNavigationBarItem(
