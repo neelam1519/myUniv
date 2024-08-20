@@ -23,7 +23,7 @@ class MaterialsHome extends StatelessWidget {
                       return StatefulBuilder(
                         builder: (BuildContext context, StateSetter setState) {
                           return Consumer<MaterialsProvider>(
-                            builder: (context, materialProvider, child){
+                            builder: (context, materialProvider, child) {
                               return SingleChildScrollView(
                                 child: Container(
                                   color: Colors.white,
@@ -42,16 +42,19 @@ class MaterialsHome extends StatelessWidget {
                                       const SizedBox(height: 8.0),
                                       DropdownButton<String>(
                                         value: materialProvider.currentYearSelectedOption,
-                                        onChanged: (String? newValue) {
-                                          // provider.currentYearSelectedOption = newValue;
+                                        onChanged: (String? newValue) async {
+                                          if (!(await materialProvider.utils.checkInternetConnection())) {
+                                            materialProvider.utils.showToastMessage("Connect to the Internet to get Subjects");
+                                            Navigator.pop(context);
+                                            return;
+                                          }
                                           materialProvider.currentYearSelection(newValue);
                                           materialProvider.getSpecialization();
                                           materialProvider.updateSharedPrefsValues();
                                           materialProvider.getSubjects();
                                         },
                                         isDense: true,
-                                        items: provider.yearsList
-                                            .map<DropdownMenuItem<String>>((String? value) {
+                                        items: provider.yearsList.map<DropdownMenuItem<String>>((String? value) {
                                           return DropdownMenuItem<String>(
                                             value: value!,
                                             child: Text(value),
@@ -68,15 +71,19 @@ class MaterialsHome extends StatelessWidget {
                                       const SizedBox(height: 8.0),
                                       DropdownButton<String>(
                                         value: materialProvider.currentBranchSelectedOption,
-                                        onChanged: (String? newValue) {
+                                        onChanged: (String? newValue) async {
+                                          if (!(await materialProvider.utils.checkInternetConnection())) {
+                                            materialProvider.utils.showToastMessage("Connect to the Internet to get Subjects");
+                                            Navigator.pop(context);
+                                            return;
+                                          }
                                           materialProvider.branchSelectedOption = newValue;
                                           materialProvider.getSpecialization();
                                           materialProvider.updateSharedPrefsValues();
                                           materialProvider.getSubjects();
                                         },
                                         isDense: true,
-                                        items: materialProvider.branchList
-                                            .map<DropdownMenuItem<String>>((String? value) {
+                                        items: materialProvider.branchList.map<DropdownMenuItem<String>>((String? value) {
                                           return DropdownMenuItem<String>(
                                             value: value!,
                                             child: Text(value),
@@ -93,20 +100,23 @@ class MaterialsHome extends StatelessWidget {
                                       const SizedBox(height: 8.0),
                                       DropdownButton<String>(
                                         value: materialProvider.currentStreamSelectedOption,
-                                        onChanged: (String? newValue) {
-                                          // materialProvider.streamSelectedOption = newValue;
+                                        onChanged: (String? newValue) async {
+                                          if (!(await materialProvider.utils.checkInternetConnection())) {
+                                            materialProvider.utils.showToastMessage("Connect to the Internet to get Subjects");
+                                            Navigator.pop(context);
+                                            return;
+                                          }
                                           materialProvider.newStreamSelection(newValue);
                                         },
                                         isDense: true,
-                                        items: materialProvider.availableSpecializations
-                                            .map<DropdownMenuItem<String>>((String? value) {
+                                        items: materialProvider.availableSpecializations.map<DropdownMenuItem<String>>((String? value) {
                                           return DropdownMenuItem<String>(
                                             value: value!,
                                             child: Text(value),
                                           );
                                         }).toList(),
                                       ),
-                                      SizedBox(height: 15.0),
+                                      const SizedBox(height: 15.0),
                                     ],
                                   ),
                                 ),
@@ -149,6 +159,10 @@ class MaterialsHome extends StatelessWidget {
                         child: ListTile(
                           title: Text(provider.availableSubjects[index].toString()),
                           onTap: () async {
+                            if (!(await provider.utils.checkInternetConnection())) {
+                              provider.utils.showToastMessage("Connect to the Internet to view details");
+                              return;
+                            }
                             final selectedSubject = provider.availableSubjects[index].toString();
                             provider.selectedSubjects.remove(selectedSubject);
                             provider.selectedSubjects.insert(0, selectedSubject);
@@ -176,4 +190,3 @@ class MaterialsHome extends StatelessWidget {
     );
   }
 }
-

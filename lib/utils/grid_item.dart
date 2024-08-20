@@ -26,7 +26,14 @@ class GridItem extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => destination),
               );
             } else {
-              homeProvider.utils.showToastMessage("Connect to the internet");
+              if(title == 'Materials'){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => destination),
+                );
+              }else{
+                homeProvider.utils.showToastMessage("Connect to the internet");
+              }
             }
           },
           child: Card(

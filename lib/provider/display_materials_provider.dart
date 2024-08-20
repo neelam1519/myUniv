@@ -26,7 +26,7 @@ class DisplayMaterialsProvider extends ChangeNotifier {
   int currentIndex = 0;
   String storagePath = '';
   List<String> pdfFileNames = [];
-  bool isDownloading = false;
+  bool isDownloading = true;
   bool stopDownload = false;
   List<File> downloadedFiles = [];
   String appBarText = 'PDFs';
@@ -48,25 +48,16 @@ class DisplayMaterialsProvider extends ChangeNotifier {
 
     if (await utils.checkInternetConnection()) {
       pdfFileNames = await firebaseStorageHelper.getFileNames(storagePath);
-
       isInitialized = true;
       notifyListeners();
-
-      if (pdfFileNames.isNotEmpty) {
-        print("PdfFile List: $pdfFileNames");
-        downloadNextFile();
-      } else {
-        print("Pdf File Names are empty");
-        downloadedFiles.clear();
-        isDownloading = false;
-        loadingDialog.dismiss();
-        notifyListeners();
-      }
+      loadingDialog.dismiss();
+      downloadMissingFiles();
     } else {
       print("No internet connection, using cached files");
+      utils.showToastMessage('No internet connection. Showing cached files.');
       isInitialized = true;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> getCachedPDFFiles(String cachePath) async {
@@ -81,8 +72,57 @@ class DisplayMaterialsProvider extends ChangeNotifier {
         }
       }
     }
+    print("Cached Files: $downloadedFiles");
     streamController.add(downloadedFiles.toList());
   }
+
+  Future<void> downloadMissingFiles() async {
+    int totalFiles = pdfFileNames.length;
+    int downloadedCount = 0;
+
+    // Extract the filenames from the downloadedFiles list
+    List<String> downloadedFileNames = downloadedFiles.map((file) {
+      return file.path.split('/').last.replaceAll(' ', '');
+    }).toList();
+
+
+
+    for (var fileName in pdfFileNames) {
+      if (stopDownload) break;
+
+      // Clean up the fileName to match the format used in the downloadedFileNames list
+      String cleanedFileName = fileName.replaceAll(' ', '');
+
+      // Check if the file is already downloaded
+      if (!downloadedFileNames.contains(cleanedFileName)) {
+        Directory cacheDir = await getTemporaryDirectory();
+        String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}/$appBarText';
+        File file = File('$cachePath/$cleanedFileName');
+
+        if (!file.existsSync()) {
+          await firebaseStorageHelper.downloadFile('$storagePath/$fileName', cachePath).then((downloadedFile) {
+            if (downloadedFile != null) {
+              print("Downloading File: $fileName");
+
+              downloadedFiles.add(downloadedFile);
+              streamController.add(downloadedFiles.toList()); // Show the downloaded file immediately
+              notifyListeners(); // Notify listeners to update the UI
+            }
+          });
+        }
+      }
+
+      downloadedCount++;
+
+      // If all files have been downloaded, show a toast message
+      if (downloadedCount == totalFiles) {
+        utils.showToastMessage('All files have been downloaded successfully.');
+      }
+    }
+    isDownloading = false;
+    notifyListeners();
+  }
+
 
   void clearScreenData() {
     downloadedFiles.clear();
@@ -98,79 +138,6 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     storagePath = path;
     print("setStoragePath: $storagePath");
     notifyListeners();
-  }
-
-  Future<void> downloadNextFile() async {
-    if (pdfFileNames.isEmpty) {
-      isDownloading = false;
-      loadingDialog.dismiss();
-      notifyListeners();
-      return;
-    }
-
-    Directory cacheDir = await getTemporaryDirectory();
-    String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}/$appBarText';
-
-    if (stopDownload) {
-      print("Download Stopped");
-      isDownloading = false;
-      loadingDialog.dismiss();
-      notifyListeners();
-      return;
-    }
-
-    isDownloading = true;
-    currentDownloadingFile = pdfFileNames.first;
-    notifyListeners();
-
-    File file = File('$cachePath/${currentDownloadingFile!.replaceAll(' ', '')}');
-
-    print("File: ${file.path}");
-
-    if (file.existsSync()) {
-      print("File already exists, skipping download.");
-
-      // Check if the file is already in the downloadedFiles list
-      bool alreadyDownloaded = downloadedFiles.any((f) => f.path == file.path);
-      if (!alreadyDownloaded) {
-        downloadedFiles.add(file);
-        streamController.add(downloadedFiles.toList());
-      }
-
-      pdfFileNames.removeAt(0);
-      currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
-
-      if (!firstDownloadCompleted) {
-        firstDownloadCompleted = true;
-        loadingDialog.dismiss(); // Stop the loading dialog after the first download
-      }
-
-      notifyListeners();
-      downloadNextFile(); // Ensure continuation of the download process
-    } else {
-      await firebaseStorageHelper.downloadFile('$storagePath/$currentDownloadingFile', cachePath).then((downloadedFile) {
-        if (downloadedFile != null) {
-
-          // Check if the downloaded file is already in the downloadedFiles list
-          bool alreadyDownloaded = downloadedFiles.any((f) => f.path == downloadedFile.path);
-          if (!alreadyDownloaded) {
-            downloadedFiles.add(downloadedFile);
-            streamController.add(downloadedFiles.toList());
-          }
-
-          pdfFileNames.removeAt(0);
-          currentDownloadingFile = pdfFileNames.isNotEmpty ? pdfFileNames.first : null;
-
-          if (!firstDownloadCompleted) {
-            firstDownloadCompleted = true;
-            loadingDialog.dismiss(); // Stop the loading dialog after the first download
-          }
-
-          notifyListeners();
-          downloadNextFile(); // Ensure continuation of the download process
-        }
-      });
-    }
   }
 
   Future<void> updateIndex(int index, String path, String unit) async {
