@@ -16,11 +16,9 @@ class ChatProvider extends ChangeNotifier {
   final SharedPreferences sharedPreferences = SharedPreferences();
   final FireStoreService fireStoreService = FireStoreService();
 
-  // Firebase References
   late rtdb.DatabaseReference _chatRef;
   late rtdb.DatabaseReference _onlineUsersRef;
 
-  // Chat State
   final List<ChatMessage> _messages = [];
   ChatUser? _user;
   final User? _firebaseUser = FirebaseAuth.instance.currentUser;
@@ -118,6 +116,7 @@ class ChatProvider extends ChangeNotifier {
 
 
   Future<void> handleSend(ChatMessage message) async {
+    print("Handling Send");
     if (_restrictedWords.isEmpty) {
       await fetchRestrictedWords();
     }
@@ -131,7 +130,6 @@ class ChatProvider extends ChangeNotifier {
         _messages.remove(message);
         notifyListeners();
       }
-
       return;
     }
 
@@ -139,6 +137,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> _sendMessageAndNotify(ChatMessage message) async {
+    print("ChatName: $chatName");
     if (_tokens.isEmpty) {
       print('Tokens: $_tokens');
       if (chatName == "UniversityChat") {
@@ -152,16 +151,15 @@ class ChatProvider extends ChangeNotifier {
     }else{
       print("Tokens are not empty");
     }
-
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
-    //await notificationService.sendNotification(_tokens, chatName, message.text, {"source": "Group Chat"});
+
+    await notificationService.sendNotification(_tokens, chatName, message.text, {"source": "Group Chat"});
 
     print('Tokens: $_tokens');
   }
 
 
-  // Fetch Data
   Future<void> fetchRestrictedWords() async {
     DocumentReference chatRef = FirebaseFirestore.instance.doc('/ChatDetails/Restricted');
     DocumentSnapshot snapshot = await chatRef.get();
@@ -184,6 +182,9 @@ class ChatProvider extends ChangeNotifier {
         try {
           Map<String, dynamic> messageData = _convertToMapStringDynamic(value);
           _messages.insert(0, ChatMessage.fromJson(messageData));
+          print("Messages: ${_messages.length}");
+          print("Messages: ${_messages}");
+
           _lastMessageKey = snapshot.key;
           notifyListeners();
         } catch (e) {
@@ -272,8 +273,6 @@ class ChatProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-
 
   Future<List<dynamic>> getSubscribers() async {
     DocumentReference chatRef = FirebaseFirestore.instance.doc('/ChatGroups/$_chatName');

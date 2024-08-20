@@ -31,6 +31,7 @@ class HomeProvider with ChangeNotifier {
     name = await _sharedPreferences.getDataFromReference(documentReference, "Name") ?? '';
     imageUrl = await _sharedPreferences.getDataFromReference(documentReference, 'ProfileImageURL') ?? '';
     await utils.updateToken();
+    utils.getToken();
     _loadingDialog.dismiss();
   }
 

@@ -38,10 +38,11 @@ class AuthProviderStart with ChangeNotifier {
   }
 
   void _onMessageReceived(RemoteMessage message) {
-    print('Received a message while in the foreground!');
+    print('Received a message while in the foreground! ${Chatting.isChatOpen}');
     print('Message data: ${message.data}');
-
-    if (Chatting.isChatOpen && Chatting.groupName == message.data["title"]) {
+    print(Chatting.groupName.replaceAll(" ", ""));
+    print(message.data["title"]);
+    if (Chatting.isChatOpen && Chatting.groupName.replaceAll(" ", "") == message.data["title"]) {
       print('Message belongs to UniversityChat and chat is open.');
     } else {
       _notificationService.showNotification(message);

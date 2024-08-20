@@ -71,7 +71,7 @@ class GroupChatProvider with ChangeNotifier {
         }
       }).toList();
 
-      _chatGroups = (await Future.wait(chatFutures)).where((group) => group != null).map((group) => group!).toList();
+      _chatGroups = (await Future.wait(chatFutures)).where((group) => group != null).map((group) => group).toList();
       _chatGroups.sort((a, b) => b['createdAt'].compareTo(a['createdAt']));
 
       notifyListeners();

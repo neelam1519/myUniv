@@ -1,5 +1,4 @@
 import 'package:findany_flutter/provider/home_provider.dart';
-import 'package:findany_flutter/shopping/dresshome.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/utils/grid_item.dart';
 import 'package:flutter/material.dart';
