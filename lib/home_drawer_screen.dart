@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:findany_flutter/Login/login.dart';
 import 'package:findany_flutter/provider/home_provider.dart';
 import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +85,7 @@ class MyDrawer extends StatelessWidget {
                       title: const Text('Sign Out'),
                       onTap: () async {
                         if (await provider.utils.checkInternetConnection()) {
-                          provider.signOut();
+                          await provider.utils.signOut(context);
                         } else {
                           provider.utils.showToastMessage('Check your internet connections');
                         }
@@ -99,16 +100,4 @@ class MyDrawer extends StatelessWidget {
       ),
     );
   }
-
-// Widget _buildDrawerItem({
-//   required IconData icon,
-//   required String text,
-//   required VoidCallback onTap,
-// }) {
-//   return ListTile(
-//     leading: Icon(icon, color: Colors.green[700]),
-//     title: Text(text, style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500)),
-//     onTap: onTap,
-//   );
-// }
 }

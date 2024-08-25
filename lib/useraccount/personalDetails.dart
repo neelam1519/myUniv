@@ -5,7 +5,6 @@ import '../provider/personaldetails_provider.dart';
 
 class PersonalDetails extends StatefulWidget {
   const PersonalDetails({super.key});
-
   @override
   _PersonalDetailsState createState() => _PersonalDetailsState();
 }
@@ -22,7 +21,6 @@ class _PersonalDetailsState extends State<PersonalDetails> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PersonalDetailsProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Details'),

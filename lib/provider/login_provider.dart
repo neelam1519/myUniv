@@ -1,5 +1,3 @@
-import 'package:findany_flutter/xerox/otherHome.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -27,104 +25,22 @@ class LoginProvider with ChangeNotifier {
   );
 
   Future<void> handleGoogleSignIn(BuildContext context) async {
-    if (kDebugMode) {
-      print('Handle Google Sign-In');
-    }
     try {
       loadingDialog.showDefaultLoading('Signing In...');
-      GoogleSignInAccount? googleSignInAccount;
+      GoogleSignInAccount? googleSignInAccount = await mobileGoogleSignIn();
 
-      if (kIsWeb) {
-        await webGoogleSignIn(context);
-      } else {
-        googleSignInAccount = await mobileGoogleSignIn();
-
-        if (googleSignInAccount != null) {
-          if (context.mounted) {
-            await firebaseSignIn(googleSignInAccount, context);
-          }
-        } else {
-          if (kDebugMode) {
-            print('Google Sign-In canceled.');
-          }
-          loadingDialog.dismiss();
-        }
-      }
-    } catch (error) {
-      loadingDialog.dismiss();
-      utils.showToastMessage(
-        'Error occurred while logging in',
-      );
-      if (kDebugMode) {
-        print('Error signing in with Google: $error');
-      }
-      await signOut();
-    }
-  }
-
-  Future<void> webGoogleSignIn(BuildContext context) async {
-    if (kDebugMode) {
-      print('Entered web sign-in');
-    }
-    try {
-      final GoogleAuthProvider provider = GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithPopup(provider);
-      final OAuthCredential? credential = userCredential.credential as OAuthCredential?;
-      final String? accessToken = credential?.accessToken;
-      final String? idToken = credential?.idToken;
-
-      if (kDebugMode) {
-        print('Access Token: $accessToken');
-      }
-      if (kDebugMode) {
-        print('ID Token: $idToken');
-      }
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        final String? email = user.email;
-        if (kDebugMode) {
-          print('Email: $email');
-        }
-        // if (email != null && email.endsWith('@klu.ac.in')) {
-        //   if (kDebugMode) {
-        //     print('User logged in with the University Email');
-        //   }
-        //   if (context.mounted) {
-        //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-        //     await storeRequiredData(context);
-        //   }
-        // }
-
-        if (email != null && email.endsWith('@gmail.com')) {
-          if (kDebugMode) {
-            print('User logged in with the University Email');
-          }
-          if (context.mounted) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
-            await storeRequiredData(context);
-          }
-        }
-        else {
-          await signOut();
-          loadingDialog.dismiss();
-          loadingDialog.showError('Please sign in with a valid KARE email.');
+      if (googleSignInAccount != null) {
+        if (context.mounted) {
+          await firebaseSignIn(googleSignInAccount, context);
         }
       } else {
-        if (kDebugMode) {
-          print('User is null after signing in.');
-        }
-        await signOut();
+        print('Google Sign-In canceled.');
         loadingDialog.dismiss();
       }
     } catch (error) {
-      if (kDebugMode) {
-        print('Error during web Google Sign-In: $error');
-      }
-      utils.showToastMessage(
-        'Error occurred while logging in',
-      );
+      loadingDialog.dismiss();
+      utils.showToastMessage('Error occurred while logging in: $error');
+      print('Error signing in with Google: $error');
       await signOut();
     }
   }
@@ -136,46 +52,34 @@ class LoginProvider with ChangeNotifier {
   }
 
   Future<void> firebaseSignIn(GoogleSignInAccount googleSignInAccount, BuildContext context) async {
-    final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
+    try {
+      final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
 
-    if (kDebugMode) {
-      print('Access Token: ${googleSignInAuthentication.accessToken}');
-    }
-    if (kDebugMode) {
-      print('ID Token: ${googleSignInAuthentication.idToken}');
-    }
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleSignInAuthentication.accessToken,
+        idToken: googleSignInAuthentication.idToken,
+      );
 
-    if (googleSignInAuthentication.accessToken == null || googleSignInAuthentication.idToken == null) {
-      throw Exception('Google Sign-In authentication tokens are null');
-    }
+      final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? user = authResult.user;
 
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleSignInAuthentication.accessToken,
-      idToken: googleSignInAuthentication.idToken,
-    );
+      if (user != null && context.mounted) {
+        final String? email = user.email;
 
-    final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
-    final User? user = authResult.user;
-
-    if (user != null && context.mounted) {
-      final String? email = user.email;
-      if (kDebugMode) {
-        print('Email: $email');
-      }
-      if (email != null && email.endsWith('@klu.ac.in')) {
-        if (kDebugMode) {
-          print('User logged in with the University Email');
+        if (email != null && email.endsWith('@klu.ac.in')) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
+          await storeRequiredData(context);
+        } else {
+          await signOut();
+          loadingDialog.showInfoMessage("Login with KALASALINGAM EMAIL ONLY");
         }
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
-        await storeRequiredData(context);
       } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Otherhome()));
-        await storeRequiredData(context);
+        await signOut();
+        loadingDialog.dismiss();
       }
-    } else {
-      if (kDebugMode) {
-        print('User is null after signing in.');
-      }
+    } catch (error) {
+      print('Error during Firebase Sign-In: $error');
+      utils.showToastMessage('Error occurred while logging in login again');
       await signOut();
       loadingDialog.dismiss();
     }
@@ -188,9 +92,7 @@ class LoginProvider with ChangeNotifier {
       String imageUrl = await utils.getCurrentUserProfileImage() ?? " ";
       String token = await utils.getToken() ?? " ";
 
-      if (kDebugMode) {
-        print('Login Token : $token');
-      }
+      print('Login Token: $token');
 
       String name = utils.removeTextAfterFirstNumber(displayName);
       String regNo = utils.removeEmailDomain(email);
@@ -201,9 +103,7 @@ class LoginProvider with ChangeNotifier {
         'ProfileImageURL': imageUrl,
         'Registration Number': regNo,
       };
-      if (kDebugMode) {
-        print('Login Details: $data');
-      }
+      print('Login Details: $data');
 
       String? currentUserUID = await utils.getCurrentUserUID();
 
@@ -215,13 +115,9 @@ class LoginProvider with ChangeNotifier {
       await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
       loadingDialog.dismiss();
     } catch (error) {
-      if (kDebugMode) {
-        print('Error storing data: $error');
-      }
-      utils.showToastMessage('Error occurred while login $error');
-      if (kDebugMode) {
-        print('Login Error2: $error');
-      }
+      print('Error storing data: $error');
+      utils.showToastMessage('Error occurred while logging in: $error');
+      print('Login Error: $error');
       await signOut();
     }
   }
@@ -231,9 +127,8 @@ class LoginProvider with ChangeNotifier {
     try {
       await googleSignIn.disconnect();
     } catch (e) {
-        print('Error disconnecting from Google: $e');
+      print('Error disconnecting from Google: $e');
     }
     await googleSignIn.signOut();
   }
 }
-

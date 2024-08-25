@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
-        android:label="FindAny"
+        android:label="myUniv"
         android:name="${applicationName}"
         android:icon="@mipmap/laucher_icon">
 

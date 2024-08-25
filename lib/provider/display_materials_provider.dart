@@ -54,14 +54,14 @@ class DisplayMaterialsProvider extends ChangeNotifier {
       downloadMissingFiles();
     } else {
       print("No internet connection, using cached files");
-      utils.showToastMessage('No internet connection. Showing cached files.');
-      isInitialized = true;
+      utils.showToastMessage('No internet connection.');
       notifyListeners();
     }
   }
 
   Future<void> getCachedPDFFiles(String cachePath) async {
     Directory cacheDir = Directory(cachePath);
+    isInitialized = true;
 
     if (cacheDir.existsSync()) {
       List<FileSystemEntity> files = cacheDir.listSync();
@@ -69,14 +69,18 @@ class DisplayMaterialsProvider extends ChangeNotifier {
       for (var file in files) {
         if (file is File && file.path.endsWith('.pdf')) {
           downloadedFiles.add(file);
+          isDownloading = false;
         }
       }
     }
+    loadingDialog.dismiss();
     print("Cached Files: $downloadedFiles");
     streamController.add(downloadedFiles.toList());
+
   }
 
   Future<void> downloadMissingFiles() async {
+    utils.showToastMessage("Downloading Files Please wait...");
     int totalFiles = pdfFileNames.length;
     int downloadedCount = 0;
 
@@ -84,8 +88,6 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     List<String> downloadedFileNames = downloadedFiles.map((file) {
       return file.path.split('/').last.replaceAll(' ', '');
     }).toList();
-
-
 
     for (var fileName in pdfFileNames) {
       if (stopDownload) break;
@@ -113,12 +115,11 @@ class DisplayMaterialsProvider extends ChangeNotifier {
       }
 
       downloadedCount++;
-
-      // If all files have been downloaded, show a toast message
       if (downloadedCount == totalFiles) {
         utils.showToastMessage('All files have been downloaded successfully.');
       }
     }
+    loadingDialog.dismiss();
     isDownloading = false;
     notifyListeners();
   }

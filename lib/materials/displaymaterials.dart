@@ -7,7 +7,7 @@ import 'package:findany_flutter/utils/utils.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:universal_io/io.dart';
 import '../provider/display_materials_provider.dart';
-import '../services/pdfscreen.dart';
+import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 
 class DisplayMaterials extends StatelessWidget {
@@ -53,16 +53,14 @@ class DisplayMaterials extends StatelessWidget {
     );
   }
 
-  void viewPdfFullScreen(String? filePath, String title, BuildContext context) {
-    if (filePath != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PDFScreen(filePath: filePath, title: title),
-        ),
-      );
+  Future<void> openPDF(String filePath, String title,BuildContext cotext) async {
+    final result = await OpenFile.open(filePath, type: "application/pdf");
+
+    if (result.type != ResultType.done) {
+      throw 'Could not open the PDF file: $filePath';
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -90,8 +88,10 @@ class DisplayMaterials extends StatelessWidget {
                 if (!provider.isInitialized) {
                   return buildSkeletonView();
                 } else if (provider.isDownloading && !provider.firstDownloadCompleted) {
+                  print("1");
                   return buildSkeletonView();
                 } else if (snapshot.hasError) {
+                  print("2");
                   provider.loadingDialog.dismiss();
                   return Center(
                     child: Text('Error: ${snapshot.error}'),
@@ -115,8 +115,8 @@ class DisplayMaterials extends StatelessWidget {
                       File pdfFile = filesToShow[index];
                       print("PDF FILE: $pdfFile");
                       return GestureDetector(
-                        onTap: () {
-                          viewPdfFullScreen(pdfFile.path, pdfFile.path.split('/').last, context);
+                        onTap: () async{
+                          await openPDF(pdfFile.path, pdfFile.path.split('/').last, context);
                         },
                         child: Card(
                           elevation: 5,

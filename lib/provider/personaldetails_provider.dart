@@ -27,7 +27,9 @@ class PersonalDetailsProvider extends ChangeNotifier {
   }
 
   Future<void> getUserDetails() async {
-    DocumentReference documentReference = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('UserDetails/${await utils.getCurrentUserUID()}');
+
+    print("UID: UserDetails/${await utils.getCurrentUserUID()}");
 
     DateTime currentTime = DateTime.now();
     loadingDialog.showDefaultLoading('Getting Details...');
@@ -36,6 +38,7 @@ class PersonalDetailsProvider extends ChangeNotifier {
     _email = await sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
     _selectedGender = await sharedPreferences.getDataFromReference(documentReference, 'Gender') ?? 'Male';
     _username = await sharedPreferences.getDataFromReference(documentReference, 'Username') ?? '';
+    print("Username: $_username");
 
     usernameController.text = _username;
 

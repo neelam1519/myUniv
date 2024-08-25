@@ -6,13 +6,11 @@ import 'package:findany_flutter/provider/busbooking_home_provider.dart';
 import 'package:findany_flutter/provider/chatting_provider.dart';
 import 'package:findany_flutter/provider/creategroupchat_provider.dart';
 import 'package:findany_flutter/provider/display_materials_provider.dart';
-import 'package:findany_flutter/provider/dress_provider.dart';
 import 'package:findany_flutter/provider/fetch_buslist_provider.dart';
 import 'package:findany_flutter/provider/group_chat_provider.dart';
 import 'package:findany_flutter/provider/history_provider.dart';
 import 'package:findany_flutter/provider/home_provider.dart';
 import 'package:findany_flutter/provider/leaveapplicationform_provider.dart';
-import 'package:findany_flutter/provider/leaveformshome_provider.dart';
 import 'package:findany_flutter/provider/login_provider.dart';
 import 'package:findany_flutter/provider/map_provider.dart';
 import 'package:findany_flutter/provider/materials_provider.dart';
@@ -22,7 +20,6 @@ import 'package:findany_flutter/provider/newslist_provider.dart';
 import 'package:findany_flutter/provider/notificationhome_provider.dart';
 import 'package:findany_flutter/provider/pdfscreen_provider.dart';
 import 'package:findany_flutter/provider/personaldetails_provider.dart';
-import 'package:findany_flutter/provider/productdetails_provider.dart';
 import 'package:findany_flutter/provider/qanda_provider.dart';
 import 'package:findany_flutter/provider/review_provider.dart';
 import 'package:findany_flutter/provider/showfiles_provider.dart';
@@ -120,8 +117,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => UniversityChatProvider()),
         ChangeNotifierProvider(create: (_) => XeroxHistoryProvider()),
-        ChangeNotifierProvider(create: (_) => ProductDetailsProvider()),
-        ChangeNotifierProvider(create: (_) => DressProvider()),
         ChangeNotifierProvider(create: (_) => DisplayMaterialsProvider(firebaseStorageHelper: FirebaseStorageHelper(),
             loadingDialog: LoadingDialog(),
             notificationService: NotificationService(),

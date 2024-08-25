@@ -66,7 +66,6 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Initialization
   Future<void> initializeUser() async {
     if (_firebaseUser != null) {
       String email = _firebaseUser.email!;

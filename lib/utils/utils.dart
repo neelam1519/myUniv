@@ -4,6 +4,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/Login/login.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -21,6 +23,7 @@ class Utils{
 
   FirebaseAuth auth = FirebaseAuth.instance;
   FireStoreService fireStoreService = FireStoreService();
+  LoadingDialog loadingDialog = LoadingDialog();
 
 
   Future<void> clearCache() async {
@@ -175,10 +178,29 @@ class Utils{
     return extension;
   }
 
-  void signOut(){
-    FirebaseAuth.instance.signOut();
-    GoogleSignIn().disconnect();
+  Future<void> signOut(BuildContext context) async {
+    GoogleSignIn googleSignIn = GoogleSignIn();
+    loadingDialog.showDefaultLoading("Signing out...");
+    await FirebaseAuth.instance.signOut();
+    print('Successfully signed out from FirebaseAuth.');
+    try {
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.disconnect();
+        print('Successfully disconnected from Google Sign-In.');
+      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Login()),
+      );
+
+    } catch (e) {
+      print('Error during sign-out: $e');
+    }
+    await googleSignIn.signOut();
+    loadingDialog.dismiss();
   }
+
+
 
   String removeTextAfterFirstNumber(String input) {
     List<String> characters = input.split('');
@@ -483,9 +505,6 @@ class Utils{
 
     return formattedTime;
   }
-
-
-
 
 // Future<void> sendSMS(String message, String recipient) async {
   //   final url = Uri.parse('https://www.fast2sms.com/dev/bulkV2');

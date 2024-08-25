@@ -42,12 +42,8 @@ class MaterialsHome extends StatelessWidget {
                                       const SizedBox(height: 8.0),
                                       DropdownButton<String>(
                                         value: materialProvider.currentYearSelectedOption,
-                                        onChanged: (String? newValue) async {
-                                          if (!(await materialProvider.utils.checkInternetConnection())) {
-                                            materialProvider.utils.showToastMessage("Connect to the Internet to get Subjects");
-                                            Navigator.pop(context);
-                                            return;
-                                          }
+                                        onChanged: (String? newValue) {
+                                          // provider.currentYearSelectedOption = newValue;
                                           materialProvider.currentYearSelection(newValue);
                                           materialProvider.getSpecialization();
                                           materialProvider.updateSharedPrefsValues();
@@ -71,19 +67,15 @@ class MaterialsHome extends StatelessWidget {
                                       const SizedBox(height: 8.0),
                                       DropdownButton<String>(
                                         value: materialProvider.currentBranchSelectedOption,
-                                        onChanged: (String? newValue) async {
-                                          if (!(await materialProvider.utils.checkInternetConnection())) {
-                                            materialProvider.utils.showToastMessage("Connect to the Internet to get Subjects");
-                                            Navigator.pop(context);
-                                            return;
-                                          }
+                                        onChanged: (String? newValue) {
                                           materialProvider.branchSelectedOption = newValue;
                                           materialProvider.getSpecialization();
                                           materialProvider.updateSharedPrefsValues();
                                           materialProvider.getSubjects();
                                         },
                                         isDense: true,
-                                        items: materialProvider.branchList.map<DropdownMenuItem<String>>((String? value) {
+                                        items:
+                                        materialProvider.branchList.map<DropdownMenuItem<String>>((String? value) {
                                           return DropdownMenuItem<String>(
                                             value: value!,
                                             child: Text(value),
@@ -100,23 +92,32 @@ class MaterialsHome extends StatelessWidget {
                                       const SizedBox(height: 8.0),
                                       DropdownButton<String>(
                                         value: materialProvider.currentStreamSelectedOption,
-                                        onChanged: (String? newValue) async {
-                                          if (!(await materialProvider.utils.checkInternetConnection())) {
-                                            materialProvider.utils.showToastMessage("Connect to the Internet to get Subjects");
-                                            Navigator.pop(context);
-                                            return;
-                                          }
+                                        onChanged: (String? newValue) {
+                                          // materialProvider.streamSelectedOption = newValue;
                                           materialProvider.newStreamSelection(newValue);
                                         },
                                         isDense: true,
-                                        items: materialProvider.availableSpecializations.map<DropdownMenuItem<String>>((String? value) {
+                                        items: materialProvider.availableSpecializations
+                                            .map<DropdownMenuItem<String>>((String? value) {
                                           return DropdownMenuItem<String>(
                                             value: value!,
                                             child: Text(value),
                                           );
                                         }).toList(),
                                       ),
-                                      const SizedBox(height: 15.0),
+                                      const SizedBox(height: 20.0),
+                                      ElevatedButton(
+                                        onPressed: () async {
+                                          if (!await materialProvider.utils.checkInternetConnection()) {
+                                            provider.utils.showToastMessage('Connect to the Internet');
+                                            return;
+                                          }
+                                          Navigator.pop(context);
+                                          materialProvider.getSubjects();
+                                          materialProvider.updateSharedPrefsValues();
+                                        },
+                                        child: const Text('Submit'),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -159,14 +160,11 @@ class MaterialsHome extends StatelessWidget {
                         child: ListTile(
                           title: Text(provider.availableSubjects[index].toString()),
                           onTap: () async {
-                            if (!(await provider.utils.checkInternetConnection())) {
-                              provider.utils.showToastMessage("Connect to the Internet to view details");
+                            final selectedSubject = provider.availableSubjects[index].toString();
+                            if (!await provider.utils.checkInternetConnection()) {
+                              provider.utils.showToastMessage('Connect to the Internet');
                               return;
                             }
-                            final selectedSubject = provider.availableSubjects[index].toString();
-                            provider.selectedSubjects.remove(selectedSubject);
-                            provider.selectedSubjects.insert(0, selectedSubject);
-                            provider.sortSubjects();
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -175,7 +173,11 @@ class MaterialsHome extends StatelessWidget {
                                   subject: selectedSubject,
                                 ),
                               ),
-                            );
+                            ).then((_) {
+                              provider.selectedSubjects.remove(selectedSubject);
+                              provider.selectedSubjects.insert(0, selectedSubject);
+                              provider.sortSubjects();
+                            });
                           },
                         ),
                       );

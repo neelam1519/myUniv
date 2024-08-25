@@ -27,8 +27,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     super.didChangeDependencies();
     _homeProvider = Provider.of<HomeProvider>(context);
     _homeProvider.loadData();
-    _homeProvider.requestPermission();
-    _homeProvider.fetchAnnouncementText();
   }
 
   @override
@@ -97,11 +95,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         title: 'Let\'s Talk',
                         destination: GroupChatHome(),
                       ),
-                      // const GridItem(
-                      //   imagePath: 'assets/images/xerox.png',
-                      //   title: 'Get Xerox',
-                      //   destination: XeroxHome(),
-                      // ),
                       const GridItem(
                         imagePath: 'assets/images/materials.png',
                         title: 'Materials',
@@ -122,11 +115,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         title: 'Bus Booking',
                         destination: BusBookingHome(),
                       ),
-                      // GridItem(
-                      //   imagePath: 'assets/images/shop.png',
-                      //   title: 'Shopping',
-                      //   destination: DressHome(),
-                      // ),
                     ],
                   ),
                 ),

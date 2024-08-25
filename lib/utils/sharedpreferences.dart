@@ -9,7 +9,7 @@ class SharedPreferences{
   Future<dynamic> getDataFromReference(DocumentReference documentReference, String key) async {
     String? data = await getSecurePrefsValue(key);
     if (data != null) {
-      print('Data found in SharedPreferences for key: $key');
+      print('Data found in SharedPreferences for key: $key $data');
       return data;
     } else {
       print('Data not found in SharedPreferences for key: $key, fetching from Firestore...');
@@ -17,8 +17,9 @@ class SharedPreferences{
         DocumentSnapshot snapshot = await documentReference.get();
         if (snapshot.exists) {
           Map<String, dynamic>? firestoreData = snapshot.data() as Map<String, dynamic>?;
+          print('Firestore Data: $firestoreData');
           if (firestoreData != null && firestoreData.containsKey(key)) {
-            dynamic value = firestoreData[key]; // Value is dynamic
+            dynamic value = firestoreData[key];
             if (value != null) {
               await storeValueInSecurePrefs(key, value.toString());
               print('Data stored in SharedPreferences for key: $key');

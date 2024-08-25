@@ -54,11 +54,9 @@ class UniversityChatProvider with ChangeNotifier {
       String userId = utils.removeEmailDomain(email);
       DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
 
-      String username = await sharedPreferences.getDataFromReference(userRef, "Username") ?? '';
       String displayName = utils.removeTextAfterFirstNumber(firebaseUser!.displayName ?? 'Anonymous');
-      String name = username.isNotEmpty ? username : (displayName.isNotEmpty ? displayName : 'Anonymous');
 
-      _user = ChatUser(id: userId, firstName: name);
+      _user = ChatUser(id: userId, firstName: displayName);
       notifyListeners();
     }
   }

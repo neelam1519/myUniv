@@ -1,6 +1,4 @@
 import 'package:findany_flutter/provider/auth_provider.dart';
-import 'package:findany_flutter/utils/utils.dart';
-import 'package:findany_flutter/xerox/otherHome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +29,7 @@ class AuthCheck extends StatelessWidget {
                   if(email != null && email.endsWith('@klu.ac.in')){
                     return Home();
                   }else{
-                    return Otherhome();
+                    return Login();
                   }
                 }else{
                   return Login();

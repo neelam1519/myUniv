@@ -23,14 +23,6 @@
           }
         },
         {
-          "client_id": "87807759596-286tiqhn1imbba1soa3qe85ni2fpdjon.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.neelam.FindAny",
-            "certificate_hash": "58572ae2a41b74d0ea35850b03aa9bd5d86dff74"
-          }
-        },
-        {
           "client_id": "87807759596-ts89hq4e2lce0dae2cm38h68i054t84n.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
