@@ -10,32 +10,50 @@ class NotificationService {
   final String fcmEndpoint = 'https://fcm.googleapis.com/fcm/send';
 
   Future<void> sendNotification(List<dynamic> tokens, String title, String message, Map<String, dynamic> additionalData) async {
+    const int maxTokensPerBatch = 1000;
 
-    final Map<String, dynamic> payload = {
-      'data': {
-        'title': title,
-        'body': message,
-        'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-        ...additionalData,
-      },
-      'registration_ids': tokens,
-    };
+    // Split the tokens into batches of 1000 or less
+    for (int i = 0; i < tokens.length; i += maxTokensPerBatch) {
+      final List<dynamic> tokenBatch = tokens.sublist(
+        i,
+        i + maxTokensPerBatch > tokens.length ? tokens.length : i + maxTokensPerBatch,
+      );
 
-    final Map<String, String> headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'key=$serverKey',
-    };
+      final Map<String, dynamic> payload = {
+        'data': {
+          'title': title,
+          'body': message,
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+          ...additionalData,
+        },
+        'registration_ids': tokenBatch,
+      };
 
-    final http.Response response = await http.post(
-      Uri.parse(fcmEndpoint),
-      headers: headers,
-      body: jsonEncode(payload),
-    );
+      final Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'key=$serverKey',
+      };
 
-    if (response.statusCode == 200) {
-      print('Notification sent successfully');
-    } else {
-      print('Failed to send notification: ${response.statusCode}');
+      print('Sending notification with payload: ${jsonEncode(payload)}');
+      print('Using server key: $serverKey');
+
+      try {
+        final http.Response response = await http.post(
+          Uri.parse(fcmEndpoint),
+          headers: headers,
+          body: jsonEncode(payload),
+        );
+
+        if (response.statusCode == 200) {
+          print('Notification sent successfully to batch ${i ~/ maxTokensPerBatch + 1}');
+        } else {
+          print('Failed to send notification to batch ${i ~/ maxTokensPerBatch + 1}: ${response.statusCode}');
+          print('Response body: ${response.body}');
+          // Handle specific error codes here
+        }
+      } catch (e) {
+        print('Exception occurred while sending notification to batch ${i ~/ maxTokensPerBatch + 1}: $e');
+      }
     }
   }
 
@@ -58,7 +76,7 @@ class NotificationService {
       priority: Priority.high,
       ticker: 'ticker',
       icon: '@mipmap/transperentlogo',
-      styleInformation: bigTextStyleInformation, // Set BigTextStyleInformation
+      styleInformation: bigTextStyleInformation,
     );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);

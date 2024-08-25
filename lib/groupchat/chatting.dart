@@ -30,6 +30,7 @@ class _ChattingState extends State<Chatting> {
 
   @override
   void initState() {
+    print("Chatting is opened");
     super.initState();
     chatProvider = Provider.of<ChatProvider>(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) {

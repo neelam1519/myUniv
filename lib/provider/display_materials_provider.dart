@@ -164,7 +164,7 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     await initialize("", ""); // Re-initialize with new storage path
   }
 
-  Future<void> uploadFiles() async {
+  Future<void> uploadFiles(String subject,String unit) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
     if (result != null && result.files.isNotEmpty) {
@@ -173,7 +173,7 @@ class DisplayMaterialsProvider extends ChangeNotifier {
         String fileName = platformFile.name;
         String fileExtension = fileName.split('.').last;
 
-        String path = 'userUploadedMaterials/"${storagePath.replaceAll('/', '-')}-${storagePath.split('/')[1]}"/${utils.getTodayDate().replaceAll('/', '-')}';
+        String path = 'Student Uploaded Materials/${utils.getTodayDate().replaceAll('/', '-')}/$subject-$unit';
         File file = File(platformFile.path!);
         await firebaseStorageHelper.uploadFile(
             file, path, '${await utils.getCurrentUserEmail()}-$fileName.$fileExtension');

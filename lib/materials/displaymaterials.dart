@@ -174,7 +174,8 @@ class DisplayMaterials extends StatelessWidget {
             ),
             floatingActionButton: FloatingActionButton(
               onPressed: () {
-                provider.uploadFiles();
+                print("Path: $path");
+                provider.uploadFiles(subject,unit);
               },
               backgroundColor: Colors.blue,
               child: const Icon(Icons.upload),
