@@ -391,6 +391,7 @@ class Utils{
   }
 
   Future<List<String>> getAllTokens() async {
+    print("Getting ALL tokens");
     DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
 
     try {
@@ -399,11 +400,11 @@ class Utils{
       if (allTokens != null) {
         List<String> tokens = allTokens.values.map((token) => token.toString()).toList();
 
-        String? currentToken = await getToken();
-
-        if (currentToken != null && tokens.contains(currentToken)) {
-          tokens.remove(currentToken);
-        }
+        // String? currentToken = await getToken();
+        //
+        // if (currentToken != null && tokens.contains(currentToken)) {
+        //   tokens.remove(currentToken);
+        // }
 
         print('Filtered Tokens: $tokens');
         return tokens;

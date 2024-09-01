@@ -37,7 +37,7 @@ class PersonalDetailsProvider extends ChangeNotifier {
     _regNo = await sharedPreferences.getDataFromReference(documentReference, 'Registration Number') ?? '';
     _email = await sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
     _selectedGender = await sharedPreferences.getDataFromReference(documentReference, 'Gender') ?? 'Male';
-    _username = await sharedPreferences.getDataFromReference(documentReference, 'Username') ?? '';
+    _username = await fireStoreService.getFieldValue(documentReference, 'Username') ?? '';
     print("Username: $_username");
 
     usernameController.text = _username;
@@ -54,12 +54,19 @@ class PersonalDetailsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateDetails() async {
+  Future<void> updateDetails(BuildContext context) async {
     _username = usernameController.text;
     if (_username.isEmpty) {
       utils.showToastMessage('Enter your username');
       return;
     }
+
+    bool isUsernameTaken = await checkUsernameExists(_username);
+    if (isUsernameTaken) {
+      utils.showToastMessage('Username is already taken');
+      return;
+    }
+
     loadingDialog.showDefaultLoading('Updating Data');
     Map<String, dynamic> userData = {
       'Gender': _selectedGender,
@@ -72,7 +79,17 @@ class PersonalDetailsProvider extends ChangeNotifier {
     sharedPreferences.storeMapValuesInSecureStorage(userData);
     loadingDialog.dismiss();
     utils.showToastMessage('Details updated');
+    Navigator.pop(context);
     notifyListeners();
+  }
+
+  Future<bool> checkUsernameExists(String username) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('UserDetails')
+        .where('Username', isEqualTo: username)
+        .get();
+
+    return querySnapshot.docs.isNotEmpty;
   }
 
   void setGender(String gender) {

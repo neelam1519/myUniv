@@ -106,4 +106,24 @@ class FireStoreService {
       print('Error deleting fields $fieldNames: $error');
     });
   }
+
+  Future<dynamic> getFieldValue(DocumentReference documentRef,String fieldName) async {
+    try {
+
+      // Get the document snapshot
+      DocumentSnapshot documentSnapshot = await documentRef.get();
+
+      // Check if the document exists
+      if (documentSnapshot.exists) {
+        // Return the value of the specific field
+        return documentSnapshot.get(fieldName);
+      } else {
+        print("Document does not exist");
+        return null;
+      }
+    } catch (e) {
+      print("Error getting field value: $e");
+      return null;
+    }
+  }
 }

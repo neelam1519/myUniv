@@ -12,7 +12,6 @@ class NotificationService {
   Future<void> sendNotification(List<dynamic> tokens, String title, String message, Map<String, dynamic> additionalData) async {
     const int maxTokensPerBatch = 1000;
 
-    // Split the tokens into batches of 1000 or less
     for (int i = 0; i < tokens.length; i += maxTokensPerBatch) {
       final List<dynamic> tokenBatch = tokens.sublist(
         i,
@@ -49,7 +48,6 @@ class NotificationService {
         } else {
           print('Failed to send notification to batch ${i ~/ maxTokensPerBatch + 1}: ${response.statusCode}');
           print('Response body: ${response.body}');
-          // Handle specific error codes here
         }
       } catch (e) {
         print('Exception occurred while sending notification to batch ${i ~/ maxTokensPerBatch + 1}: $e');

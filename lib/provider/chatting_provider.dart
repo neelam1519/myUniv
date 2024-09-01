@@ -4,7 +4,6 @@ import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:flutter/material.dart';
-
 import '../Firebase/firestore.dart';
 import '../services/sendnotification.dart';
 import '../utils/sharedpreferences.dart';
@@ -136,20 +135,22 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> _sendMessageAndNotify(ChatMessage message) async {
-    print("ChatName: $chatName");
-    if (_tokens.isEmpty) {
+    print(": $chatName");
       print('Tokens: $_tokens');
       if (chatName == "UniversityChat") {
-        _tokens = await utils.getAllTokens();
+        if(_tokens.isEmpty) {
+          _tokens = await utils.getAllTokens();
+        }
+        print("Getting all tokens");
       } else {
-        List<dynamic> members = await getSubscribers();
+        List<dynamic> members =[];
+        if(_tokens.isEmpty) {
+          members = await getSubscribers();
+        }
         print("Members: $members");
         members.remove(_regNo);
         _tokens = await getTokensForMembers(members);
       }
-    }else{
-      print("Tokens are not empty");
-    }
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
 

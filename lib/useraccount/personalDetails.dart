@@ -21,6 +21,7 @@ class _PersonalDetailsState extends State<PersonalDetails> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PersonalDetailsProvider>(context);
+    print("UserName: ${provider.username}");
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Details'),
@@ -131,8 +132,7 @@ class _PersonalDetailsState extends State<PersonalDetails> {
               child: IntrinsicWidth(
                 child: ElevatedButton(
                   onPressed: () async {
-                    await provider.updateDetails();
-                    Navigator.pop(context);
+                    await provider.updateDetails(context);
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
