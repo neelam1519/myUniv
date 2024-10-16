@@ -48,7 +48,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const NotificationHome()),
+                MaterialPageRoute(
+                    builder: (context) => const NotificationHome()),
               );
             },
           ),
@@ -61,9 +62,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           builder: (context, provider, child) {
             return Column(
               children: [
-                if (provider.announcementText != null && provider.announcementText!.isNotEmpty)
+                if (provider.announcementText != null &&
+                    provider.announcementText!.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16.0),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 16.0),
                     child: Linkify(
                       text: provider.announcementText!,
                       style: const TextStyle(
@@ -89,28 +92,28 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16.0,
                     mainAxisSpacing: 16.0,
-                    children: [
-                      const GridItem(
+                    children: const [
+                      GridItem(
                         imagePath: 'assets/images/groupchat.png',
                         title: 'Let\'s Talk',
                         destination: GroupChatHome(),
                       ),
-                      const GridItem(
+                      GridItem(
                         imagePath: 'assets/images/materials.png',
                         title: 'Materials',
                         destination: MaterialsHome(),
                       ),
-                      const GridItem(
+                      GridItem(
                         imagePath: 'assets/images/navigation.png',
                         title: 'Navigation',
                         destination: MapScreen(),
                       ),
-                      const GridItem(
+                      GridItem(
                         imagePath: 'assets/images/universitynews.jpeg',
                         title: 'University News',
                         destination: NewsListScreen(),
                       ),
-                      const GridItem(
+                      GridItem(
                         imagePath: 'assets/images/busbooking.png',
                         title: 'Bus Booking',
                         destination: BusBookingHome(),

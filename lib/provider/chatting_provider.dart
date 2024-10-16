@@ -60,7 +60,7 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  set isMember(bool value){
+  set isMember(bool value) {
     _isMember = value;
     notifyListeners();
   }
@@ -69,11 +69,17 @@ class ChatProvider extends ChangeNotifier {
     if (_firebaseUser != null) {
       String email = _firebaseUser.email!;
       String userId = utils.removeEmailDomain(email);
-      userRef = FirebaseFirestore.instance.doc('UserDetails/${utils.getCurrentUserUID()}');
+      userRef = FirebaseFirestore.instance
+          .doc('UserDetails/${utils.getCurrentUserUID()}');
 
-      String username = await sharedPreferences.getDataFromReference(userRef!, "Username") ?? '';
-      String displayName = utils.removeTextAfterFirstNumber(_firebaseUser.displayName ?? 'Anonymous');
-      String name = username.isNotEmpty ? username : (displayName.isNotEmpty ? displayName : 'Anonymous');
+      String username =
+          await sharedPreferences.getDataFromReference(userRef!, "Username") ??
+              '';
+      String displayName = utils
+          .removeTextAfterFirstNumber(_firebaseUser.displayName ?? 'Anonymous');
+      String name = username.isNotEmpty
+          ? username
+          : (displayName.isNotEmpty ? displayName : 'Anonymous');
 
       _user = ChatUser(id: userId, firstName: name);
       notifyListeners();
@@ -82,12 +88,15 @@ class ChatProvider extends ChangeNotifier {
 
   Future<void> checkMembershipStatus() async {
     if (_firebaseUser != null) {
-      _regNo = await sharedPreferences.getDataFromReference(userRef!, "Registration Number");
-      DocumentReference groupRef = FirebaseFirestore.instance.doc('ChatGroups/$_chatName');
+      _regNo = await sharedPreferences.getDataFromReference(
+          userRef!, "Registration Number");
+      DocumentReference groupRef =
+          FirebaseFirestore.instance.doc('ChatGroups/$_chatName');
 
       DocumentSnapshot groupSnapshot = await groupRef.get();
       if (groupSnapshot.exists) {
-        Map<String, dynamic>? groupData = groupSnapshot.data() as Map<String, dynamic>?;
+        Map<String, dynamic>? groupData =
+            groupSnapshot.data() as Map<String, dynamic>?;
         if (groupData != null && groupData.containsKey('MEMBERS')) {
           List<dynamic> members = groupData['MEMBERS'];
           _isMember = members.contains(_regNo);
@@ -101,17 +110,16 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> isFirstTime() async{
+  Future<void> isFirstTime() async {
     String key = "${chatName}isFirstTime";
     print('key $key');
     bool value = await utils.checkFirstTime(key);
     print('isFirstTime: $value');
-    if(value){
-      Map<String,dynamic> values = {"${chatName}isFirstTime": false};
+    if (value) {
+      Map<String, dynamic> values = {"${chatName}isFirstTime": false};
       sharedPreferences.storeMapValuesInSecureStorage(values);
     }
   }
-
 
   Future<void> handleSend(ChatMessage message) async {
     print("Handling Send");
@@ -119,8 +127,8 @@ class ChatProvider extends ChangeNotifier {
       await fetchRestrictedWords();
     }
 
-    bool containsRestrictedWord =
-    _restrictedWords.any((word) => message.text.toLowerCase().contains(word.toLowerCase()));
+    bool containsRestrictedWord = _restrictedWords
+        .any((word) => message.text.toLowerCase().contains(word.toLowerCase()));
 
     if (containsRestrictedWord) {
       utils.showToastMessage('Message contains restricted content');
@@ -136,32 +144,33 @@ class ChatProvider extends ChangeNotifier {
 
   Future<void> _sendMessageAndNotify(ChatMessage message) async {
     print(": $chatName");
-      print('Tokens: $_tokens');
-      if (chatName == "UniversityChat") {
-        if(_tokens.isEmpty) {
-          _tokens = await utils.getAllTokens();
-        }
-        print("Getting all tokens");
-      } else {
-        List<dynamic> members =[];
-        if(_tokens.isEmpty) {
-          members = await getSubscribers();
-        }
-        print("Members: $members");
-        members.remove(_regNo);
-        _tokens = await getTokensForMembers(members);
+    print('Tokens: $_tokens');
+    if (chatName == "UniversityChat") {
+      if (_tokens.isEmpty) {
+        _tokens = await utils.getAllTokens();
       }
+      print("Getting all tokens");
+    } else {
+      List<dynamic> members = [];
+      if (_tokens.isEmpty) {
+        members = await getSubscribers();
+      }
+      print("Members: $members");
+      members.remove(_regNo);
+      _tokens = await getTokensForMembers(members);
+    }
     final newMessageRef = _chatRef.push();
     newMessageRef.set(message.toJson());
 
-    await notificationService.sendNotification(_tokens, chatName, message.text, {"source": "Group Chat"});
+    await notificationService.sendNotification(
+        _tokens, chatName, message.text, {"source": "Group Chat"});
 
     print('Tokens: $_tokens');
   }
 
-
   Future<void> fetchRestrictedWords() async {
-    DocumentReference chatRef = FirebaseFirestore.instance.doc('/ChatDetails/Restricted');
+    DocumentReference chatRef =
+        FirebaseFirestore.instance.doc('/ChatDetails/Restricted');
     DocumentSnapshot snapshot = await chatRef.get();
 
     if (snapshot.exists && snapshot.data() != null) {
@@ -175,7 +184,8 @@ class ChatProvider extends ChangeNotifier {
 
   // Listen to Messages
   void listenForNewMessages() {
-    _messageSubscription = _chatRef.orderByKey().limitToLast(20).onChildAdded.listen((event) {
+    _messageSubscription =
+        _chatRef.orderByKey().limitToLast(20).onChildAdded.listen((event) {
       rtdb.DataSnapshot snapshot = event.snapshot;
       var value = snapshot.value;
       if (value is Map) {
@@ -183,7 +193,7 @@ class ChatProvider extends ChangeNotifier {
           Map<String, dynamic> messageData = _convertToMapStringDynamic(value);
           _messages.insert(0, ChatMessage.fromJson(messageData));
           print("Messages: ${_messages.length}");
-          print("Messages: ${_messages}");
+          print("Messages: $_messages");
 
           _lastMessageKey = snapshot.key;
           notifyListeners();
@@ -207,7 +217,8 @@ class ChatProvider extends ChangeNotifier {
     _onlineUsersSubscription = _onlineUsersRef.onValue.listen((event) {
       rtdb.DataSnapshot snapshot = event.snapshot;
       if (snapshot.exists) {
-        Map<dynamic, dynamic> onlineUsers = snapshot.value as Map<dynamic, dynamic>;
+        Map<dynamic, dynamic> onlineUsers =
+            snapshot.value as Map<dynamic, dynamic>;
         _onlineUsersCount = onlineUsers.length;
       } else {
         _onlineUsersCount = 0;
@@ -238,7 +249,8 @@ class ChatProvider extends ChangeNotifier {
     _isLoadingMore = true;
     notifyListeners();
 
-    rtdb.Query query = _chatRef.orderByKey().endAt(_lastMessageKey).limitToLast(21);
+    rtdb.Query query =
+        _chatRef.orderByKey().endAt(_lastMessageKey).limitToLast(21);
     try {
       rtdb.DatabaseEvent event = await query.once();
       rtdb.DataSnapshot snapshot = event.snapshot;
@@ -250,7 +262,8 @@ class ChatProvider extends ChangeNotifier {
           var value = childSnapshot.value;
           if (value is Map) {
             try {
-              Map<String, dynamic> messageData = _convertToMapStringDynamic(value);
+              Map<String, dynamic> messageData =
+                  _convertToMapStringDynamic(value);
               ChatMessage chatMessage = ChatMessage.fromJson(messageData);
               if (childSnapshot.key != _lastMessageKey) {
                 moreMessages.add(chatMessage);
@@ -275,15 +288,18 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<List<dynamic>> getSubscribers() async {
-    DocumentReference chatRef = FirebaseFirestore.instance.doc('/ChatGroups/$_chatName');
-    Map<String, dynamic>? details = await fireStoreService.getDocumentDetails(chatRef);
+    DocumentReference chatRef =
+        FirebaseFirestore.instance.doc('/ChatGroups/$_chatName');
+    Map<String, dynamic>? details =
+        await fireStoreService.getDocumentDetails(chatRef);
     List<dynamic> members = details!["MEMBERS"];
     return members;
   }
 
   Future<List<String>> getTokensForMembers(List<dynamic> members) async {
     List<String> tokens = [];
-    DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
+    DocumentReference tokenRef =
+        FirebaseFirestore.instance.doc('Tokens/Tokens');
 
     DocumentSnapshot docSnapshot = await tokenRef.get();
     if (docSnapshot.exists) {
@@ -299,7 +315,8 @@ class ChatProvider extends ChangeNotifier {
     return tokens;
   }
 
-  Map<String, dynamic> _convertToMapStringDynamic(Map<dynamic, dynamic> original) {
+  Map<String, dynamic> _convertToMapStringDynamic(
+      Map<dynamic, dynamic> original) {
     return original.map((key, value) {
       if (value is Map) {
         return MapEntry(key.toString(), _convertToMapStringDynamic(value));
@@ -317,4 +334,3 @@ class ChatProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-

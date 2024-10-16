@@ -48,17 +48,25 @@ class MaterialsProvider with ChangeNotifier {
   }
 
   Future<void> getSharedPrefsValues() async {
-    yearSelectedOption = await sharedPreferences.getSecurePrefsValue('yearSelectedOption') ?? yearsList.first;
-    branchSelectedOption = await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ?? branchList.first;
+    yearSelectedOption =
+        await sharedPreferences.getSecurePrefsValue('yearSelectedOption') ??
+            yearsList.first;
+    branchSelectedOption =
+        await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ??
+            branchList.first;
     if (specializations.isNotEmpty) {
-      streamSelectedOption = await sharedPreferences.getSecurePrefsValue('streamSelectedOption') ?? specializations.first;
+      streamSelectedOption =
+          await sharedPreferences.getSecurePrefsValue('streamSelectedOption') ??
+              specializations.first;
     }
-    selectedSubjects = await sharedPreferences.getListFromSecureStorage('selectedSubjects');
+    selectedSubjects =
+        await sharedPreferences.getListFromSecureStorage('selectedSubjects');
     notifyListeners();
   }
 
   Future<void> fetchAnnouncementText() async {
-    final DatabaseReference announcementRef = _database.ref('Materials/Announcement');
+    final DatabaseReference announcementRef =
+        _database.ref('Materials/Announcement');
     announcementRef.onValue.listen((event) {
       final DataSnapshot snapshot = event.snapshot;
       if (snapshot.exists) {
@@ -78,7 +86,8 @@ class MaterialsProvider with ChangeNotifier {
     }
 
     if (specializations.isNotEmpty) {
-      if (streamSelectedOption == null || !specializations.contains(streamSelectedOption)) {
+      if (streamSelectedOption == null ||
+          !specializations.contains(streamSelectedOption)) {
         streamSelectedOption = specializations.first;
       }
     }
@@ -88,14 +97,18 @@ class MaterialsProvider with ChangeNotifier {
   Future<void> getSubjects() async {
     loadingDialog.showDefaultLoading('Getting subjects');
     subjects.clear();
-    DocumentReference branchRef = FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/COMMON');
-    DocumentReference streamRef = FirebaseFirestore.instance.doc('subjects/$yearSelectedOption/$branchSelectedOption/$streamSelectedOption');
+    DocumentReference branchRef = FirebaseFirestore.instance
+        .doc('subjects/$yearSelectedOption/$branchSelectedOption/COMMON');
+    DocumentReference streamRef = FirebaseFirestore.instance.doc(
+        'subjects/$yearSelectedOption/$branchSelectedOption/$streamSelectedOption');
 
-    Map<String, dynamic>? branchDetails = await fireStoreService.getDocumentDetails(branchRef);
-    Map<String, dynamic>? streamDetails = await fireStoreService.getDocumentDetails(streamRef);
+    Map<String, dynamic>? branchDetails =
+        await fireStoreService.getDocumentDetails(branchRef);
+    Map<String, dynamic>? streamDetails =
+        await fireStoreService.getDocumentDetails(streamRef);
 
-    List<dynamic> branchValues = branchDetails?.values.toList() ?? [];
-    List<dynamic> streamValues = streamDetails?.values.toList() ?? [];
+    List<dynamic> branchValues = branchDetails!.values.toList() ?? [];
+    List<dynamic> streamValues = streamDetails!.values.toList() ?? [];
 
     subjects.addAll(branchValues);
     subjects.addAll(streamValues);
@@ -132,7 +145,8 @@ class MaterialsProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    sharedPreferences.storeListInSecureStorage(selectedSubjects, 'selectedSubjects');
+    sharedPreferences.storeListInSecureStorage(
+        selectedSubjects, 'selectedSubjects');
     loadingDialog.dismiss();
     super.dispose();
   }
@@ -145,15 +159,13 @@ class MaterialsProvider with ChangeNotifier {
   String? get currentBranchSelectedOption => branchSelectedOption;
   String? get currentStreamSelectedOption => streamSelectedOption;
 
-  void currentYearSelection(String? value){
+  void currentYearSelection(String? value) {
     yearSelectedOption = value;
     notifyListeners();
   }
 
-  void newStreamSelection(String? value){
+  void newStreamSelection(String? value) {
     streamSelectedOption = value;
     notifyListeners();
   }
-
-
 }

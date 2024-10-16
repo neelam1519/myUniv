@@ -85,9 +85,7 @@ class UserAccountProvider with ChangeNotifier {
       );
       if (result != null && result.paths.isNotEmpty) {
         String? imagePath = result.paths[0];
-        if (imagePath != null) {
-          await uploadImageAndStoreUrl(imagePath);
-        }
+        await uploadImageAndStoreUrl(imagePath!);
       }
     } catch (e) {
       print('Error picking file: $e');
@@ -98,7 +96,10 @@ class UserAccountProvider with ChangeNotifier {
     _loadingDialog.showDefaultLoading('Updating profile');
     try {
       String extension = _utils.getFileExtension(File(imagePath));
-      Reference ref = _storage.ref().child('ProfileImages').child('${_utils.getCurrentUserUID()}.$extension');
+      Reference ref = _storage
+          .ref()
+          .child('ProfileImages')
+          .child('${_utils.getCurrentUserUID()}.$extension');
       final UploadTask uploadTask = ref.putFile(File(imagePath));
       final TaskSnapshot snapshot = await uploadTask.whenComplete(() {});
       final String downloadUrl = await snapshot.ref.getDownloadURL();
@@ -106,7 +107,8 @@ class UserAccountProvider with ChangeNotifier {
       final Map<String, String> image = {'ProfileImageURL': downloadUrl};
       await _sharedPreferences.storeMapValuesInSecureStorage(image);
 
-      DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/${_utils.getCurrentUserUID()}');
+      DocumentReference userRef = FirebaseFirestore.instance
+          .doc('UserDetails/${_utils.getCurrentUserUID()}');
       _firebaseService.uploadMapDataToFirestore(image, userRef);
 
       imageUrl = downloadUrl;
@@ -119,7 +121,8 @@ class UserAccountProvider with ChangeNotifier {
 
   Future<void> getUserDetails() async {
     _name = await _sharedPreferences.getSecurePrefsValue('Name');
-    _regNo = await _sharedPreferences.getSecurePrefsValue('Registration Number');
+    _regNo =
+        await _sharedPreferences.getSecurePrefsValue('Registration Number');
     _imageUrl = await _sharedPreferences.getSecurePrefsValue('ProfileImageURL');
     notifyListeners();
   }

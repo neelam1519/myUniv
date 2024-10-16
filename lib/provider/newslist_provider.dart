@@ -19,7 +19,8 @@ class NewsListProvider with ChangeNotifier {
   Future<void> checkAdminStatus() async {
     String? email = await utils.getCurrentUserEmail();
     String id = utils.removeEmailDomain(email!);
-    DocumentReference userRef = FirebaseFirestore.instance.doc('AdminDetails/UniversityNews');
+    DocumentReference userRef =
+        FirebaseFirestore.instance.doc('AdminDetails/UniversityNews');
     List<String> admins = await utils.getAdmins(userRef);
     isAdmin = admins.contains(id);
     notifyListeners();

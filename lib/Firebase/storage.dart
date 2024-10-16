@@ -11,7 +11,6 @@ class FirebaseStorageHelper {
     return '${cacheDir.path}/$storagePath'.replaceAll(' ', '');
   }
 
-
   Future<int> getFileCount(String folderPath) async {
     int fileCount = 0;
     try {
@@ -32,7 +31,8 @@ class FirebaseStorageHelper {
   Future<String> uploadXeroxFiles(String fileName, File file) async {
     try {
       // Create a reference to the location where you want to upload the file
-      final Reference storageReference = storage.ref().child('XeroxFiles/$fileName');
+      final Reference storageReference =
+          storage.ref().child('XeroxFiles/$fileName');
 
       // Upload the file
       final UploadTask uploadTask = storageReference.putFile(file);
@@ -57,7 +57,8 @@ class FirebaseStorageHelper {
       print('File Name: $fileName');
 
       // Get a reference to the file location (including the folder path)
-      Reference storageRef = FirebaseStorage.instance.ref().child(filePath).child(fileName);
+      Reference storageRef =
+          FirebaseStorage.instance.ref().child(filePath).child(fileName);
 
       // Upload the file
       UploadTask uploadTask = storageRef.putFile(file);
@@ -96,7 +97,6 @@ class FirebaseStorageHelper {
       Reference ref = storage.ref(fullPath);
       String fileName = ref.name;
 
-
       // Ensure the local directory exists, and create it if it doesn't
       await Directory(localDirectory).create(recursive: true);
 
@@ -119,7 +119,6 @@ class FirebaseStorageHelper {
     }
   }
 
-
   Future<void> deleteFile(String filePath) async {
     try {
       // Create a reference to the file to be deleted
@@ -131,9 +130,10 @@ class FirebaseStorageHelper {
       print('File deleted successfully from path: $filePath');
     } catch (e) {
       print('Failed to delete file: $e');
-      throw e;
+      rethrow;
     }
   }
+
   // Method to delete a folder and its contents
   Future<void> deleteFolder(String folderPath) async {
     try {

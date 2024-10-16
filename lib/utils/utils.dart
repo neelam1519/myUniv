@@ -18,13 +18,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-
-class Utils{
-
+class Utils {
   FirebaseAuth auth = FirebaseAuth.instance;
   FireStoreService fireStoreService = FireStoreService();
   LoadingDialog loadingDialog = LoadingDialog();
-
 
   Future<void> clearCache() async {
     Directory cacheDir = await getTemporaryDirectory();
@@ -57,18 +54,20 @@ class Utils{
   Future<void> showToastMessage(String message) async {
     Fluttertoast.showToast(
         msg: message,
-        toastLength: Toast.LENGTH_SHORT,  // or Toast.LENGTH_LONG
-        gravity: ToastGravity.BOTTOM,     // or ToastGravity.CENTER, ToastGravity.TOP
-        timeInSecForIosWeb: 1,            // duration in seconds for iOS and Web
-        backgroundColor: Colors.black54,  // background color of the toast
-        textColor: Colors.white,          // text color of the toast
-        fontSize: 16.0                    // text size
-    );
+        toastLength: Toast.LENGTH_SHORT, // or Toast.LENGTH_LONG
+        gravity:
+            ToastGravity.BOTTOM, // or ToastGravity.CENTER, ToastGravity.TOP
+        timeInSecForIosWeb: 1, // duration in seconds for iOS and Web
+        backgroundColor: Colors.black54, // background color of the toast
+        textColor: Colors.white, // text color of the toast
+        fontSize: 16.0 // text size
+        );
   }
 
   Future<String?> getCurrentUserUID() async {
     String? email = await getCurrentUserEmail();
-    final url = Uri.parse('https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
+    final url = Uri.parse(
+        'https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
 
     try {
       final response = await http.get(url);
@@ -138,10 +137,10 @@ class Utils{
     }
   }
 
-    bool isValidMobileNumber(String mobileNumber) {
-      RegExp regExp = RegExp(r'^[0-9]{10}$');
-      return regExp.hasMatch(mobileNumber);
-    }
+  bool isValidMobileNumber(String mobileNumber) {
+    RegExp regExp = RegExp(r'^[0-9]{10}$');
+    return regExp.hasMatch(mobileNumber);
+  }
 
   String getTodayDate() {
     DateTime now = DateTime.now();
@@ -192,7 +191,6 @@ class Utils{
         context,
         MaterialPageRoute(builder: (context) => const Login()),
       );
-
     } catch (e) {
       print('Error during sign-out: $e');
     }
@@ -200,12 +198,11 @@ class Utils{
     loadingDialog.dismiss();
   }
 
-
-
   String removeTextAfterFirstNumber(String input) {
     List<String> characters = input.split('');
 
-    int indexOfNumber = characters.indexWhere((char) => RegExp(r'[0-9]').hasMatch(char));
+    int indexOfNumber =
+        characters.indexWhere((char) => RegExp(r'[0-9]').hasMatch(char));
 
     if (indexOfNumber != -1) {
       return input.substring(0, indexOfNumber).trim();
@@ -253,19 +250,13 @@ class Utils{
   Future<String?> getToken() async {
     try {
       String? token = await firebaseMessaging.getToken();
-      if (token != null) {
-        print('Token: $token');
-        return token;
-      } else {
-        print('Failed to get token.');
-        return null;
-      }
+      print('Token: $token');
+      return token;
     } catch (e) {
       print('Error retrieving token: $e');
       return null;
     }
   }
-
 
   Future<void> openFile(String filePath) async {
     try {
@@ -289,18 +280,18 @@ class Utils{
     }
   }
 
-  Future<void> updateToken() async{
+  Future<void> updateToken() async {
     // Listen for token refresh event
     FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
       print('Updated Token: $fcmToken');
       String? email = await getCurrentUserEmail();
       String regNo = removeEmailDomain(email!);
-      DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
-      fireStoreService.uploadMapDataToFirestore({regNo:fcmToken}, tokenRef);
+      DocumentReference tokenRef =
+          FirebaseFirestore.instance.doc('Tokens/Tokens');
+      fireStoreService.uploadMapDataToFirestore({regNo: fcmToken}, tokenRef);
     }).onError((err) {
       print('Error while refreshing token');
     });
-
   }
 
   String getMimeType(String extension) {
@@ -336,20 +327,18 @@ class Utils{
     }
   }
 
-  Future<List<String>> getAdmins(DocumentReference specificRef) async{
+  Future<List<String>> getAdmins(DocumentReference specificRef) async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     DocumentReference adminRef = firestore.doc('AdminDetails/All');
 
-    Map<String, dynamic>? specificAdmins = await fireStoreService.getDocumentDetails(specificRef);
-    Map<String, dynamic>? mainAdmins = await fireStoreService.getDocumentDetails(adminRef);
+    Map<String, dynamic>? specificAdmins =
+        await fireStoreService.getDocumentDetails(specificRef);
+    Map<String, dynamic>? mainAdmins =
+        await fireStoreService.getDocumentDetails(adminRef);
 
     List<String> admins = [];
-    if (specificAdmins != null) {
-      admins.addAll(specificAdmins.values.cast<String>());
-    }
-    if (mainAdmins != null) {
-      admins.addAll(mainAdmins.values.cast<String>());
-    }
+    admins.addAll(specificAdmins!.values.cast<String>());
+    admins.addAll(mainAdmins!.values.cast<String>());
     print('Admins: $admins');
     return admins;
   }
@@ -359,27 +348,24 @@ class Utils{
     DocumentReference adminRef = firestore.doc('AdminDetails/All');
     DocumentReference tokenRef = firestore.doc('Tokens/Tokens');
 
-    Map<String, dynamic>? specificAdmins = await fireStoreService.getDocumentDetails(specificRef);
-    Map<String, dynamic>? mainAdmins = await fireStoreService.getDocumentDetails(adminRef);
+    Map<String, dynamic>? specificAdmins =
+        await fireStoreService.getDocumentDetails(specificRef);
+    Map<String, dynamic>? mainAdmins =
+        await fireStoreService.getDocumentDetails(adminRef);
 
     List<String> admins = [];
     List<String> tokens = [];
 
-    if (specificAdmins != null) {
-      admins.addAll(specificAdmins.values.cast<String>());
-    }
-    if (mainAdmins != null) {
-      admins.addAll(mainAdmins.values.cast<String>());
-    }
+    admins.addAll(specificAdmins!.values.cast<String>());
+    admins.addAll(mainAdmins!.values.cast<String>());
     print('Admin Names: $admins');
 
     if (admins.isNotEmpty) {
-      Map<String, dynamic>? tokenValues = await fireStoreService.getDocumentDetails(tokenRef);
-      if (tokenValues != null) {
-        for (String admin in admins) {
-          if (tokenValues.containsKey(admin)) {
-            tokens.add(tokenValues[admin]);
-          }
+      Map<String, dynamic>? tokenValues =
+          await fireStoreService.getDocumentDetails(tokenRef);
+      for (String admin in admins) {
+        if (tokenValues!.containsKey(admin)) {
+          tokens.add(tokenValues[admin]);
         }
       }
     }
@@ -392,25 +378,24 @@ class Utils{
 
   Future<List<String>> getAllTokens() async {
     print("Getting ALL tokens");
-    DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
+    DocumentReference tokenRef =
+        FirebaseFirestore.instance.doc('Tokens/Tokens');
 
     try {
-      Map<String, dynamic>? allTokens = await fireStoreService.getDocumentDetails(tokenRef);
+      Map<String, dynamic>? allTokens =
+          await fireStoreService.getDocumentDetails(tokenRef);
 
-      if (allTokens != null) {
-        List<String> tokens = allTokens.values.map((token) => token.toString()).toList();
+      List<String> tokens =
+          allTokens!.values.map((token) => token.toString()).toList();
 
-        // String? currentToken = await getToken();
-        //
-        // if (currentToken != null && tokens.contains(currentToken)) {
-        //   tokens.remove(currentToken);
-        // }
+      // String? currentToken = await getToken();
+      //
+      // if (currentToken != null && tokens.contains(currentToken)) {
+      //   tokens.remove(currentToken);
+      // }
 
-        print('Filtered Tokens: $tokens');
-        return tokens;
-      } else {
-        return [];
-      }
+      print('Filtered Tokens: $tokens');
+      return tokens;
     } catch (e) {
       print('Error fetching tokens: $e');
       return [];
@@ -461,11 +446,9 @@ class Utils{
 
     bool value = true;
 
-    if (isFirstTime != null) {
-      // Check if the stored value is 'false' (as a string)
-      if (isFirstTime.toLowerCase() == 'false') {
-        value = false;
-      }
+    // Check if the stored value is 'false' (as a string)
+    if (isFirstTime!.toLowerCase() == 'false') {
+      value = false;
     }
 
     print('checkFirstTime: $value');
@@ -489,7 +472,6 @@ class Utils{
     return file;
   }
 
-
   double calculatePages(int numberOfFiles, int pagesPerFile) {
     return (numberOfFiles * pagesPerFile).toDouble();
   }
@@ -499,10 +481,11 @@ class Utils{
     DateTime now = DateTime.now().toUtc();
 
     // Convert UTC time to Indian Standard Time (UTC+5:30)
-    DateTime istTime = now.add(Duration(hours: 5, minutes: 30));
+    DateTime istTime = now.add(const Duration(hours: 5, minutes: 30));
 
     // Format the time to a readable string
-    String formattedTime = "${istTime.hour}:${istTime.minute.toString().padLeft(2, '0')}:${istTime.second.toString().padLeft(2, '0')}";
+    String formattedTime =
+        "${istTime.hour}:${istTime.minute.toString().padLeft(2, '0')}:${istTime.second.toString().padLeft(2, '0')}";
 
     return formattedTime;
   }
@@ -544,5 +527,4 @@ class Utils{
   //     print('Error sending SMS: $e');
   //   }
   // }
-
 }

@@ -29,29 +29,30 @@ class AcademicDetailsProvider with ChangeNotifier {
   Future<void> fetchUserDetails() async {
     try {
       String? userUID = await utils.getCurrentUserUID();
-      DocumentReference userRef = FirebaseFirestore.instance.doc("UserDetails/$userUID");
+      DocumentReference userRef =
+          FirebaseFirestore.instance.doc("UserDetails/$userUID");
 
-      Map<String, dynamic>? userData = await fireStoreService.getDocumentDetails(userRef);
+      Map<String, dynamic>? userData =
+          await fireStoreService.getDocumentDetails(userRef);
 
-      if (userData != null) {
-        selectedYear = userData['YEAR'];
-        selectedBranch = userData['BRANCH'];
-        selectedSpecialization = userData['SPECIALIZATION'];
-        selectedSection = userData['SECTION'];
+      selectedYear = userData!['YEAR'];
+      selectedBranch = userData['BRANCH'];
+      selectedSpecialization = userData['SPECIALIZATION'];
+      selectedSection = userData['SECTION'];
 
-        if (selectedYear != null) {
-          await fetchBranches(selectedYear!);
-        }
-        if (selectedYear != null && selectedBranch != null) {
-          await fetchSpecializations(selectedYear!, selectedBranch!);
-        }
-        if (selectedYear != null && selectedBranch != null && selectedSpecialization != null) {
-          await fetchSections(selectedYear!, selectedBranch!, selectedSpecialization!);
-        }
-        notifyListeners();
-      } else {
-        print('User details not found.');
+      if (selectedYear != null) {
+        await fetchBranches(selectedYear!);
       }
+      if (selectedYear != null && selectedBranch != null) {
+        await fetchSpecializations(selectedYear!, selectedBranch!);
+      }
+      if (selectedYear != null &&
+          selectedBranch != null &&
+          selectedSpecialization != null) {
+        await fetchSections(
+            selectedYear!, selectedBranch!, selectedSpecialization!);
+      }
+      notifyListeners();
     } catch (e) {
       print(e);
     } finally {
@@ -61,7 +62,8 @@ class AcademicDetailsProvider with ChangeNotifier {
 
   Future<void> fetchYears() async {
     try {
-      var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').get();
+      var snapshot =
+          await FirebaseFirestore.instance.collection('AcademicDetails').get();
       years = snapshot.docs.map((doc) => doc.id).toList();
       if (years.isNotEmpty && selectedYear == null) {
         selectedYear = years[0];
@@ -75,7 +77,11 @@ class AcademicDetailsProvider with ChangeNotifier {
 
   Future<void> fetchBranches(String year) async {
     try {
-      var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').doc(year).collection('BRANCHES').get();
+      var snapshot = await FirebaseFirestore.instance
+          .collection('AcademicDetails')
+          .doc(year)
+          .collection('BRANCHES')
+          .get();
       branches = snapshot.docs.map((doc) => doc.id).toList();
       if (branches.isNotEmpty && selectedBranch == null) {
         selectedBranch = branches[0];
@@ -89,11 +95,18 @@ class AcademicDetailsProvider with ChangeNotifier {
 
   Future<void> fetchSpecializations(String year, String branch) async {
     try {
-      var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').doc(year).collection('BRANCHES').doc(branch).collection('SPECIALIZATIONS').get();
+      var snapshot = await FirebaseFirestore.instance
+          .collection('AcademicDetails')
+          .doc(year)
+          .collection('BRANCHES')
+          .doc(branch)
+          .collection('SPECIALIZATIONS')
+          .get();
       specializations = snapshot.docs.map((doc) => doc.id).toList();
       if (specializations.isNotEmpty && selectedSpecialization == null) {
         selectedSpecialization = specializations[0];
-        await fetchSections(selectedYear!, selectedBranch!, selectedSpecialization!);
+        await fetchSections(
+            selectedYear!, selectedBranch!, selectedSpecialization!);
       }
       notifyListeners();
     } catch (e) {
@@ -101,9 +114,18 @@ class AcademicDetailsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchSections(String year, String branch, String specialization) async {
+  Future<void> fetchSections(
+      String year, String branch, String specialization) async {
     try {
-      var snapshot = await FirebaseFirestore.instance.collection('AcademicDetails').doc(year).collection('BRANCHES').doc(branch).collection('SPECIALIZATIONS').doc(specialization).collection('SECTIONS').get();
+      var snapshot = await FirebaseFirestore.instance
+          .collection('AcademicDetails')
+          .doc(year)
+          .collection('BRANCHES')
+          .doc(branch)
+          .collection('SPECIALIZATIONS')
+          .doc(specialization)
+          .collection('SECTIONS')
+          .get();
       sections = snapshot.docs.map((doc) => doc.id).toList();
       if (sections.isNotEmpty && selectedSection == null) {
         selectedSection = sections[0];
@@ -119,7 +141,8 @@ class AcademicDetailsProvider with ChangeNotifier {
       String? userUID = await utils.getCurrentUserUID();
       loadingDialog.showDefaultLoading('Updating Details...');
 
-      DocumentReference userRef = FirebaseFirestore.instance.doc('UserDetails/$userUID');
+      DocumentReference userRef =
+          FirebaseFirestore.instance.doc('UserDetails/$userUID');
 
       Map<String, dynamic> data = {
         'YEAR': selectedYear!,
@@ -133,10 +156,12 @@ class AcademicDetailsProvider with ChangeNotifier {
       Navigator.pop(context);
       loadingDialog.dismiss();
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Details updated successfully')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Details updated successfully')));
     } catch (e) {
       print(e);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update details')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update details')));
     }
   }
 }

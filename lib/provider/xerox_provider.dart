@@ -38,7 +38,8 @@ class XeroxProvider with ChangeNotifier {
   final TextEditingController mobilenumberController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController bindingFileController = TextEditingController();
-  final TextEditingController singleSideFileController = TextEditingController();
+  final TextEditingController singleSideFileController =
+      TextEditingController();
   final TextEditingController totalAmountController = TextEditingController();
 
   // Variables
@@ -133,7 +134,8 @@ class XeroxProvider with ChangeNotifier {
 
   Future<void> getData() async {
     _loadingDialog.showDefaultLoading('Getting Details...');
-    DocumentReference detailsRef = FirebaseFirestore.instance.doc('XeroxDetails/DisplayDetails');
+    DocumentReference detailsRef =
+        FirebaseFirestore.instance.doc('XeroxDetails/DisplayDetails');
     xeroxDetails = await _fireStoreService.getDocumentDetails(detailsRef);
 
     email = (await _sharedPreferences.getSecurePrefsValue('Email'))!;
@@ -148,14 +150,13 @@ class XeroxProvider with ChangeNotifier {
         Uri.parse('https://api.razorpay.com/v1/orders'),
         headers: <String, String>{
           'Content-Type': 'application/json',
-          'Authorization': 'Basic ${base64Encode(utf8.encode("$_razorpayKey:$_apiSecret"))}',
+          'Authorization':
+              'Basic ${base64Encode(utf8.encode("$_razorpayKey:$_apiSecret"))}',
         },
         body: jsonEncode(<String, dynamic>{
           'amount': amount * 100,
           'currency': 'INR',
-          'receipt': 'order_receipt_${DateTime
-              .now()
-              .millisecondsSinceEpoch}',
+          'receipt': 'order_receipt_${DateTime.now().millisecondsSinceEpoch}',
           'payment_capture': 1,
         }),
       );
@@ -221,7 +222,8 @@ class XeroxProvider with ChangeNotifier {
     double totalProgress = 0.9 / fileLength;
 
     int? count = await _realTimeDatabase.incrementValue('Xerox/XeroxHistory');
-    String folderPath = "XeroList/${utils.getTodayDate().replaceAll('/', ',')}/$count";
+    String folderPath =
+        "XeroList/${utils.getTodayDate().replaceAll('/', ',')}/$count";
 
     print('Uploading Files: $_uploadedFiles');
 
@@ -232,7 +234,8 @@ class XeroxProvider with ChangeNotifier {
       String uploadedUrl = '';
       String fileName = '$fileIndex.pdf';
 
-      uploadedUrl = await _firebaseStorageHelper.uploadFile(file, folderPath, fileName);
+      uploadedUrl =
+          await _firebaseStorageHelper.uploadFile(file, folderPath, fileName);
 
       print('Uploading url: $uploadedUrl');
 
@@ -244,8 +247,8 @@ class XeroxProvider with ChangeNotifier {
       fileIndex++;
     }
 
-    DocumentReference userRef = FirebaseFirestore.instance.doc(
-        '/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
+    DocumentReference userRef = FirebaseFirestore.instance
+        .doc('/UserDetails/${utils.getCurrentUserUID()}/XeroxHistory/$count');
     Map<String, dynamic> uploadData = {
       'ID': count,
       'Name': nameController.text,
@@ -278,10 +281,12 @@ class XeroxProvider with ChangeNotifier {
     await _fireStoreService.uploadMapDataToFirestore(uploadData, userRef);
     _userSheetsApi.updateCell(sheetData);
     utils.deleteFolder('/data/user/0/com.neelam.FindAny/cache/XeroxPdfs/');
-    DocumentReference xeroxRef = FirebaseFirestore.instance.doc('AdminDetails/Xerox');
+    DocumentReference xeroxRef =
+        FirebaseFirestore.instance.doc('AdminDetails/Xerox');
     List<String> tokens = await utils.getSpecificTokens(xeroxRef);
 
-    _notificationService.sendNotification(tokens, 'Xerox Submitted', nameController.text, {});
+    _notificationService
+        .sendNotification(tokens, 'Xerox Submitted', nameController.text, {});
 
     _loadingDialog.showProgressLoading(progress + 0.05, 'Uploading Files...');
 
@@ -304,7 +309,10 @@ class XeroxProvider with ChangeNotifier {
 
   Future<void> fetchAnnouncementText() async {
     try {
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('AdminDetails').doc('Xerox').get();
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('AdminDetails')
+          .doc('Xerox')
+          .get();
       if (snapshot.exists) {
         _announcementText = snapshot.get('AnnouncementText');
         notifyListeners();
@@ -322,7 +330,6 @@ class XeroxProvider with ChangeNotifier {
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWallet);
   }
 
-
   Future<void> onSubmitClicked(int price) async {
     if (!await utils.checkInternetConnection()) {
       utils.showToastMessage('Connect to the Internet');
@@ -331,7 +338,8 @@ class XeroxProvider with ChangeNotifier {
     if (_uploadedFiles.isEmpty) {
       utils.showToastMessage('Files are missing');
       return;
-    } else if (!utils.isValidMobileNumber(mobilenumberController.text) || mobilenumberController.text.isEmpty) {
+    } else if (!utils.isValidMobileNumber(mobilenumberController.text) ||
+        mobilenumberController.text.isEmpty) {
       utils.showToastMessage('Enter a Valid Mobile Number');
       return;
     } else if (nameController.text.length < 5 || nameController.text.isEmpty) {
@@ -347,9 +355,9 @@ class XeroxProvider with ChangeNotifier {
     }
   }
 
-
   Future<int> calculatePrice() async {
-    String doubleSide = singleSideFileController.text.replaceAll(RegExp(r'\s+'), '');
+    String doubleSide =
+        singleSideFileController.text.replaceAll(RegExp(r'\s+'), '');
     String binding = bindingFileController.text.replaceAll(RegExp(r'\s+'), '');
 
     List<String> doubleSideList = doubleSide.split(",");
@@ -360,7 +368,6 @@ class XeroxProvider with ChangeNotifier {
     int fileIndex = 1;
     Map<int, int> pdfPageCounts = {};
     double totalPrice = 0;
-
 
     for (String value in _uploadedFiles.values) {
       File file = File(value);
@@ -402,7 +409,7 @@ class XeroxProvider with ChangeNotifier {
     );
 
     // Wait until the document is fully loaded
-    await pdfViewerController.pageCount;
+    pdfViewerController.pageCount;
 
     // Get the total page count
     final int pageCount = pdfViewerController.pageCount;
@@ -410,7 +417,6 @@ class XeroxProvider with ChangeNotifier {
     // Return the page count
     return pageCount;
   }
-
 
   Future<void> pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -458,15 +464,15 @@ class XeroxProvider with ChangeNotifier {
     }
   }
 
-    @override
-    void dispose() {
-      _razorpay.clear();
-      nameController.dispose();
-      mobilenumberController.dispose();
-      descriptionController.dispose();
-      bindingFileController.dispose();
-      singleSideFileController.dispose();
-      totalAmountController.dispose();
-      super.dispose();
-    }
+  @override
+  void dispose() {
+    _razorpay.clear();
+    nameController.dispose();
+    mobilenumberController.dispose();
+    descriptionController.dispose();
+    bindingFileController.dispose();
+    singleSideFileController.dispose();
+    totalAmountController.dispose();
+    super.dispose();
   }
+}

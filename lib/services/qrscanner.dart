@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class QRScannerScreen extends StatefulWidget {
+  const QRScannerScreen({super.key});
+
   @override
   _QRScannerScreenState createState() => _QRScannerScreenState();
 }
@@ -15,9 +17,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   QRViewController? controller;
   String? scannedData;
   Map<String, dynamic>? documentData = {};
-  Map<String, dynamic>? leaveData={};
+  Map<String, dynamic>? leaveData = {};
   bool isLoading = false;
-  String leaveID ="";
+  String leaveID = "";
 
   LoadingDialog loadingDialog = LoadingDialog();
   Utils utils = Utils();
@@ -49,16 +51,19 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     loadingDialog.showDefaultLoading('Getting Details');
     if (docId == null) return;
 
-    leaveID= docId;
-    DocumentReference documentReference = FirebaseFirestore.instance.doc("LeaveForms/$docId");
+    leaveID = docId;
+    DocumentReference documentReference =
+        FirebaseFirestore.instance.doc("LeaveForms/$docId");
     print('Document Reference: ${documentReference.path}');
 
     leaveData = await fireStoreService.getDocumentDetails(documentReference);
 
     String? uid = await utils.getCurrentUserUID();
 
-    DocumentReference userRef = FirebaseFirestore.instance.doc("UserDetails/$uid");
-    Map<String, dynamic>? userData = await fireStoreService.getDocumentDetails(userRef);
+    DocumentReference userRef =
+        FirebaseFirestore.instance.doc("UserDetails/$uid");
+    Map<String, dynamic>? userData =
+        await fireStoreService.getDocumentDetails(userRef);
 
     documentData!.addAll({
       "APPROVAL STATUS": leaveData!["finalApproval"]["status"],
@@ -86,9 +91,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('QR Scanner'),
+        title: const Text('QR Scanner'),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -112,53 +117,57 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             Expanded(
               flex: 1,
               child: documentData == null
-                  ? Center(child: Text('Scan a QR code'))
+                  ? const Center(child: Text('Scan a QR code'))
                   : Column(
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        flex: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Approval Status: ${documentData!["APPROVAL STATUS"] ?? 'CHECKING'}',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: documentData!["APPROVAL STATUS"] == 'APPROVED'
-                                      ? Colors.green
-                                      : documentData!["APPROVAL STATUS"] == 'PENDING'
-                                      ? Colors.red
-                                      : Colors.black,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              flex: 1,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Approval Status: ${documentData!["APPROVAL STATUS"] ?? 'CHECKING'}',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: documentData![
+                                                    "APPROVAL STATUS"] ==
+                                                'APPROVED'
+                                            ? Colors.green
+                                            : documentData![
+                                                        "APPROVAL STATUS"] ==
+                                                    'PENDING'
+                                                ? Colors.red
+                                                : Colors.black,
+                                      ),
+                                    ),
+                                    Text(
+                                      'From: ${documentData!["FROM"] ?? 'No from date found'}',
+                                      style: const TextStyle(fontSize: 15),
+                                    ),
+                                    Text(
+                                      'To: ${documentData!["TO"] ?? 'No to date found'}',
+                                      style: const TextStyle(fontSize: 15),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                'From: ${documentData!["FROM"] ?? 'No from date found'}',
-                                style: TextStyle(fontSize: 15),
+                            ),
+                            SizedBox(
+                              width: 150,
+                              height: 150,
+                              child: Image.network(
+                                documentData!["PROFILE IMAGE"] ??
+                                    'https://firebasestorage.googleapis.com/v0/b/findany-84c36.appspot.com/o/Logo%20Imgae%2Ftransperentlogo.png?alt=media&token=025da46c-07c9-43ae-93f5-e46a509e5ab5',
                               ),
-                              Text(
-                                'To: ${documentData!["TO"] ?? 'No to date found'}',
-                                style: TextStyle(fontSize: 15),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Container(
-                        width: 150,
-                        height: 150,
-                        child: Image.network(
-                          documentData!["PROFILE IMAGE"] ??
-                              'https://firebasestorage.googleapis.com/v0/b/findany-84c36.appspot.com/o/Logo%20Imgae%2Ftransperentlogo.png?alt=media&token=025da46c-07c9-43ae-93f5-e46a509e5ab5',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                      ],
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -167,18 +176,22 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   loadingDialog.showDefaultLoading("uploading Data");
                   // Add your button action here
 
-                  DocumentReference reference = FirebaseFirestore.instance.doc("LeaveForms/$leaveID");
-                  Map<String,dynamic> data = {leaveID:reference};
-                  Map<String,dynamic> outData = {"OUT TIME":utils.getCurrentTime()};
-                  fireStoreService.uploadMapDataToFirestore(outData,reference);
+                  DocumentReference reference =
+                      FirebaseFirestore.instance.doc("LeaveForms/$leaveID");
+                  Map<String, dynamic> data = {leaveID: reference};
+                  Map<String, dynamic> outData = {
+                    "OUT TIME": utils.getCurrentTime()
+                  };
+                  fireStoreService.uploadMapDataToFirestore(outData, reference);
 
-                  DocumentReference leaveRef = FirebaseFirestore.instance.doc("/AcademicDetails/WATCHMEN APPROVED FORMS");
-                  fireStoreService.uploadMapDataToFirestore(data,leaveRef);
+                  DocumentReference leaveRef = FirebaseFirestore.instance
+                      .doc("/AcademicDetails/WATCHMEN APPROVED FORMS");
+                  fireStoreService.uploadMapDataToFirestore(data, leaveRef);
 
                   loadingDialog.dismiss();
                   Navigator.pop(context);
                 },
-                child: Text('APPROVED'),
+                child: const Text('APPROVED'),
               ),
             ),
           ],
@@ -186,6 +199,4 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       ),
     );
   }
-
-
 }

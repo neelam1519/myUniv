@@ -23,16 +23,16 @@ class AuthCheck extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               } else {
                 EasyLoading.dismiss();
-                if(snapshot.hasData){
+                if (snapshot.hasData) {
                   String? email = snapshot.data!.email;
 
-                  if(email != null && email.endsWith('@klu.ac.in')){
-                    return Home();
-                  }else{
-                    return Login();
+                  if (email != null && email.endsWith('@klu.ac.in')) {
+                    return const Home();
+                  } else {
+                    return const Login();
                   }
-                }else{
-                  return Login();
+                } else {
+                  return const Login();
                 }
               }
             },

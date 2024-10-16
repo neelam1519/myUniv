@@ -6,7 +6,6 @@ import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 class HomeProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -23,10 +22,17 @@ class HomeProvider with ChangeNotifier {
 
   Future<void> loadData() async {
     _loadingDialog.showDefaultLoading("Getting Details...");
-    DocumentReference documentReference = _firestore.doc('/UserDetails/${utils.getCurrentUserUID()}');
-    email = await _sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
-    name = await _sharedPreferences.getDataFromReference(documentReference, "Name") ?? '';
-    imageUrl = await _sharedPreferences.getDataFromReference(documentReference, 'ProfileImageURL') ?? '';
+    DocumentReference documentReference =
+        _firestore.doc('/UserDetails/${utils.getCurrentUserUID()}');
+    email = await _sharedPreferences.getDataFromReference(
+            documentReference, 'Email') ??
+        '';
+    name = await _sharedPreferences.getDataFromReference(
+            documentReference, "Name") ??
+        '';
+    imageUrl = await _sharedPreferences.getDataFromReference(
+            documentReference, 'ProfileImageURL') ??
+        '';
     await utils.updateToken();
     utils.getToken();
     _loadingDialog.dismiss();

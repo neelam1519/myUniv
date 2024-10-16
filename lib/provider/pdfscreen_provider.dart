@@ -47,7 +47,7 @@ class PdfScreenProvider with ChangeNotifier {
 
   void performSearch(String text) async {
     if (_pdfViewerController != null && text.isNotEmpty) {
-      _searchResult = await _pdfViewerController!.searchText(text);
+      _searchResult = _pdfViewerController!.searchText(text);
       if (_searchResult != null) {
         _searchResult!.addListener(notifyListeners);
       }

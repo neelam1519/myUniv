@@ -7,7 +7,8 @@ class FullScreenImageGallery extends StatelessWidget {
   final List<String> media;
   final int initialIndex;
 
-  FullScreenImageGallery({required this.media, required this.initialIndex});
+  const FullScreenImageGallery(
+      {super.key, required this.media, required this.initialIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +24,8 @@ class FullScreenImageGallery extends StatelessWidget {
             maxScale: PhotoViewComputedScale.covered * 2.5,
           );
         },
-        scrollPhysics: BouncingScrollPhysics(),
-        backgroundDecoration: BoxDecoration(
+        scrollPhysics: const BouncingScrollPhysics(),
+        backgroundDecoration: const BoxDecoration(
           color: Colors.black,
         ),
         enableRotation: false, // Rotation is disabled

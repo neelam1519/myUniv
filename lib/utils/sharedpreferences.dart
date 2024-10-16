@@ -3,20 +3,23 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class SharedPreferences{
+class SharedPreferences {
   final storage = const FlutterSecureStorage();
 
-  Future<dynamic> getDataFromReference(DocumentReference documentReference, String key) async {
+  Future<dynamic> getDataFromReference(
+      DocumentReference documentReference, String key) async {
     String? data = await getSecurePrefsValue(key);
     if (data != null) {
       print('Data found in SharedPreferences for key: $key $data');
       return data;
     } else {
-      print('Data not found in SharedPreferences for key: $key, fetching from Firestore...');
+      print(
+          'Data not found in SharedPreferences for key: $key, fetching from Firestore...');
       try {
         DocumentSnapshot snapshot = await documentReference.get();
         if (snapshot.exists) {
-          Map<String, dynamic>? firestoreData = snapshot.data() as Map<String, dynamic>?;
+          Map<String, dynamic>? firestoreData =
+              snapshot.data() as Map<String, dynamic>?;
           print('Firestore Data: $firestoreData');
           if (firestoreData != null && firestoreData.containsKey(key)) {
             dynamic value = firestoreData[key];
@@ -36,8 +39,8 @@ class SharedPreferences{
     }
   }
 
-
-  Future<void> storeMapValuesInSecureStorage(Map<String, dynamic> mapValues) async {
+  Future<void> storeMapValuesInSecureStorage(
+      Map<String, dynamic> mapValues) async {
     try {
       for (MapEntry<String, dynamic> entry in mapValues.entries) {
         String key = entry.key;
@@ -52,7 +55,8 @@ class SharedPreferences{
     }
   }
 
-  Future<void> storeListInSecureStorage(List<String> yourList, String key) async {
+  Future<void> storeListInSecureStorage(
+      List<String> yourList, String key) async {
     try {
       String jsonString = jsonEncode(yourList);
       await storage.write(key: key, value: jsonString);
@@ -65,11 +69,7 @@ class SharedPreferences{
   Future<List<String>> getListFromSecureStorage(String key) async {
     try {
       String? jsonString = await storage.read(key: key);
-
-      if (jsonString == null) {
-        return [];
-      }
-      List<dynamic> jsonList = jsonDecode(jsonString);
+      List<dynamic> jsonList = jsonDecode(jsonString!);
       List<String> yourList = jsonList.cast<String>();
       print('List retrieved from secure storage successfully!');
       return yourList;
@@ -78,7 +78,6 @@ class SharedPreferences{
       return [];
     }
   }
-
 
   Future<dynamic> getSecurePrefsValue(String key) async {
     try {
@@ -89,7 +88,7 @@ class SharedPreferences{
     }
   }
 
-  Future<void> storeValueInSecurePrefs(String key,dynamic value) async {
+  Future<void> storeValueInSecurePrefs(String key, dynamic value) async {
     try {
       return await storage.write(key: key, value: value);
     } catch (error) {
@@ -97,5 +96,4 @@ class SharedPreferences{
       return;
     }
   }
-
 }
