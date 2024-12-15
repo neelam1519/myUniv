@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../navigation/clicked.dart';
+import 'clicked.dart';
 import '../utils/utils.dart';
 
 class MapProvider with ChangeNotifier {

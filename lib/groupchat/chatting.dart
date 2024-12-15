@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:findany_flutter/provider/chatting_provider.dart';
+import 'package:findany_flutter/groupchat/chatting_provider.dart';
 import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:flutter/material.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';

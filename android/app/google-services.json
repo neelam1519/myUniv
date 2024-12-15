@@ -23,16 +23,28 @@
           }
         },
         {
+          "client_id": "87807759596-8gjcur1aoia3f4pfc7l32lcirrf3tdgk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.neelam.FindAny",
+            "certificate_hash": "336465606bef78997045e5b08cb0b8e68035a48b"
+          }
+        },
+        {
+          "client_id": "87807759596-q977etq27s66ebo38spmdpq143tc9lba.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.neelam.FindAny",
+            "certificate_hash": "36edffd07cbe7ed1abf401fbe8972353ffec7a91"
+          }
+        },
+        {
           "client_id": "87807759596-ts89hq4e2lce0dae2cm38h68i054t84n.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.neelam.FindAny",
             "certificate_hash": "9aed0017799615dfccc5175790f5838cac3918e3"
           }
-        },
-        {
-          "client_id": "87807759596-ijh25ipt7ig7bq78jl2lr70qjmhdu1m5.apps.googleusercontent.com",
-          "client_type": 3
         }
       ],
       "api_key": [
@@ -44,14 +56,45 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "87807759596-ijh25ipt7ig7bq78jl2lr70qjmhdu1m5.apps.googleusercontent.com",
+              "client_id": "87807759596-u8abgv3eprlfa30cvfmijeu31olmv9qb.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "87807759596-95vs04smcs1tqjka3qipd6c14mmiu0ia.apps.googleusercontent.com",
+              "client_id": "87807759596-23rr5pl34k4cjdgcd2aorp7ban87p73p.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.findanyFlutter"
+                "bundle_id": "com.neelam.myunivnew"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:87807759596:android:d8d3028be2b87f7edb81c9",
+        "android_client_info": {
+          "package_name": "com.neelam.myunivnew"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWGXGSNfeezkdPHdEpW1iZAWT7ZpYrM-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "87807759596-u8abgv3eprlfa30cvfmijeu31olmv9qb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "87807759596-23rr5pl34k4cjdgcd2aorp7ban87p73p.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.neelam.myunivnew"
               }
             }
           ]

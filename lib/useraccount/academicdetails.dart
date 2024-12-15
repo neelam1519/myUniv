@@ -293,7 +293,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../provider/acedemicdetails_provider.dart';
+import 'acedemicdetails_provider.dart';
 
 class AcademicDetails extends StatefulWidget {
   const AcademicDetails({super.key});

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../provider/newslist_provider.dart';
+import 'newslist_provider.dart';
 import 'news_detail_screen.dart';
 import 'addnews.dart';
 

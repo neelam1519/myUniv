@@ -1,33 +1,27 @@
-import 'package:findany_flutter/provider/acedemicdetails_provider.dart';
+import 'package:findany_flutter/useraccount/acedemicdetails_provider.dart';
 import 'package:findany_flutter/provider/addnews_provider.dart';
 import 'package:findany_flutter/provider/addnotification_provider.dart';
 import 'package:findany_flutter/provider/auth_provider.dart';
-import 'package:findany_flutter/provider/busbooking_home_provider.dart';
-import 'package:findany_flutter/provider/chatting_provider.dart';
-import 'package:findany_flutter/provider/creategroupchat_provider.dart';
-import 'package:findany_flutter/provider/display_materials_provider.dart';
-import 'package:findany_flutter/provider/fetch_buslist_provider.dart';
-import 'package:findany_flutter/provider/group_chat_provider.dart';
-import 'package:findany_flutter/provider/history_provider.dart';
+import 'package:findany_flutter/busbooking/busbooking_home_provider.dart';
+import 'package:findany_flutter/groupchat/chatting_provider.dart';
+import 'package:findany_flutter/groupchat/creategroupchat_provider.dart';
+import 'package:findany_flutter/materials/display_materials_provider.dart';
+import 'package:findany_flutter/groupchat/group_chat_provider.dart';
+import 'package:findany_flutter/busbooking/history_provider.dart';
 import 'package:findany_flutter/provider/home_provider.dart';
-import 'package:findany_flutter/provider/leaveapplicationform_provider.dart';
-import 'package:findany_flutter/provider/login_provider.dart';
-import 'package:findany_flutter/provider/map_provider.dart';
-import 'package:findany_flutter/provider/materials_provider.dart';
-import 'package:findany_flutter/provider/moneyearninghome_provider.dart';
-import 'package:findany_flutter/provider/newsdetailsscreen_provider.dart';
-import 'package:findany_flutter/provider/newslist_provider.dart';
+import 'package:findany_flutter/Login/login_provider.dart';
+import 'package:findany_flutter/navigation/map_provider.dart';
+import 'package:findany_flutter/materials/materials_provider.dart';
+import 'package:findany_flutter/universitynews/newsdetailsscreen_provider.dart';
+import 'package:findany_flutter/universitynews/newslist_provider.dart';
 import 'package:findany_flutter/provider/notificationhome_provider.dart';
 import 'package:findany_flutter/provider/pdfscreen_provider.dart';
-import 'package:findany_flutter/provider/personaldetails_provider.dart';
+import 'package:findany_flutter/useraccount/personaldetails_provider.dart';
 import 'package:findany_flutter/provider/qanda_provider.dart';
-import 'package:findany_flutter/provider/review_provider.dart';
-import 'package:findany_flutter/provider/showfiles_provider.dart';
-import 'package:findany_flutter/provider/universitychat_provider.dart';
-import 'package:findany_flutter/provider/useraccount_provider.dart';
-import 'package:findany_flutter/provider/xerox_provider.dart';
-import 'package:findany_flutter/provider/xeroxdetailsview_provider.dart';
-import 'package:findany_flutter/provider/xeroxhistory_provider.dart';
+import 'package:findany_flutter/Other/review_provider.dart';
+import 'package:findany_flutter/materials/showfiles_provider.dart';
+import 'package:findany_flutter/groupchat/universitychat_provider.dart';
+import 'package:findany_flutter/useraccount/useraccount_provider.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/foundation.dart';
@@ -40,7 +34,10 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'Firebase/storage.dart';
+import 'Home.dart';
+import 'Login/login.dart';
 import 'auth_check_screen.dart';
+import 'busbooking/fetch_buslist_provider.dart';
 import 'firebase_options.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 
@@ -94,42 +91,36 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => NewsListProvider()),
         ChangeNotifierProvider(create: (_) => BusBookingHomeProvider()),
-        ChangeNotifierProvider(create: (_) => XeroxProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => FetchBuslistProvider()),
         ChangeNotifierProvider(create: (_) => CreateGroupChatProvider()),
-        ChangeNotifierProvider(create: (_) => LeaveApplicationFormProvider()),
         ChangeNotifierProvider(create: (_) => AcademicDetailsProvider()),
         ChangeNotifierProvider(create: (_) => QAndAProvider()),
         ChangeNotifierProvider(create: (_) => PersonalDetailsProvider()),
         ChangeNotifierProvider(create: (_) => UserAccountProvider()),
         ChangeNotifierProvider(create: (_) => ShowFilesProvider()),
-        ChangeNotifierProvider(create: (_) => XeroxDetailProvider()),
         ChangeNotifierProvider(create: (_) => PdfScreenProvider()),
         ChangeNotifierProvider(create: (_) => AddNewsProvider()),
         ChangeNotifierProvider(create: (_) => AddNotificationProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => GroupChatProvider()),
         ChangeNotifierProvider(create: (_) => BusBookedHistoryProvider()),
-        ChangeNotifierProvider(create: (_) => MoneyEarningHomeProvider()),
         ChangeNotifierProvider(create: (_) => NewsDetailsScreenProvider()),
         ChangeNotifierProvider(create: (_) => NotificationHomeProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => UniversityChatProvider()),
-        ChangeNotifierProvider(create: (_) => XeroxHistoryProvider()),
         ChangeNotifierProvider(create: (_) => DisplayMaterialsProvider(firebaseStorageHelper: FirebaseStorageHelper(),
             loadingDialog: LoadingDialog(),
             notificationService: NotificationService(),
             utils: Utils(),
           ),
         ),
-
       ],
       child: MaterialApp(
         title: 'FindAny',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.blue),
-        home: const AuthCheck(),
+        home: AuthCheck(),
         builder: EasyLoading.init(),
       ),
     );

@@ -25,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -47,14 +41,14 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-      apiKey: "AIzaSyDUSQJUJgzt3_JdMK9ZAs36_yQYBnGLRRE",
-      authDomain: "findany-84c36.firebaseapp.com",
-      databaseURL: "https://findany-84c36-default-rtdb.firebaseio.com",
-      projectId: "findany-84c36",
-      storageBucket: "findany-84c36.appspot.com",
-      messagingSenderId: "87807759596",
-      appId: "1:87807759596:web:3b24859ea0aff139db81c9",
-      measurementId: "G-MJBV899L1D"
+    apiKey: 'AIzaSyDUSQJUJgzt3_JdMK9ZAs36_yQYBnGLRRE',
+    appId: '1:87807759596:web:3b24859ea0aff139db81c9',
+    messagingSenderId: '87807759596',
+    projectId: 'findany-84c36',
+    authDomain: 'findany-84c36.firebaseapp.com',
+    databaseURL: 'https://findany-84c36-default-rtdb.firebaseio.com',
+    storageBucket: 'findany-84c36.appspot.com',
+    measurementId: 'G-MJBV899L1D',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -77,4 +71,28 @@ class DefaultFirebaseOptions {
     iosClientId: '87807759596-95vs04smcs1tqjka3qipd6c14mmiu0ia.apps.googleusercontent.com',
     iosBundleId: 'com.example.findanyFlutter',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyBZHd_nGdO5UjT_A3-x0WROwJJ7B61-dlQ',
+    appId: '1:87807759596:ios:da1c39c7897028acdb81c9',
+    messagingSenderId: '87807759596',
+    projectId: 'findany-84c36',
+    databaseURL: 'https://findany-84c36-default-rtdb.firebaseio.com',
+    storageBucket: 'findany-84c36.appspot.com',
+    androidClientId: '87807759596-0pmrvm443ho3dfbuiau7ghm2pk0m1c5q.apps.googleusercontent.com',
+    iosClientId: '87807759596-vbbsanc1ro9d1kqnc9piekokchv61m4n.apps.googleusercontent.com',
+    iosBundleId: 'com.neelam.findanyFlutter',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyA51LgBMCjOEqVh5Wz244Hyy-6EWyO_U48',
+    appId: '1:87807759596:web:542d637605b76f3fdb81c9',
+    messagingSenderId: '87807759596',
+    projectId: 'findany-84c36',
+    authDomain: 'findany-84c36.firebaseapp.com',
+    databaseURL: 'https://findany-84c36-default-rtdb.firebaseio.com',
+    storageBucket: 'findany-84c36.appspot.com',
+    measurementId: 'G-RL10RZKM45',
+  );
+
 }

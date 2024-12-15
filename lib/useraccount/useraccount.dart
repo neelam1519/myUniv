@@ -3,7 +3,7 @@ import 'package:findany_flutter/useraccount/academicdetails.dart';
 import 'package:findany_flutter/useraccount/personalDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../provider/useraccount_provider.dart';
+import 'useraccount_provider.dart';
 import '../utils/utils.dart';
 import 'package:provider/provider.dart';
 

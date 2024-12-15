@@ -855,7 +855,7 @@ import 'package:provider/provider.dart';
 import 'package:findany_flutter/busbooking/history.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../provider/busbooking_home_provider.dart';
+import 'busbooking_home_provider.dart';
 
 class BusBookingHome extends StatefulWidget {
   const BusBookingHome({super.key});

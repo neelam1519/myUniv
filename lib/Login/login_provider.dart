@@ -9,10 +9,10 @@ import '../utils/sharedpreferences.dart';
 import '../utils/utils.dart';
 
 class LoginProvider with ChangeNotifier {
-  Utils utils = Utils();
-  LoadingDialog loadingDialog = LoadingDialog();
-  SharedPreferences sharedPreferences = SharedPreferences();
-  FireStoreService fireStoreService = FireStoreService();
+  final Utils utils = Utils();
+  final LoadingDialog loadingDialog = LoadingDialog();
+  final SharedPreferences sharedPreferences = SharedPreferences();
+  final FireStoreService fireStoreService = FireStoreService();
 
   final GoogleSignIn googleSignIn = GoogleSignIn(
     scopes: [
@@ -20,14 +20,23 @@ class LoginProvider with ChangeNotifier {
       'profile',
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile',
-      'openid'
+      'openid',
     ],
   );
 
   Future<void> handleGoogleSignIn(BuildContext context) async {
+    if (await googleSignIn.isSignedIn()) {
+      print("not disconnected");
+      await googleSignIn.disconnect();
+      await googleSignIn.signOut();
+    }else{
+      print('Disconnected');
+    }
+
     try {
       loadingDialog.showDefaultLoading('Signing In...');
-      GoogleSignInAccount? googleSignInAccount = await mobileGoogleSignIn();
+
+      final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
 
       if (googleSignInAccount != null) {
         if (context.mounted) {
@@ -45,41 +54,45 @@ class LoginProvider with ChangeNotifier {
     }
   }
 
-  Future<GoogleSignInAccount?> mobileGoogleSignIn() async {
-    GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
-    googleSignInAccount ??= await googleSignIn.signIn();
-    return googleSignInAccount;
-  }
-
   Future<void> firebaseSignIn(GoogleSignInAccount googleSignInAccount, BuildContext context) async {
     try {
-      final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
+      print('Starting Google Sign-In process...');
 
+      // Get Google authentication details
+      GoogleSignInAuthentication? googleAuth = await (await GoogleSignIn(scopes: ["profile", "email"]).signIn())?.authentication;
+      print('Google authentication successful. Access Token: ${googleAuth!.accessToken}, ID Token: ${googleAuth.idToken}');
+
+      // Create a credential for Firebase
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleSignInAuthentication.accessToken,
-        idToken: googleSignInAuthentication.idToken,
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
       final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
       final User? user = authResult.user;
 
       if (user != null && context.mounted) {
+        print('Firebase sign-in successful. User ID: ${user.uid}, Email: ${user.email}');
+
         final String? email = user.email;
 
         if (email != null && email.endsWith('@klu.ac.in')) {
+          print('User  email is valid. Navigating to Home...');
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
           await storeRequiredData(context);
         } else {
+          print('Invalid email domain. User email: $email');
           await signOut();
           loadingDialog.showInfoMessage("Login with KALASALINGAM EMAIL ONLY");
         }
       } else {
+        print('User  is null after Firebase sign-in.');
         await signOut();
         loadingDialog.dismiss();
       }
     } catch (error) {
       print('Error during Firebase Sign-In: $error');
-      utils.showToastMessage('Error occurred while logging in login again');
+      utils.showToastMessage('Error occurred while logging in. Please try again.');
       await signOut();
       loadingDialog.dismiss();
     }
@@ -87,48 +100,51 @@ class LoginProvider with ChangeNotifier {
 
   Future<void> storeRequiredData(BuildContext context) async {
     try {
-      String email = await utils.getCurrentUserEmail() ?? " ";
-      String displayName = await utils.getCurrentUserDisplayName() ?? " ";
-      String imageUrl = await utils.getCurrentUserProfileImage() ?? " ";
-      String token = await utils.getToken() ?? " ";
+      final String email = await utils.getCurrentUserEmail() ?? " ";
+      final String displayName = await utils.getCurrentUserDisplayName() ?? " ";
+      final String imageUrl = await utils.getCurrentUserProfileImage() ?? " ";
+      final String token = await utils.getToken() ?? " ";
 
       print('Login Token: $token');
 
-      String name = utils.removeTextAfterFirstNumber(displayName);
-      String regNo = utils.removeEmailDomain(email);
+      final String name = utils.removeTextAfterFirstNumber(displayName);
+      final String regNo = utils.removeEmailDomain(email);
 
-      Map<String, String> data = {
+      final Map<String, String> data = {
         'Email': email,
         'Name': name,
         'ProfileImageURL': imageUrl,
         'Registration Number': regNo,
       };
+
       print('Login Details: $data');
 
-      String? currentUserUID = await utils.getCurrentUserUID();
+      final String? currentUserUID = await utils.getCurrentUserUID();
+      final DocumentReference userDoc = FirebaseFirestore.instance.doc('/UserDetails/$currentUserUID');
 
-      DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/$currentUserUID');
-      fireStoreService.uploadMapDataToFirestore(data, documentReference);
+      await fireStoreService.uploadMapDataToFirestore(data, userDoc);
       sharedPreferences.storeMapValuesInSecureStorage(data);
 
-      DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
+      final DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
       await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
       loadingDialog.dismiss();
     } catch (error) {
       print('Error storing data: $error');
-      utils.showToastMessage('Error occurred while logging in: $error');
-      print('Login Error: $error');
+      utils.showToastMessage('Error occurred while storing data: $error');
       await signOut();
     }
   }
 
   Future<void> signOut() async {
-    await FirebaseAuth.instance.signOut();
     try {
-      await googleSignIn.disconnect();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.disconnect();
+      }
     } catch (e) {
       print('Error disconnecting from Google: $e');
+    } finally {
+      await googleSignIn.signOut();
+      await FirebaseAuth.instance.signOut();
     }
-    await googleSignIn.signOut();
   }
 }

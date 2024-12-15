@@ -29,6 +29,12 @@ class GroupChatProvider with ChangeNotifier {
         return;
       }
 
+      print('ChatGroups snapshot: ${chatGroupsSnapshot.docs}');
+      chatGroupsSnapshot.docs.forEach((doc) {
+        print('Processing document: ${doc.id}, data: ${doc.data()}');
+      });
+
+
       final chatFutures = chatGroupsSnapshot.docs.map((document) async {
         final data = document.data();
         final groupName = data['GroupName'];
@@ -39,9 +45,9 @@ class GroupChatProvider with ChangeNotifier {
 
         final chatRef = rtdb.FirebaseDatabase.instance.ref().child("Chat/$groupName");
 
-        if (groupName != 'University Chat') {
-          await _isFirstTime(groupName);
-        }
+        // if (groupName != 'University Chat') {
+        //   await _isFirstTime(groupName);
+        // }
 
         final chatSnapshot = await chatRef.orderByKey().limitToLast(1).get();
         if (chatSnapshot.value != null) {
@@ -52,10 +58,12 @@ class GroupChatProvider with ChangeNotifier {
 
           final createdAtDate = DateTime.tryParse(createdAt)?.toLocal() ?? DateTime.now();
           final formattedTime = _formatTime(createdAtDate);
+          print('Current group name: $groupName, Profile URL: ${data['ProfileUrl']}');
+
 
           return {
             'groupName': groupName,
-            'profileUrl': data['ProfileUrl'],
+            'profileUrl': data['ProfileUrl'] ?? '',
             'lastMessage': lastMessage,
             'formattedTime': formattedTime,
             'createdAt': createdAtDate,
@@ -63,12 +71,13 @@ class GroupChatProvider with ChangeNotifier {
         } else {
           return {
             'groupName': groupName,
-            'profileUrl': data['ProfileUrl'],
+            'profileUrl': data['ProfileUrl'] ?? '',
             'lastMessage': '',
             'formattedTime': '',
             'createdAt': DateTime.fromMillisecondsSinceEpoch(0),
           };
         }
+
       }).toList();
 
       _chatGroups = (await Future.wait(chatFutures)).where((group) => group != null).map((group) => group!).toList();

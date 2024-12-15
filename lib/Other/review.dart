@@ -100,7 +100,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../provider/review_provider.dart';
+import 'review_provider.dart';
 
 class Review extends StatelessWidget {
   const Review({super.key});

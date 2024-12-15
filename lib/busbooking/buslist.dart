@@ -1,6 +1,7 @@
-import 'package:findany_flutter/provider/fetch_buslist_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'fetch_buslist_provider.dart';
 
 class BusList extends StatefulWidget {
   final String selectedFrom;

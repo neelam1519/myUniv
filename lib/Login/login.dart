@@ -3,7 +3,7 @@ import 'package:flutter_signin_button/button_list.dart';
 import 'package:flutter_signin_button/button_view.dart';
 import 'package:provider/provider.dart';
 
-import '../provider/login_provider.dart';
+import 'login_provider.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -57,6 +57,7 @@ class Login extends StatelessWidget {
                       bool internet = await loginProvider.utils.checkInternetConnection();
                       if (internet) {
                         if (context.mounted) {
+                          print("User is signing in...");
                           await loginProvider.handleGoogleSignIn(context);
                         }
                       } else {

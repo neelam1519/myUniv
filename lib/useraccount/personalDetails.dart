@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../provider/personaldetails_provider.dart';
+import 'personaldetails_provider.dart';
 
 class PersonalDetails extends StatefulWidget {
   const PersonalDetails({super.key});

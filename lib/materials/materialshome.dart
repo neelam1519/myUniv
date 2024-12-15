@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../provider/materials_provider.dart';
+import 'materials_provider.dart';
 import 'units.dart';
 
 class MaterialsHome extends StatelessWidget {

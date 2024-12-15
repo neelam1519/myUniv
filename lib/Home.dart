@@ -2,6 +2,7 @@ import 'package:findany_flutter/provider/home_provider.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/utils/grid_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:findany_flutter/Other/notification.dart';
@@ -11,10 +12,14 @@ import 'package:findany_flutter/navigation/navigationhome.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'groupchat/CreateRoom.dart';
+import 'groupchat/build_group_tile.dart';
 import 'home_drawer_screen.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class Home extends StatefulWidget {
   const Home({super.key});
+
   @override
   State<Home> createState() => _HomeState();
 }
@@ -28,6 +33,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     _homeProvider = Provider.of<HomeProvider>(context);
     _homeProvider.loadData();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -113,11 +119,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         title: 'University News',
                         destination: NewsListScreen(),
                       ),
-                      GridItem(
-                        imagePath: 'assets/images/busbooking.png',
-                        title: 'Bus Booking',
-                        destination: BusBookingHome(),
-                      ),
+                      // GridItem(
+                      //   imagePath: 'assets/images/busbooking.png',
+                      //   title: 'Bus Booking',
+                      //   destination: BusBookingHome(),
+                      // ),
                     ],
                   ),
                 ),
@@ -125,6 +131,17 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             );
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed:(){
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => CreateRoomPage()),
+          );
+        },
+        child: const Icon(Icons.add), // "+" icon
+        backgroundColor: Colors.green.shade200, // FAB background color
       ),
     );
   }

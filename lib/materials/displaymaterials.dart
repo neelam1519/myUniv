@@ -6,7 +6,7 @@ import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:universal_io/io.dart';
-import '../provider/display_materials_provider.dart';
+import 'display_materials_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 

@@ -129,7 +129,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../provider/history_provider.dart';
+import 'history_provider.dart';
 
 class BusBookedHistory extends StatefulWidget {
   const BusBookedHistory({super.key});

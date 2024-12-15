@@ -164,7 +164,7 @@
 // }
 
 
-import 'package:findany_flutter/provider/newsdetailsscreen_provider.dart';
+import 'package:findany_flutter/universitynews/newsdetailsscreen_provider.dart';
 import 'package:findany_flutter/universitynews/addnews.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';

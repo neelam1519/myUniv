@@ -2,7 +2,7 @@ import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 class RealTimeDatabase {
-  final DatabaseReference _databaseReference = FirebaseDatabase.instance.reference();
+  final DatabaseReference _databaseReference = FirebaseDatabase.instance.ref();
 
   Future<void> updateTypingStatus(ChatUser chatUser, String userId) async {
     try {
