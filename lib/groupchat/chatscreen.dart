@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatScreen extends StatefulWidget {
   final types.Room room;
@@ -40,6 +41,38 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  /// Send message and update room metadata with the last message and time
+  void _handleSendPressed(types.PartialText message) async {
+    // Send the message
+    FirebaseChatCore.instance.sendMessage(message, widget.room.id);
+
+    print("Message: ${message.toJson()}");
+
+    // Create the new message object to update room's last messages
+    final newMessage = types.TextMessage(
+      author: types.User(id: FirebaseChatCore.instance.firebaseUser!.uid),
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      id: DateTime.now().toString(),
+      text: message.text,
+    );
+
+    // Update the room with the new last message
+    final updatedRoom = types.Room(
+      id: widget.room.id,
+      lastMessages: [newMessage],
+      type: widget.room.type,
+      users: widget.room.users,
+      updatedAt: DateTime.now().millisecondsSinceEpoch, // Add current timestamp
+    );
+
+
+    // Update room metadata in Firebase
+    FirebaseChatCore.instance.updateRoom(updatedRoom);
+
+    print("Updated Room: ${updatedRoom.toJson()}");
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,9 +87,5 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
-  }
-
-  void _handleSendPressed(types.PartialText message) {
-     FirebaseChatCore.instance.sendMessage(message, widget.room.id);
   }
 }

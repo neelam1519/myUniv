@@ -98,6 +98,18 @@ class Utils {
     }
   }
 
+  static String formatTimestamp(int timestamp) {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return '${date.month}/${date.day}'; // Example: "12/15"
+    } else {
+      return '${date.hour}:${date.minute.toString().padLeft(2, '0')}'; // Example: "10:45"
+    }
+  }
+
   Future<String?> getCurrentUserDisplayName() async {
     try {
       User? user = auth.currentUser;
