@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatScreen extends StatefulWidget {
   final types.Room room;
@@ -47,6 +46,7 @@ class _ChatScreenState extends State<ChatScreen> {
     FirebaseChatCore.instance.sendMessage(message, widget.room.id);
 
     print("Message: ${message.toJson()}");
+    print("Users:${widget.room.users}");
 
     // Create the new message object to update room's last messages
     final newMessage = types.TextMessage(
@@ -64,7 +64,6 @@ class _ChatScreenState extends State<ChatScreen> {
       users: widget.room.users,
       updatedAt: DateTime.now().millisecondsSinceEpoch, // Add current timestamp
     );
-
 
     // Update room metadata in Firebase
     FirebaseChatCore.instance.updateRoom(updatedRoom);

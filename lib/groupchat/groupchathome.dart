@@ -9,45 +9,89 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 import 'chatscreen.dart';
 
-class GroupChatHome extends StatelessWidget {
+class GroupChatHome extends StatefulWidget {
   const GroupChatHome({super.key});
 
-  /// Checks if the user is already registered. If not, registers the user.
-  Future<void> ensureUserRegistered() async {
-    String? uid = await Utils().getCurrentUserUID();
-    if (uid == null) {
-      throw Exception("User not logged in");
-    }
+  @override
+  _GroupChatHomeState createState() => _GroupChatHomeState();
+}
 
-    // Check if the user already exists in Firestore
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+class _GroupChatHomeState extends State<GroupChatHome> {
+  @override
+  void initState() {
+    super.initState();
+    _ensureUserRegistered();
+  }
 
-    if (!userDoc.exists) {
-      // If user does not exist, register the user
-      String? name = await Utils().getCurrentUserDisplayName();
-      if (name == null || name.isEmpty) {
-        throw Exception("User display name not found");
+  Future<void> _ensureUserRegistered() async {
+    try {
+      String? uid = await Utils().getCurrentUserUID();
+      if (uid == null) {
+        throw Exception("User not logged in");
       }
+      // Check if the user already exists in Firestore
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
-      String renamed = Utils().removeTextAfterFirstNumber(name);
-      DocumentReference documentReference = FirebaseFirestore.instance.doc('UserDetails/$uid');
-      String? url = await SharedPreferences().getDataFromReference(documentReference, 'ProfileImageURL');
+      if (!userDoc.exists) {
+        String? name = await Utils().getCurrentUserDisplayName();
+        if (name == null || name.isEmpty) {
+          throw Exception("User display name not found");
+        }
 
-      await FirebaseChatCore.instance.createUserInFirestore(
-        types.User(
-          firstName: renamed,
-          id: uid,
-          imageUrl: url ?? '',
-          lastName: '',
-        ),
-      );
+        String renamed = Utils().removeTextAfterFirstNumber(name);
+        DocumentReference documentReference = FirebaseFirestore.instance.doc('UserDetails/$uid');
+        String? url = await SharedPreferences().getDataFromReference(documentReference, 'ProfileImageURL');
 
-      print("User registered: $uid");
-    } else {
-      print("User already registered: $uid");
+        await FirebaseChatCore.instance.createUserInFirestore(
+          types.User(
+            firstName: renamed,
+            id: uid,
+            imageUrl: url ?? '',
+            lastName: '',
+          ),
+        );
+
+        print("User registered: $uid");
+        _addUserToGroup("on0PYULNaQE0H8zRlC30", uid);
+      } else {
+        print("User already registered: $uid");
+        _addUserToGroup("on0PYULNaQE0H8zRlC30", uid);
+      }
+    } catch (e) {
+      print('Error during user registration: $e');
     }
   }
 
+  Future<void> _addUserToGroup(String groupId, String userId) async {
+    try {
+      final groupDoc = FirebaseFirestore.instance.collection('rooms').doc(groupId);
+
+      // Fetch the group document
+      final groupSnapshot = await groupDoc.get();
+
+      if (!groupSnapshot.exists) {
+        print('Group $groupId does not exist.');
+        return;
+      }
+
+      final groupData = groupSnapshot.data();
+      final List<dynamic> users = groupData?['userIds'] ?? [];
+
+      // Check if the user is already in the group
+      if (users.contains(userId)) {
+        print('User $userId is already in the group.');
+        return;
+      }
+      // Add user to the group
+      await groupDoc.update({
+        'userIds': FieldValue.arrayUnion([userId]),
+      });
+
+      print('User $userId added to group $groupId.');
+    } catch (error) {
+      print('Error adding user to group: $error');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,21 +107,11 @@ class GroupChatHome extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.blueAccent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CreateRoomPage()),
-              );
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<List<types.Room>>(
         stream: FirebaseChatCore.instance.rooms(),
         builder: (context, snapshot) {
+          print("Snapshot: ${snapshot.data}");
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -125,7 +159,7 @@ class GroupChatHome extends StatelessWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
             itemCount: rooms.length,
             itemBuilder: (context, index) {
               final room = rooms[index];

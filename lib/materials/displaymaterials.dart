@@ -10,12 +10,25 @@ import 'display_materials_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 
-class DisplayMaterials extends StatelessWidget {
+class DisplayMaterials extends StatefulWidget {
   final String path;
   final String unit;
   final String subject;
 
   const DisplayMaterials({super.key, required this.path, required this.subject, required this.unit});
+
+  @override
+  _DisplayMaterialsState createState() => _DisplayMaterialsState();
+}
+
+class _DisplayMaterialsState extends State<DisplayMaterials> {
+  late Utils utils;
+
+  @override
+  void initState() {
+    super.initState();
+    utils = Utils();
+  }
 
   Widget buildSkeletonView() {
     return GridView.builder(
@@ -25,7 +38,7 @@ class DisplayMaterials extends StatelessWidget {
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
       ),
-      itemCount: 4, // Display 4 shimmer placeholders
+      itemCount: 4,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
           baseColor: Colors.grey[300]!,
@@ -53,7 +66,7 @@ class DisplayMaterials extends StatelessWidget {
     );
   }
 
-  Future<void> openPDF(String filePath, String title,BuildContext cotext) async {
+  Future<void> openPDF(String filePath, BuildContext context) async {
     final result = await OpenFile.open(filePath, type: "application/pdf");
 
     if (result.type != ResultType.done) {
@@ -61,6 +74,45 @@ class DisplayMaterials extends StatelessWidget {
     }
   }
 
+  Widget buildPdfCard(File pdfFile, BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        await openPDF(pdfFile.path, context);
+      },
+      child: Card(
+        elevation: 5,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: PDFView(
+                filePath: pdfFile.path,
+                enableSwipe: true,
+                swipeHorizontal: false,
+                autoSpacing: false,
+                pageFling: false,
+                onRender: (pages) {},
+                onError: (error) {
+                  print(error.toString());
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                pdfFile.path.split('/').last,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,29 +121,25 @@ class DisplayMaterials extends StatelessWidget {
         firebaseStorageHelper: FirebaseStorageHelper(),
         loadingDialog: LoadingDialog(),
         notificationService: NotificationService(),
-        utils: Utils(),
-      )..initialize(path, unit),
+        utils: utils,
+      )..initialize(widget.path, widget.unit),
       child: Consumer<DisplayMaterialsProvider>(
         builder: (context, provider, child) {
-          print("StoragePath: ${provider.storagePath}");
           return Scaffold(
             appBar: AppBar(
               title: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text("$subject > $unit"),
+                child: Text("${widget.subject} > ${widget.unit}"),
               ),
             ),
             body: StreamBuilder<List<File>>(
               stream: provider.streamController.stream,
               builder: (context, snapshot) {
-                print("Snapshot Data: ${snapshot.data}");
                 if (!provider.isInitialized) {
                   return buildSkeletonView();
                 } else if (provider.isDownloading && !provider.firstDownloadCompleted) {
-                  print("1");
                   return buildSkeletonView();
                 } else if (snapshot.hasError) {
-                  print("2");
                   provider.loadingDialog.dismiss();
                   return Center(
                     child: Text('Error: ${snapshot.error}'),
@@ -102,6 +150,7 @@ class DisplayMaterials extends StatelessWidget {
                     child: Text('No files available.'),
                   );
                 } else {
+                  print("Entered Else block");
                   List<File> filesToShow = snapshot.data!;
                   return GridView.builder(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -112,45 +161,7 @@ class DisplayMaterials extends StatelessWidget {
                     ),
                     itemCount: filesToShow.length,
                     itemBuilder: (context, index) {
-                      File pdfFile = filesToShow[index];
-                      print("PDF FILE: $pdfFile");
-                      return GestureDetector(
-                        onTap: () async{
-                          await openPDF(pdfFile.path, pdfFile.path.split('/').last, context);
-                        },
-                        child: Card(
-                          elevation: 5,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: PDFView(
-                                  filePath: pdfFile.path,
-                                  enableSwipe: true,
-                                  swipeHorizontal: false,
-                                  autoSpacing: false,
-                                  pageFling: false,
-                                  onRender: (pages) {},
-                                  onError: (error) {
-                                    print(error.toString());
-                                  },
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  pdfFile.path.split('/').last,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                      return buildPdfCard(filesToShow[index], context);
                     },
                   );
                 }
@@ -159,7 +170,7 @@ class DisplayMaterials extends StatelessWidget {
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: provider.currentIndex,
               onTap: (int index) async {
-                provider.updateIndex(index, path, unit);
+                provider.updateIndex(index, widget.path, widget.unit);
               },
               items: const [
                 BottomNavigationBarItem(
@@ -174,8 +185,7 @@ class DisplayMaterials extends StatelessWidget {
             ),
             floatingActionButton: FloatingActionButton(
               onPressed: () {
-                print("Path: $path");
-                provider.uploadFiles(subject,unit);
+                provider.uploadFiles(widget.subject, widget.unit);
               },
               backgroundColor: Colors.blue,
               child: const Icon(Icons.upload),

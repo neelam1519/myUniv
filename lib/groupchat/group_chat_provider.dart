@@ -68,6 +68,7 @@ class GroupChatProvider with ChangeNotifier {
             'formattedTime': formattedTime,
             'createdAt': createdAtDate,
           };
+
         } else {
           return {
             'groupName': groupName,
@@ -92,15 +93,6 @@ class GroupChatProvider with ChangeNotifier {
     loadingDialog.dismiss();
   }
 
-  Future<void> _isFirstTime(String chatName) async {
-    chatName = chatName.replaceAll(" ", "");
-    final key = "${chatName}isFirstTime";
-    final value = await _utils.checkFirstTime(key);
-    if (value) {
-      await _subscribeToChat(chatName);
-      await _sharedPreferences.storeMapValuesInSecureStorage({"${chatName}isFirstTime": false});
-    }
-  }
 
   Future<void> _subscribeToChat(String chatName) async {
     chatName = chatName.replaceAll(" ", "");

@@ -4,7 +4,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
-import '../groupchat/chatting.dart';
 
 class AuthProviderStart with ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -12,8 +11,10 @@ class AuthProviderStart with ChangeNotifier {
   final NotificationService _notificationService = NotificationService();
 
   AuthProviderStart() {
+    print('Running auth start');
     _setupInteractedMessage();
     FirebaseMessaging.onMessage.listen(_onMessageReceived);
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
     _checkForUpdate();
   }
 
@@ -22,10 +23,10 @@ class AuthProviderStart with ChangeNotifier {
   Future<void> _setupInteractedMessage() async {
     final initialMessage = await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) _handleMessage(initialMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
   }
 
   void _handleMessage(RemoteMessage message) {
+    print('Clicked the notification');
     if (kDebugMode) {
       print('Entered handle message');
     }
@@ -38,15 +39,7 @@ class AuthProviderStart with ChangeNotifier {
   }
 
   void _onMessageReceived(RemoteMessage message) {
-    print('Received a message while in the foreground! ${Chatting.isChatOpen}');
-    print('Message data: ${message.data}');
-    print(Chatting.groupName.replaceAll(" ", ""));
-    print(message.data["title"]);
-    if (Chatting.isChatOpen && Chatting.groupName.replaceAll(" ", "") == message.data["title"]) {
-      print('Message belongs to UniversityChat and chat is open.');
-    } else {
-      _notificationService.showNotification(message);
-    }
+    _notificationService.showNotification(message);
   }
 
   Future<void> _checkForUpdate() async {

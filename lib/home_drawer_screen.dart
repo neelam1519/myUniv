@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:findany_flutter/provider/home_provider.dart';
+import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/useraccount/useraccount.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

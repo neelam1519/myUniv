@@ -14,137 +14,178 @@ class LoginProvider with ChangeNotifier {
   final SharedPreferences sharedPreferences = SharedPreferences();
   final FireStoreService fireStoreService = FireStoreService();
 
-  final GoogleSignIn googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-      'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile',
-      'openid',
-    ],
-  );
 
-  Future<void> handleGoogleSignIn(BuildContext context) async {
-    if (await googleSignIn.isSignedIn()) {
-      print("not disconnected");
-      await googleSignIn.disconnect();
-      await googleSignIn.signOut();
-    }else{
-      print('Disconnected');
-    }
+  // final GoogleSignIn googleSignIn = GoogleSignIn(
+  //   // scopes: [
+  //   //   'email',
+  //   //   'profile',
+  //   //   'https://www.googleapis.com/auth/userinfo.email',
+  //   //   'https://www.googleapis.com/auth/userinfo.profile',
+  //   //   'openid',
+  //   // ],
+  // );
 
+  Future<UserCredential?> signInWithGoogle() async {
+    loadingDialog.showDefaultLoading("Signing in...");
     try {
-      loadingDialog.showDefaultLoading('Signing In...');
+      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: [
+        'openid',
+        'email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+      ]);
 
-      final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
-
-      if (googleSignInAccount != null) {
-        if (context.mounted) {
-          await firebaseSignIn(googleSignInAccount, context);
-        }
-      } else {
-        print('Google Sign-In canceled.');
+      final GoogleSignInAccount? googleUser  = await googleSignIn.signIn();
+      if (googleUser  == null) {
+        print('Sign-in aborted by user.');
         loadingDialog.dismiss();
+        return null;
       }
-    } catch (error) {
-      loadingDialog.dismiss();
-      utils.showToastMessage('Error occurred while logging in: $error');
-      print('Error signing in with Google: $error');
-      await signOut();
-    }
-  }
 
-  Future<void> firebaseSignIn(GoogleSignInAccount googleSignInAccount, BuildContext context) async {
-    try {
-      print('Starting Google Sign-In process...');
+      final GoogleSignInAuthentication? googleAuth = await googleUser .authentication;
+      if (googleAuth == null) {
+        print('Google authentication failed.');
+        loadingDialog.dismiss();
+        return null;
+      }
 
-      // Get Google authentication details
-      GoogleSignInAuthentication? googleAuth = await (await GoogleSignIn(scopes: ["profile", "email"]).signIn())?.authentication;
-      print('Google authentication successful. Access Token: ${googleAuth!.accessToken}, ID Token: ${googleAuth.idToken}');
+      if (googleAuth.accessToken == null) {
+        print('Access token is null. Check user permissions and scopes.');
+        loadingDialog.dismiss();
+        return null;
+      }
 
-      // Create a credential for Firebase
-      final AuthCredential credential = GoogleAuthProvider.credential(
+      final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
-      final User? user = authResult.user;
-
-      if (user != null && context.mounted) {
-        print('Firebase sign-in successful. User ID: ${user.uid}, Email: ${user.email}');
-
-        final String? email = user.email;
-
-        if (email != null && email.endsWith('@klu.ac.in')) {
-          print('User  email is valid. Navigating to Home...');
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
-          await storeRequiredData(context);
-        } else {
-          print('Invalid email domain. User email: $email');
-          await signOut();
-          loadingDialog.showInfoMessage("Login with KALASALINGAM EMAIL ONLY");
-        }
-      } else {
-        print('User  is null after Firebase sign-in.');
-        await signOut();
-        loadingDialog.dismiss();
-      }
-    } catch (error) {
-      print('Error during Firebase Sign-In: $error');
-      utils.showToastMessage('Error occurred while logging in. Please try again.');
-      await signOut();
+      print('Credentials: $credential');
       loadingDialog.dismiss();
-    }
-  }
-
-  Future<void> storeRequiredData(BuildContext context) async {
-    try {
-      final String email = await utils.getCurrentUserEmail() ?? " ";
-      final String displayName = await utils.getCurrentUserDisplayName() ?? " ";
-      final String imageUrl = await utils.getCurrentUserProfileImage() ?? " ";
-      final String token = await utils.getToken() ?? " ";
-
-      print('Login Token: $token');
-
-      final String name = utils.removeTextAfterFirstNumber(displayName);
-      final String regNo = utils.removeEmailDomain(email);
-
-      final Map<String, String> data = {
-        'Email': email,
-        'Name': name,
-        'ProfileImageURL': imageUrl,
-        'Registration Number': regNo,
-      };
-
-      print('Login Details: $data');
-
-      final String? currentUserUID = await utils.getCurrentUserUID();
-      final DocumentReference userDoc = FirebaseFirestore.instance.doc('/UserDetails/$currentUserUID');
-
-      await fireStoreService.uploadMapDataToFirestore(data, userDoc);
-      sharedPreferences.storeMapValuesInSecureStorage(data);
-
-      final DocumentReference tokenRef = FirebaseFirestore.instance.doc('Tokens/Tokens');
-      await fireStoreService.uploadMapDataToFirestore({regNo: token}, tokenRef);
+      return await FirebaseAuth.instance.signInWithCredential(credential);
+    } catch (e, stackTrace) {
+      print('Error signing in with Google: $e');
+      print('Stack trace: $stackTrace');
       loadingDialog.dismiss();
-    } catch (error) {
-      print('Error storing data: $error');
-      utils.showToastMessage('Error occurred while storing data: $error');
-      await signOut();
+      return null;
     }
   }
 
-  Future<void> signOut() async {
-    try {
-      if (await googleSignIn.isSignedIn()) {
-        await googleSignIn.disconnect();
-      }
-    } catch (e) {
-      print('Error disconnecting from Google: $e');
-    } finally {
-      await googleSignIn.signOut();
-      await FirebaseAuth.instance.signOut();
-    }
-  }
+  // Future<void> handleGoogleSignIn(BuildContext context) async {
+  //   if (await googleSignIn.isSignedIn()) {
+  //     print("not disconnected");
+  //     await googleSignIn.disconnect();
+  //     await googleSignIn.signOut();
+  //   }else{
+  //     print('Disconnected');
+  //   }
+  //
+  //   try {
+  //     print('Attempting to show loading dialog...');
+  //     loadingDialog.showDefaultLoading('Signing In...');
+  //     print('Loading dialog shown successfully.');
+  //
+  //     print('Initiating Google Sign-In...');
+  //     final GoogleSignInAccount? googleSignInAccount = await googleSignIn.signIn();
+  //
+  //     if (googleSignInAccount != null) {
+  //       print('Google Sign-In successful. Account details:');
+  //       print('Display Name: ${googleSignInAccount.displayName}');
+  //       print('Email: ${googleSignInAccount.email}');
+  //       print('ID: ${googleSignInAccount.id}');
+  //
+  //       print('Proceeding to Firebase sign-in...');
+  //       await firebaseSignIn(googleSignInAccount, context);
+  //       print('Firebase sign-in process completed.');
+  //     } else {
+  //       print('Google Sign-In canceled by user.');
+  //       loadingDialog.dismiss();
+  //     }
+  //   } catch (error, stackTrace) {
+  //     print('Error occurred during the sign-in process: $error');
+  //     print('Stack Trace: $stackTrace');
+  //
+  //     loadingDialog.dismiss();
+  //     utils.showToastMessage('Error occurred while logging in: $error');
+  //
+  //     print('Attempting to sign out due to error...');
+  //     await signOut();
+  //     print('Sign-out process completed after error.');
+  //   }
+  //
+  // }
+  //
+  // Future<void> firebaseSignIn(GoogleSignInAccount googleSignInAccount, BuildContext context) async {
+  //   try {
+  //     loadingDialog.showDefaultLoading('Singing...');
+  //
+  //     final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+  //
+  //     if (googleUser == null) {
+  //       print('Google Sign-In canceled or failed.');
+  //       throw Exception('Google sign-in returned null account.');
+  //     }
+  //
+  //     final GoogleSignInAuthentication? googleAuth = await googleUser.authentication;
+  //
+  //     if (googleAuth == null) {
+  //       print('Failed to retrieve authentication details from Google.');
+  //       throw Exception('Google authentication returned null.');
+  //     }
+  //
+  //     final AuthCredential credential = GoogleAuthProvider.credential(
+  //       accessToken: googleAuth.accessToken,
+  //       idToken: googleAuth.idToken,
+  //     );
+  //     final UserCredential authResult = await FirebaseAuth.instance.signInWithCredential(credential);
+  //
+  //     final User? user = authResult.user;
+  //
+  //     if (user != null && context.mounted) {
+  //       print('Firebase sign-in successful. User ID: ${user.uid}, Email: ${user.email}');
+  //
+  //       final String? email = user.email;
+  //
+  //       if (email != null && email.endsWith('@klu.ac.in')) {
+  //         print('User email is valid (${email}). Checking if user exists in Firestore...');
+  //
+  //         final DocumentReference userDoc = FirebaseFirestore.instance.collection('UserDetails').doc(user.uid);
+  //         final DocumentSnapshot userSnapshot = await userDoc.get();
+  //
+  //         if (userSnapshot.exists) {
+  //           print('User already exists. Navigating to Home...');
+  //         } else {
+  //           print('New user detected. Storing required data...');
+  //           //await storeRequiredData(context);
+  //         }
+  //       } else {
+  //         print('Invalid email domain. User email: $email');
+  //         await signOut();
+  //         loadingDialog.showInfoMessage("Login with KALASALINGAM EMAIL ONLY");
+  //       }
+  //     } else {
+  //       print('User is null after Firebase sign-in.');
+  //       await signOut();
+  //       loadingDialog.dismiss();
+  //     }
+  //   } catch (error, stackTrace) {
+  //     print('Error during Firebase Sign-In: $error');
+  //     print('Stack Trace: $stackTrace');
+  //     utils.showToastMessage('Error occurred while logging in. Please try again.');
+  //     await signOut();
+  //     loadingDialog.dismiss();
+  //   }
+  // }
+  //
+  // Future<void> signOut() async {
+  //   try {
+  //     if (await googleSignIn.isSignedIn()) {
+  //       await googleSignIn.disconnect();
+  //     }
+  //   } catch (e) {
+  //     print('Error disconnecting from Google: $e');
+  //   } finally {
+  //     await googleSignIn.signOut();
+  //     await FirebaseAuth.instance.signOut();
+  //   }
+  // }
 }

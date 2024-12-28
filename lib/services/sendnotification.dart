@@ -56,10 +56,10 @@ class NotificationService {
   }
 
   Future<void> showNotification(RemoteMessage message) async {
-    print('showNotification Data: ${message.data}');
+    print('showNotification Data: ${message.notification}');
 
-    final String? title = message.data['title'];
-    final String? body = message.data['body'];
+    final String? title = message.notification?.title;
+    final String? body = message.notification?.body;
 
     final BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
       body ?? '',
@@ -87,4 +87,5 @@ class NotificationService {
       payload: message.data['source'] ?? 'notification_payload',
     );
   }
+
 }

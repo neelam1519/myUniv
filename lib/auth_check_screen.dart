@@ -27,6 +27,7 @@ class AuthCheck extends StatelessWidget {
                   String? email = snapshot.data!.email;
 
                   if (email != null && email.endsWith('@klu.ac.in')) {
+                    print('Auth Check Screen returnin Home');
                     return const Home();
                   } else {
                     return const Login();

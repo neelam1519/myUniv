@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+
 import '../Firebase/storage.dart';
 import '../services/sendnotification.dart';
-import '../utils/LoadingDialog.dart';
 import '../utils/utils.dart';
 
 class DisplayMaterialsProvider extends ChangeNotifier {
@@ -46,7 +48,9 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     print("Cache Path: $cachePath");
     await getCachedPDFFiles(cachePath);
 
-    if (await utils.checkInternetConnection()) {
+    bool internet = await utils.checkInternetConnection();
+
+    if (internet) {
       pdfFileNames = await firebaseStorageHelper.getFileNames(storagePath);
       isInitialized = true;
       notifyListeners();
@@ -76,11 +80,9 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     loadingDialog.dismiss();
     print("Cached Files: $downloadedFiles");
     streamController.add(downloadedFiles.toList());
-
   }
 
   Future<void> downloadMissingFiles() async {
-    utils.showToastMessage("Downloading Files Please wait...");
     int totalFiles = pdfFileNames.length;
     int downloadedCount = 0;
 
@@ -101,11 +103,12 @@ class DisplayMaterialsProvider extends ChangeNotifier {
         String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}/$appBarText';
         File file = File('$cachePath/$cleanedFileName');
 
+        isDownloading = false;
+        firstDownloadCompleted = true;
         if (!file.existsSync()) {
           await firebaseStorageHelper.downloadFile('$storagePath/$fileName', cachePath).then((downloadedFile) {
             if (downloadedFile != null) {
               print("Downloading File: $fileName");
-
               downloadedFiles.add(downloadedFile);
               streamController.add(downloadedFiles.toList()); // Show the downloaded file immediately
               notifyListeners(); // Notify listeners to update the UI
@@ -123,7 +126,6 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     isDownloading = false;
     notifyListeners();
   }
-
 
   void clearScreenData() {
     downloadedFiles.clear();
@@ -164,7 +166,7 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     await initialize("", ""); // Re-initialize with new storage path
   }
 
-  Future<void> uploadFiles(String subject,String unit) async {
+  Future<void> uploadFiles(String subject, String unit) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
     if (result != null && result.files.isNotEmpty) {
@@ -175,13 +177,11 @@ class DisplayMaterialsProvider extends ChangeNotifier {
 
         String path = 'Student Uploaded Materials/${utils.getTodayDate().replaceAll('/', '-')}/$subject-$unit';
         File file = File(platformFile.path!);
-        await firebaseStorageHelper.uploadFile(
-            file, path, '${await utils.getCurrentUserEmail()}-$fileName.$fileExtension');
+        await firebaseStorageHelper.uploadFile(file, path, '${await utils.getCurrentUserEmail()}-$fileName.$fileExtension');
 
         DocumentReference specificRef = FirebaseFirestore.instance.doc('AdminDetails/Materials');
         List<String> tokens = await utils.getSpecificTokens(specificRef);
-        notificationService.sendNotification(
-            tokens, "Materials", '${result.count} files uploaded by ${await utils.getCurrentUserEmail()}', {});
+        notificationService.sendNotification(tokens, "Materials", '${result.count} files uploaded by ${await utils.getCurrentUserEmail()}', {});
 
         utils.showToastMessage('Files are submitted sent for reviewing');
         loadingDialog.dismiss();

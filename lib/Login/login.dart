@@ -58,7 +58,7 @@ class Login extends StatelessWidget {
                       if (internet) {
                         if (context.mounted) {
                           print("User is signing in...");
-                          await loginProvider.handleGoogleSignIn(context);
+                          await loginProvider.signInWithGoogle();
                         }
                       } else {
                         loginProvider.utils.showToastMessage('Check your internet connection');

@@ -65,22 +65,19 @@ class Utils {
   }
 
   Future<String?> getCurrentUserUID() async {
-    String? email = await getCurrentUserEmail();
-    final url = Uri.parse(
-        'https://us-central1-findany-84c36.cloudfunctions.net/getUidByEmail?email=$email');
-
     try {
-      final response = await http.get(url);
+      User? user = FirebaseAuth.instance.currentUser;
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['uid'];
+      if (user != null) {
+        String uid = user.uid;
+        print('Current user UID: $uid');
+        return uid;
       } else {
-        print('Error fetching UID: ${response.reasonPhrase}');
+        print('No user is currently signed in.');
         return null;
       }
-    } catch (error) {
-      print('Error fetching UID: $error');
+    } catch (e) {
+      print('Error fetching user UID: $e');
       return null;
     }
   }
@@ -90,10 +87,8 @@ class Utils {
     User? user = auth.currentUser;
 
     if (user != null) {
-      // User is signed in
       return user.email;
     } else {
-      // No user is signed in
       return null;
     }
   }
@@ -293,18 +288,42 @@ class Utils {
   }
 
   Future<void> updateToken() async {
-    // Listen for token refresh event
+    print("Updating Token");
     FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
       print('Updated Token: $fcmToken');
-      String? email = await getCurrentUserEmail();
-      String regNo = removeEmailDomain(email!);
-      DocumentReference tokenRef =
-          FirebaseFirestore.instance.doc('Tokens/Tokens');
-      fireStoreService.uploadMapDataToFirestore({regNo: fcmToken}, tokenRef);
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      print('Current User uid: $uid');
+      DocumentReference tokenRef = FirebaseFirestore.instance.doc('users/$uid');
+      fireStoreService.uploadMapDataToFirestore({'fcmToken': fcmToken}, tokenRef);
     }).onError((err) {
       print('Error while refreshing token');
     });
   }
+
+  Future<void> saveToken() async {
+    String? token = await getToken();
+
+    if (token == null) return;
+
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      print('Current User uid: $uid');
+      DocumentReference userTokenRef = FirebaseFirestore.instance.collection('users').doc(uid);
+
+      await userTokenRef.update({'fcmToken': token}).catchError((e) async {
+        await userTokenRef.set({'fcmToken': token});
+      });
+
+      print("Token saved/updated successfully.");
+    } catch (e) {
+      print("Error saving token: $e");
+    }
+  }
+  // Future<void> getFirebaseInstallationId() async {
+  //
+  //   String installationId = await FirebaseInstallations.instance.getId();
+  //   print('Firebase Installation ID: $installationId');
+  // }
 
   String getMimeType(String extension) {
     switch (extension) {
@@ -489,13 +508,8 @@ class Utils {
   }
 
   String getCurrentTime() {
-    // Get the current UTC time
     DateTime now = DateTime.now().toUtc();
-
-    // Convert UTC time to Indian Standard Time (UTC+5:30)
     DateTime istTime = now.add(const Duration(hours: 5, minutes: 30));
-
-    // Format the time to a readable string
     String formattedTime =
         "${istTime.hour}:${istTime.minute.toString().padLeft(2, '0')}:${istTime.second.toString().padLeft(2, '0')}";
 

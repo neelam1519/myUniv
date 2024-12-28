@@ -13,16 +13,16 @@ class MaterialsProvider with ChangeNotifier {
   final Utils utils = Utils();
   final FirebaseDatabase _database = FirebaseDatabase.instance;
 
-  List<String?> yearsList = ['1', '2', '3', '4'];
-  List<String?> branchList = ['CSE', 'ECE'];
-  List<String?> specializations = [];
-  List<String?> cseSpecialization = [
+  List<String> yearsList = ['1', '2', '3', '4'];
+  List<String> branchList = ['CSE', 'ECE'];
+  List<String> specializations = [];
+  List<String> cseSpecialization = [
     'CYBER SECURITY',
     'ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING',
     'DATA SCIENCE',
     'INTERNET OF THINGS'
   ];
-  List<String?> eceSpecialization = [
+  List<String> eceSpecialization = [
     'ARTIFICIAL INTELLIGENCE FOR CYBER SECURITY',
     'EMBEDDED AND INTERNET OF THINGS',
     'MICROCHIP PHYSICAL DESIGN',
@@ -153,7 +153,7 @@ class MaterialsProvider with ChangeNotifier {
 
   // Getters for UI
   String? get announcementText => _announcementText;
-  List<String?> get availableSpecializations => specializations;
+  List<String> get availableSpecializations => specializations;
   List<dynamic> get availableSubjects => subjects;
   String? get currentYearSelectedOption => yearSelectedOption;
   String? get currentBranchSelectedOption => branchSelectedOption;

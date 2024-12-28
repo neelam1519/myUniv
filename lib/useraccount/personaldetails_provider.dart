@@ -67,16 +67,18 @@ class PersonalDetailsProvider extends ChangeNotifier {
       return;
     }
 
-    loadingDialog.showDefaultLoading('Updating Data');
+    loadingDialog.showDefaultLoading('Updating Data...');
+
     Map<String, dynamic> userData = {
       'Gender': _selectedGender,
       'DOB': dob!.toIso8601String(),
       'Username': _username,
     };
-    DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/${utils.getCurrentUserUID()}');
+    String? uid = await utils.getCurrentUserUID();
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/$uid');
     fireStoreService.uploadMapDataToFirestore(userData, documentReference);
-
     sharedPreferences.storeMapValuesInSecureStorage(userData);
+
     loadingDialog.dismiss();
     utils.showToastMessage('Details updated');
     Navigator.pop(context);

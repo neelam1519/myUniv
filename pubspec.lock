@@ -553,6 +553,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.6+5"
+  firebase_in_app_messaging:
+    dependency: "direct main"
+    description:
+      name: firebase_in_app_messaging
+      sha256: b5348731cbeec8a96e3d4709617550a4f4e0746864ad0dff032266db6544b5cb
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0+11"
+  firebase_in_app_messaging_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_in_app_messaging_platform_interface
+      sha256: "00bcc7842c819de00131e26f5df4e4e087b9a28f51bb4a4f289ad65a356ee688"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.4+47"
   firebase_messaging:
     dependency: "direct main"
     description:
@@ -1440,14 +1456,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  qr_code_scanner:
-    dependency: "direct main"
-    description:
-      name: qr_code_scanner
-      sha256: f23b68d893505a424f0bd2e324ebea71ed88465d572d26bb8d2e78a4749591fd
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
   qr_flutter:
     dependency: "direct main"
     description:

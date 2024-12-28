@@ -15,39 +15,69 @@ class Units extends StatefulWidget {
 
 class _UnitsState extends State<Units> {
   late DisplayMaterialsProvider displayMaterialsProvider;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     displayMaterialsProvider = Provider.of<DisplayMaterialsProvider>(context);
-
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(widget.subject),
+        title: Text(
+          widget.subject,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
+        centerTitle: true,
+        elevation: 4.0,
       ),
-      body: ListView.builder(
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Card(
-            child: ListTile(
-              title: Text('UNIT ${index + 1}'),
-              onTap: () {
-                String storagePath = "${widget.path}/UNIT ${index+1}";
-                displayMaterialsProvider.setStoragePath(storagePath);
-                Navigator.push(
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ListView.builder(
+          itemCount: 5,
+          itemBuilder: (context, index) {
+            return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              elevation: 4.0,
+              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+              child: ListTile(
+                title: Text(
+                  'UNIT ${index + 1}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 18,
+                  color: Colors.blueGrey,
+                ),
+                onTap: () {
+                  String storagePath = "${widget.path}/UNIT ${index + 1}";
+                  displayMaterialsProvider.setStoragePath(storagePath);
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            DisplayMaterials(path: widget.path, unit: 'UNIT ${index + 1}', subject: widget.subject)));
-              },
-            ),
-          );
-        },
+                      builder: (context) => DisplayMaterials(
+                        path: widget.path,
+                        unit: 'UNIT ${index + 1}',
+                        subject: widget.subject,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

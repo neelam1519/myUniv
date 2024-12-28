@@ -3,12 +3,10 @@ import 'package:findany_flutter/provider/addnews_provider.dart';
 import 'package:findany_flutter/provider/addnotification_provider.dart';
 import 'package:findany_flutter/provider/auth_provider.dart';
 import 'package:findany_flutter/busbooking/busbooking_home_provider.dart';
-import 'package:findany_flutter/groupchat/chatting_provider.dart';
-import 'package:findany_flutter/groupchat/creategroupchat_provider.dart';
 import 'package:findany_flutter/materials/display_materials_provider.dart';
 import 'package:findany_flutter/groupchat/group_chat_provider.dart';
 import 'package:findany_flutter/busbooking/history_provider.dart';
-import 'package:findany_flutter/provider/home_provider.dart';
+import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/Login/login_provider.dart';
 import 'package:findany_flutter/navigation/map_provider.dart';
 import 'package:findany_flutter/materials/materials_provider.dart';
@@ -20,10 +18,10 @@ import 'package:findany_flutter/useraccount/personaldetails_provider.dart';
 import 'package:findany_flutter/provider/qanda_provider.dart';
 import 'package:findany_flutter/Other/review_provider.dart';
 import 'package:findany_flutter/materials/showfiles_provider.dart';
-import 'package:findany_flutter/groupchat/universitychat_provider.dart';
 import 'package:findany_flutter/useraccount/useraccount_provider.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -43,18 +41,19 @@ import 'package:findany_flutter/services/sendnotification.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print("Handling a background message: ${message.messageId}");
-  NotificationService().showNotification(message);
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // print("Handling a background message: ${message.messageId}");
+   NotificationService().showNotification(message);
 }
 
 final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   MobileAds.instance.initialize();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   if (kIsWeb) {
@@ -80,6 +79,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -91,9 +91,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => NewsListProvider()),
         ChangeNotifierProvider(create: (_) => BusBookingHomeProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => FetchBuslistProvider()),
-        ChangeNotifierProvider(create: (_) => CreateGroupChatProvider()),
         ChangeNotifierProvider(create: (_) => AcademicDetailsProvider()),
         ChangeNotifierProvider(create: (_) => QAndAProvider()),
         ChangeNotifierProvider(create: (_) => PersonalDetailsProvider()),
@@ -102,13 +100,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PdfScreenProvider()),
         ChangeNotifierProvider(create: (_) => AddNewsProvider()),
         ChangeNotifierProvider(create: (_) => AddNotificationProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => GroupChatProvider()),
         ChangeNotifierProvider(create: (_) => BusBookedHistoryProvider()),
         ChangeNotifierProvider(create: (_) => NewsDetailsScreenProvider()),
         ChangeNotifierProvider(create: (_) => NotificationHomeProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
-        ChangeNotifierProvider(create: (_) => UniversityChatProvider()),
         ChangeNotifierProvider(create: (_) => DisplayMaterialsProvider(firebaseStorageHelper: FirebaseStorageHelper(),
             loadingDialog: LoadingDialog(),
             notificationService: NotificationService(),

@@ -100,19 +100,19 @@ class _UserAccountState extends State<UserAccount> {
                           },
                         ),
                       ),
-                      Visibility(
-                        visible: provider.showAcademicDetails,
-                        child: ListTile(
-                          title: const Text('Academic details', style: TextStyle(fontSize: 16)),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const AcademicDetails()),
-                            );
-                          },
-                        ),
-                      ),
+                      // Visibility(
+                      //   visible: provider.showAcademicDetails,
+                      //   child: ListTile(
+                      //     title: const Text('Academic details', style: TextStyle(fontSize: 16)),
+                      //     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      //     onTap: () {
+                      //       Navigator.push(
+                      //         context,
+                      //         MaterialPageRoute(builder: (context) => const AcademicDetails()),
+                      //       );
+                      //     },
+                      //   ),
+                      // ),
                     ],
                   ),
                 ],

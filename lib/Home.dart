@@ -1,21 +1,19 @@
-import 'package:findany_flutter/provider/home_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/utils/grid_item.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:findany_flutter/Other/notification.dart';
 import 'package:findany_flutter/groupchat/groupchathome.dart';
 import 'package:findany_flutter/materials/materialshome.dart';
 import 'package:findany_flutter/navigation/navigationhome.dart';
-import 'package:findany_flutter/busbooking/busbookinghome.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'groupchat/CreateRoom.dart';
-import 'groupchat/build_group_tile.dart';
 import 'home_drawer_screen.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -26,14 +24,20 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> with WidgetsBindingObserver {
   late HomeProvider _homeProvider;
+  Utils utils = Utils();
+  FireStoreService firebaseFirestore = FireStoreService();
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _homeProvider = Provider.of<HomeProvider>(context);
-    _homeProvider.loadData();
-  }
+  void initState() {
+    print('running init');
 
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      _homeProvider.loadData(context);
+      utils.updateToken();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +59,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const NotificationHome()),
+                  builder: (context) => const NotificationHome(),
+                ),
               );
             },
           ),
@@ -98,8 +103,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16.0,
                     mainAxisSpacing: 16.0,
-                    children: const [
-                      GridItem(
+                    children: [
+                      const GridItem(
                         imagePath: 'assets/images/groupchat.png',
                         title: 'Let\'s Talk',
                         destination: GroupChatHome(),
@@ -109,7 +114,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         title: 'Materials',
                         destination: MaterialsHome(),
                       ),
-                      GridItem(
+                      const GridItem(
                         imagePath: 'assets/images/navigation.png',
                         title: 'Navigation',
                         destination: MapScreen(),
@@ -119,11 +124,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         title: 'University News',
                         destination: NewsListScreen(),
                       ),
-                      // GridItem(
-                      //   imagePath: 'assets/images/busbooking.png',
-                      //   title: 'Bus Booking',
-                      //   destination: BusBookingHome(),
-                      // ),
                     ],
                   ),
                 ),
@@ -131,17 +131,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             );
           },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed:(){
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => CreateRoomPage()),
-          );
-        },
-        child: const Icon(Icons.add), // "+" icon
-        backgroundColor: Colors.green.shade200, // FAB background color
       ),
     );
   }
