@@ -100,12 +100,12 @@ class ShowFilesProvider with ChangeNotifier {
 
     try {
       if (await file.exists()) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PDFScreen(filePath: filePath, title: filename),
-          ),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => PDFScreen(filePath: filePath, title: filename),
+        //   ),
+        // );
       } else {
         loadingDialog.showDefaultLoading('Downloading...');
         final dio = Dio();
@@ -117,12 +117,12 @@ class ShowFilesProvider with ChangeNotifier {
         });
 
         EasyLoading.dismiss();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PDFScreen(filePath: filePath, title: filename),
-          ),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => PDFScreen(filePath: filePath, title: filename),
+        //   ),
+        // );
       }
     } catch (e) {
       EasyLoading.dismiss();

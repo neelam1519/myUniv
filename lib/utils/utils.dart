@@ -10,7 +10,7 @@ import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:open_file/open_file.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 import 'package:path/path.dart' as path;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -254,16 +254,16 @@ class Utils {
 
   final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
 
-  Future<String?> getToken() async {
-    try {
-      String? token = await firebaseMessaging.getToken();
-      print('Token: $token');
-      return token;
-    } catch (e) {
-      print('Error retrieving token: $e');
-      return null;
+    Future<String?> getToken() async {
+      try {
+        String? token = await firebaseMessaging.getToken();
+        print('Token: $token');
+        return token;
+      } catch (e) {
+        print('Error retrieving token: $e');
+        return null;
+      }
     }
-  }
 
   Future<void> openFile(String filePath) async {
     try {
@@ -289,10 +289,15 @@ class Utils {
 
   Future<void> updateToken() async {
     print("Updating Token");
+
+    String? token = await getToken();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    DocumentReference tokenRef = FirebaseFirestore.instance.doc('users/$uid');
+    fireStoreService.uploadMapDataToFirestore({'fcmToken': token}, tokenRef);
+
     FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
       print('Updated Token: $fcmToken');
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      print('Current User uid: $uid');
       DocumentReference tokenRef = FirebaseFirestore.instance.doc('users/$uid');
       fireStoreService.uploadMapDataToFirestore({'fcmToken': fcmToken}, tokenRef);
     }).onError((err) {
@@ -319,6 +324,7 @@ class Utils {
       print("Error saving token: $e");
     }
   }
+
   // Future<void> getFirebaseInstallationId() async {
   //
   //   String installationId = await FirebaseInstallations.instance.getId();
@@ -553,4 +559,15 @@ class Utils {
   //     print('Error sending SMS: $e');
   //   }
   // }
+
+  Future<void> changeTOuser() async{
+    CollectionReference  cref = FirebaseFirestore.instance.collection('users');
+    List<String> documents = await fireStoreService.getDocumentNames(cref);
+    print('Documents: $documents');
+    for(String document in documents){
+      DocumentReference docref  = cref.doc(document);
+      Map<String,String> data = {'role':'user'};
+      fireStoreService.uploadMapDataToFirestore(data, docref);
+    }
+  }
 }

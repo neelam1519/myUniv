@@ -21,9 +21,9 @@ export const sendGroupMessageNotification = functions.firestore
       return null;
     }
 
-    const senderId = messageData.authorId; // ID of the sender
+    const senderId = messageData.authorId;
     const message = messageData.text;
-    const roomId = event.params.roomId; // Access roomId from event.params
+    const roomId = event.params.roomId;
 
     console.log('Function triggered for room:', roomId);
 
@@ -46,12 +46,12 @@ export const sendGroupMessageNotification = functions.firestore
     }
 
     // Exclude the sender from the participants
-    const recipientIds = participants.filter((id: string) => id !== senderId);
-
+    //const recipientIds = participants.filter((id: string) => id !== senderId);
     // Fetch FCM tokens for all recipients
-    console.log('Participants: ', recipientIds);
+
+    console.log('recipientIds: ', participants);
     const tokens: string[] = [];
-    for (const userId of recipientIds) {
+    for (const userId of participants) {
       const userDoc = await admin.firestore().collection("users").doc(userId).get();
       const fcmToken = userDoc.data()?.fcmToken;
       if (fcmToken) {
@@ -64,20 +64,37 @@ export const sendGroupMessageNotification = functions.firestore
       return null;
     }
 
-    const notification = {
-      notification: {
-        title: `${senderName} in Group Chat`,
-        body: message,
-      },
-      data: {
-        roomId: roomId,
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-    };
+const notification = {
+  notification: {
+    title: `${senderName} in Group Chat`,
+    body: message,
+  },
+  data: {
+    roomId: roomId,
+    route: "/home",
+    click_action: "FLUTTER_NOTIFICATION_CLICK", // Required for Android deep linking
+  },
+  android: {
+    notification: {
+      clickAction: "FLUTTER_NOTIFICATION_CLICK", // For handling notifications in Flutter
+      channelId: "Neelam", // Ensure this matches the app's notification channel
+      sound: "default", // Play the default notification sound
+    },
+  },
+};
+
+
 
     try {
       const response = await admin.messaging().sendEachForMulticast({ tokens, ...notification });
       console.log("Group notifications sent successfully:", response);
+       if (response.responses) {
+                  response.responses.forEach((resp, index) => {
+                      if (!resp.success) {
+                          console.error(`Failed to send notification to token ${tokens[index]}: ${resp.error?.message || 'Unknown error'}`);
+                      }
+                  });
+              }
       return null;
     } catch (error) {
       console.error("Error sending group notifications:", error);

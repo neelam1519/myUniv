@@ -3,11 +3,15 @@ import 'package:findany_flutter/materials/display_materials_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'displaymaterials_drive.dart';
+
 class Units extends StatefulWidget {
-  final String path;
+  final String year;
+  final String branch;
+  final String stream;
   final String subject;
 
-  const Units({super.key, required this.path, required this.subject});
+  const Units({super.key, required this.year, required this.branch, required this.stream,required this.subject});
 
   @override
   State<Units> createState() => _UnitsState();
@@ -61,15 +65,15 @@ class _UnitsState extends State<Units> {
                   color: Colors.blueGrey,
                 ),
                 onTap: () {
-                  String storagePath = "${widget.path}/UNIT ${index + 1}";
-                  displayMaterialsProvider.setStoragePath(storagePath);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DisplayMaterials(
-                        path: widget.path,
-                        unit: 'UNIT ${index + 1}',
+                      builder: (context) => DriveMaterials(
+                        year: widget.year,
+                        branch: widget.branch,
+                        stream: widget.stream,
                         subject: widget.subject,
+                        unit: 'UNIT ${index + 1}',
                       ),
                     ),
                   );

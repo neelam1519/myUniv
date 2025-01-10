@@ -157,7 +157,9 @@ class MaterialsHome extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => Units(
-                                  path: 'materials/${provider.yearSelectedOption}/$selectedSubject',
+                                  year:provider.yearSelectedOption ?? '3',
+                                  branch: provider.branchSelectedOption ?? 'CSE',
+                                  stream: provider.streamSelectedOption ?? "SOFTWARE ENGINEERING",
                                   subject: selectedSubject,
                                 ),
                               ),

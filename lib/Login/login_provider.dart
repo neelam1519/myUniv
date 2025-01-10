@@ -32,7 +32,12 @@ class LoginProvider with ChangeNotifier {
         'openid',
         'email',
         'https://www.googleapis.com/auth/userinfo.profile',
-      ]);
+      ]
+      // serverClientId: '87807759596-ijh25ipt7ig7bq78jl2lr70qjmhdu1m5.apps.googleusercontent.com',
+      // clientId: '87807759596-q977etq27s66ebo38spmdpq143tc9lba.apps.googleusercontent.com'
+          );
+
+      print("google signin data ${googleSignIn.clientId}   ${googleSignIn.serverClientId}  ${googleSignIn.scopes}");
 
       final GoogleSignInAccount? googleUser  = await googleSignIn.signIn();
       if (googleUser  == null) {
@@ -64,6 +69,7 @@ class LoginProvider with ChangeNotifier {
       return await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e, stackTrace) {
       print('Error signing in with Google: $e');
+      utils.showToastMessage('Login Error Please try after some time');
       print('Stack trace: $stackTrace');
       loadingDialog.dismiss();
       return null;

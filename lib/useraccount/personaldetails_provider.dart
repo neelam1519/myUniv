@@ -27,13 +27,13 @@ class PersonalDetailsProvider extends ChangeNotifier {
   }
 
   Future<void> getUserDetails() async {
-    DocumentReference documentReference = FirebaseFirestore.instance.doc('UserDetails/${await utils.getCurrentUserUID()}');
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('users/${await utils.getCurrentUserUID()}');
 
-    print("UID: UserDetails/${await utils.getCurrentUserUID()}");
+    print("UID: users/${await utils.getCurrentUserUID()}");
 
     DateTime currentTime = DateTime.now();
     loadingDialog.showDefaultLoading('Getting Details...');
-    _name = await sharedPreferences.getDataFromReference(documentReference, 'Name') ?? '';
+    _name = await sharedPreferences.getDataFromReference(documentReference, 'firstName') ?? '';
     _regNo = await sharedPreferences.getDataFromReference(documentReference, 'Registration Number') ?? '';
     _email = await sharedPreferences.getDataFromReference(documentReference, 'Email') ?? '';
     _selectedGender = await sharedPreferences.getDataFromReference(documentReference, 'Gender') ?? 'Male';
@@ -75,7 +75,7 @@ class PersonalDetailsProvider extends ChangeNotifier {
       'Username': _username,
     };
     String? uid = await utils.getCurrentUserUID();
-    DocumentReference documentReference = FirebaseFirestore.instance.doc('/UserDetails/$uid');
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('/users/$uid');
     fireStoreService.uploadMapDataToFirestore(userData, documentReference);
     sharedPreferences.storeMapValuesInSecureStorage(userData);
 
@@ -86,10 +86,8 @@ class PersonalDetailsProvider extends ChangeNotifier {
   }
 
   Future<bool> checkUsernameExists(String username) async {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('UserDetails')
-        .where('Username', isEqualTo: username)
-        .get();
+    print('UserName: $username');
+    final querySnapshot = await FirebaseFirestore.instance.collection('users').where('Username', isEqualTo: username).get();
 
     return querySnapshot.docs.isNotEmpty;
   }

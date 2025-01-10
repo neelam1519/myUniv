@@ -12,35 +12,43 @@ class AuthProviderStart with ChangeNotifier {
 
   AuthProviderStart() {
     print('Running auth start');
-    _setupInteractedMessage();
-    FirebaseMessaging.onMessage.listen(_onMessageReceived);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+    _setupInteractedMessage(); // Handle notification if the app was launched by one
+    FirebaseMessaging.onMessage.listen(_onMessageReceived); // Foreground messages
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage); // Background notification click
     _checkForUpdate();
   }
+
 
   User? get currentUser => _firebaseAuth.currentUser;
 
   Future<void> _setupInteractedMessage() async {
     final initialMessage = await _firebaseMessaging.getInitialMessage();
-    if (initialMessage != null) _handleMessage(initialMessage);
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
   }
 
+
   void _handleMessage(RemoteMessage message) {
-    print('Clicked the notification');
     if (kDebugMode) {
-      print('Entered handle message');
+      print('Notification Clicked: ${message.data}');
     }
-    if (kDebugMode) {
-      print('Notification Data: ${message.data}');
-    }
-    if (message.data['source'] != null) {
-      print('Source is not null: ${message.data['source']}');
+
+    final route = message.data['route']; // Example: extract `route` from data
+    if (route != null) {
+      print('Navigating to route: $route');
+      // Navigate to the specified route (adjust context usage as needed):
+      // You may need a BuildContext if navigation depends on Flutter's Navigator
+      // For example:
+      // Navigator.pushNamed(context, route);
     }
   }
 
   void _onMessageReceived(RemoteMessage message) {
+    print('Foreground Notification Received');
     _notificationService.showNotification(message);
   }
+
 
   Future<void> _checkForUpdate() async {
     InAppUpdate.checkForUpdate().then((info) {

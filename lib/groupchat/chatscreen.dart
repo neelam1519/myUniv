@@ -1,88 +1,136 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
+import 'package:open_file_plus/open_file_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'chatscreen_provider.dart';
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends StatelessWidget {
   final types.Room room;
 
   const ChatScreen({Key? key, required this.room}) : super(key: key);
 
-  @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
+  Future<void> _pickFile(BuildContext context, ChatProvider chatProvider) async {
+    final ImagePicker _picker = ImagePicker();
 
-class _ChatScreenState extends State<ChatScreen> {
-  List<types.Message> _messages = [];
-  late types.User _user;
+    // Try picking an image or video
+    final XFile? imageOrVideo =
+    await _picker.pickImage(source: ImageSource.gallery);
 
-  @override
-  void initState() {
-    super.initState();
-    _loadMessages();
-    _loadCurrentUser();
-  }
+    if (imageOrVideo != null) {
+      try {
+        final fileSize = await imageOrVideo.length();
+        if (fileSize > 10 * 1024 * 1024) {
+          print("File too large. Maximum allowed size is 10MB.");
+          return;
+        }
 
-  Future<void> _loadCurrentUser() async {
-    final firebaseUser = FirebaseChatCore.instance.firebaseUser;
-    if (firebaseUser != null) {
-      setState(() {
-        _user = types.User(id: firebaseUser.uid);
-      });
+        // Create a partial file message for image/video
+        final partialFile = types.PartialFile(
+          mimeType: imageOrVideo.mimeType ?? 'application/octet-stream',
+          name: imageOrVideo.name,
+          size: fileSize,
+          uri: imageOrVideo.path,
+        );
+
+        FirebaseChatCore.instance.sendMessage(partialFile, room.id);
+      } catch (e) {
+        print("Error picking file: $e");
+      }
+    } else {
+      // Use FilePicker for other file types
+      final result = await FilePicker.platform.pickFiles();
+
+      if (result != null && result.files.isNotEmpty) {
+        try {
+          final pickedFile = result.files.first;
+
+          if (pickedFile.size > 10 * 1024 * 1024) {
+            print("File too large. Maximum allowed size is 10MB.");
+            return;
+          }
+
+          // Create a partial file message for other files
+          final partialFile = types.PartialFile(
+            mimeType: pickedFile.extension != null
+                ? 'application/${pickedFile.extension}'
+                : 'application/octet-stream',
+            name: pickedFile.name,
+            size: pickedFile.size,
+            uri: pickedFile.path!,
+          );
+
+          FirebaseChatCore.instance.sendMessage(partialFile, room.id);
+        } catch (e) {
+          print("Error picking file: $e");
+        }
+      }
     }
   }
 
-  Future<void> _loadMessages() async {
-    FirebaseChatCore.instance.messages(widget.room).listen((messages) {
-      setState(() {
-        _messages = messages;
-      });
-    });
-  }
-
-  /// Send message and update room metadata with the last message and time
-  void _handleSendPressed(types.PartialText message) async {
-    // Send the message
-    FirebaseChatCore.instance.sendMessage(message, widget.room.id);
-
-    print("Message: ${message.toJson()}");
-    print("Users:${widget.room.users}");
-
-    // Create the new message object to update room's last messages
-    final newMessage = types.TextMessage(
-      author: types.User(id: FirebaseChatCore.instance.firebaseUser!.uid),
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      id: DateTime.now().toString(),
-      text: message.text,
-    );
-
-    // Update the room with the new last message
-    final updatedRoom = types.Room(
-      id: widget.room.id,
-      lastMessages: [newMessage],
-      type: widget.room.type,
-      users: widget.room.users,
-      updatedAt: DateTime.now().millisecondsSinceEpoch, // Add current timestamp
-    );
-
-    // Update room metadata in Firebase
-    FirebaseChatCore.instance.updateRoom(updatedRoom);
-
-    print("Updated Room: ${updatedRoom.toJson()}");
-  }
-
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.room.name ?? 'Group Chat'),
-      ),
-      body: SafeArea(
-        child: Chat(
-          messages: _messages,
-          onSendPressed: _handleSendPressed,
-          user: _user,
+    return ChangeNotifierProvider(
+      create: (_) =>
+      ChatProvider()
+        ..loadCurrentUser()
+        ..loadMessages(room),
+      child: Scaffold(
+        body: SafeArea(
+          child: Consumer<ChatProvider>(
+            builder: (context, chatProvider, child) {
+              return Column(
+                children: [
+                  Expanded(
+                    child: Chat(
+                      showUserNames: true,
+                      showUserAvatars: true,
+                      messages: chatProvider.messages,
+                      onSendPressed: (types.PartialText message) {
+                        chatProvider.handleSendPressed(message, room);
+                      },
+                      theme: DefaultChatTheme(
+                        // Customize background and message styles
+                        primaryColor: Colors.blueAccent,  // Custom primary color for sent messages
+                        // receivedMessageBodyTextStyle: TextStyle(
+                        //   color: Colors.black,  // Text color for received messages
+                        //   backgroundColor: Colors.grey[200],  // Background color for received messages
+                        // ),
+                        // sentMessageBodyTextStyle: TextStyle(
+                        //   color: Colors.white,  // Text color for sent messages
+                        //   backgroundColor: Colors.blueAccent,  // Background color for sent messages
+                        // ),
+                        // Customize other properties as needed
+                         //messageBorderRadius: 20,
+                        // messageInsetsHorizontal: 12,
+                        // messageInsetsVertical: 8,
+                        // Customize the styling of user name, avatars, and more
+                      ),
+                      onMessageTap: (context, message) async {
+                        if (message is types.FileMessage) {
+                          try {
+                            await OpenFile.open(message.uri);
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Unable to open the file')),
+                            );
+                          }
+                        }
+                      },
+                      user: chatProvider.user,
+                      isAttachmentUploading: chatProvider.isAttachmentUploading,
+                      onAttachmentPressed: () async {
+                        await _pickFile(context, chatProvider);
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

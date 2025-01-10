@@ -40,14 +40,12 @@ class HomeProvider with ChangeNotifier {
 
       if (userSnapshot.exists) {
         print('User is an old user. Fetching details...');
-        loadingDialog.showDefaultLoading("Getting Details...");
         final data = userSnapshot.data() as Map<String, dynamic>?;
 
         email = data?['Email'] as String? ?? "Unknown";
         name = data?['firstName'] as String? ?? "User";
         imageUrl = data?['imageUrl'] as String? ?? "";
 
-        loadingDialog.dismiss();
 
       } else {
         loadingDialog.showDefaultLoading("Hello, New User! Hold tight—We're updating your account");
@@ -77,9 +75,10 @@ class HomeProvider with ChangeNotifier {
         await FirebaseChatCore.instance.createUserInFirestore(
           types.User(
             firstName: name,
-            id: uid!, // UID from Firebase Authentication
+            id: uid!,
             imageUrl: imageUrl,
-            role: types.Role.admin
+            role: types.Role.user,
+            metadata: {},
           ),
         );
       }
@@ -92,12 +91,20 @@ class HomeProvider with ChangeNotifier {
         'fcmToken' : token!,
       };
 
+      final Map<String, String> sharedPreference = {
+        'Email': email!,
+        'Registration Number': regNo,
+        'fcmToken' : token,
+        "firstName": name!,
+        "imageUrl": imageUrl!,
+      };
+
       print('User Details: $data');
 
       DocumentReference userToken = FirebaseFirestore.instance.doc('users/$uid');
       fireStoreService.uploadMapDataToFirestore(data, userToken);
 
-      sharedPreferences.storeMapValuesInSecureStorage(data);
+      sharedPreferences.storeMapValuesInSecureStorage(sharedPreference);
 
       loadingDialog.dismiss();
     } catch (error) {
@@ -110,22 +117,36 @@ class HomeProvider with ChangeNotifier {
 
   Future<void> requestPermission() async {
     try {
-      NotificationSettings settings = await _messaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-      if (kDebugMode) {
-        print('User granted permission: ${settings.authorizationStatus}');
+      NotificationSettings settings = await _messaging.getNotificationSettings();
+
+      // If the permission is already denied, don't ask for it again
+      if (settings.authorizationStatus == AuthorizationStatus.denied ||
+          settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+        // Only request permission if not denied or not determined
+        settings = await _messaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
+
+        if (kDebugMode) {
+          print('User granted permission: ${settings.authorizationStatus}');
+        }
+      } else {
+        // If permission is already granted or restricted, no need to ask
+        if (kDebugMode) {
+          print('Notification permission already granted or restricted');
+        }
       }
     } catch (error) {
       print('Error requesting notification permissions: $error');
     }
   }
+
 
   String? get announcementText => _announcementText;
 

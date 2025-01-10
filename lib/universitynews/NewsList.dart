@@ -51,8 +51,20 @@ class _NewsListScreenState extends State<NewsListScreen> {
           body: StreamBuilder<List<DocumentSnapshot>>(
             stream: provider.newsStream,
             builder: (context, snapshot) {
+              // Check for loading state
+              print('Snapshot: $snapshot');
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
+              }
+
+              // If no news data is found, display the "No News" message
+              if (snapshot.data!.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No News Available',
+                    style: TextStyle(fontSize: 18.0, color: Colors.grey),
+                  ),
+                );
               }
 
               final filteredDocs = provider.filterNews(snapshot.data!);
@@ -63,6 +75,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                 itemBuilder: (context, index) {
                   var doc = filteredDocs[index];
                   final data = doc.data() as Map<String, dynamic>?;
+
                   final pdfUrl = data?.containsKey('pdfUrl') ?? false ? data!['pdfUrl'] as String? : null;
                   final timestamp = (doc['timestamp'] as Timestamp).toDate();
 

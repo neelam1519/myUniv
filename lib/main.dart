@@ -1,10 +1,14 @@
+import 'package:findany_flutter/busbooking/busbookinghome.dart';
+import 'package:findany_flutter/groupchat/chatscreen.dart';
+import 'package:findany_flutter/groupchat/groupchathome.dart';
+import 'package:findany_flutter/materials/materialshome.dart';
+import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/useraccount/acedemicdetails_provider.dart';
 import 'package:findany_flutter/provider/addnews_provider.dart';
 import 'package:findany_flutter/provider/addnotification_provider.dart';
 import 'package:findany_flutter/provider/auth_provider.dart';
 import 'package:findany_flutter/busbooking/busbooking_home_provider.dart';
 import 'package:findany_flutter/materials/display_materials_provider.dart';
-import 'package:findany_flutter/groupchat/group_chat_provider.dart';
 import 'package:findany_flutter/busbooking/history_provider.dart';
 import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/Login/login_provider.dart';
@@ -20,63 +24,47 @@ import 'package:findany_flutter/Other/review_provider.dart';
 import 'package:findany_flutter/materials/showfiles_provider.dart';
 import 'package:findany_flutter/useraccount/useraccount_provider.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
+import 'package:findany_flutter/groupchat/groupchathome_provider.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'Firebase/storage.dart';
 import 'Home.dart';
-import 'Login/login.dart';
 import 'auth_check_screen.dart';
 import 'busbooking/fetch_buslist_provider.dart';
 import 'firebase_options.dart';
 import 'package:findany_flutter/services/sendnotification.dart';
 
+import 'groupchat/chatscreen_provider.dart';
+import 'materials/displaymaterials_drive_provider.dart';
+
+late String routeToGo = '/';
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // print("Handling a background message: ${message.messageId}");
-   NotificationService().showNotification(message);
-}
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  routeToGo = '/groupchat';
+  NotificationService().showNotification(message);
 
-final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  MobileAds.instance.initialize();
-
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  if (kIsWeb) {
-    final GoogleSignIn googleSignIn = GoogleSignIn(
-      clientId: '87807759596-ijh25ipt7ig7bq78jl2lr70qjmhdu1m5.apps.googleusercontent.com',
-    );
-    try {
-      await googleSignIn.signInSilently();
-    } catch (error) {
-      print('Error during Google Sign-In initialization: $error');
-    }
-  }
-
-  const initializationSettings = InitializationSettings(
-    android: AndroidInitializationSettings('@mipmap/transperentlogo'),
-  );
-
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
+  NotificationService().initialize();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   const MyApp({super.key});
 
 
@@ -100,24 +88,47 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PdfScreenProvider()),
         ChangeNotifierProvider(create: (_) => AddNewsProvider()),
         ChangeNotifierProvider(create: (_) => AddNotificationProvider()),
-        ChangeNotifierProvider(create: (_) => GroupChatProvider()),
         ChangeNotifierProvider(create: (_) => BusBookedHistoryProvider()),
         ChangeNotifierProvider(create: (_) => NewsDetailsScreenProvider()),
         ChangeNotifierProvider(create: (_) => NotificationHomeProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
-        ChangeNotifierProvider(create: (_) => DisplayMaterialsProvider(firebaseStorageHelper: FirebaseStorageHelper(),
-            loadingDialog: LoadingDialog(),
-            notificationService: NotificationService(),
-            utils: Utils(),
-          ),
-        ),
+        ChangeNotifierProvider(create: (_) => GroupChatHomeProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => PDFProvider()),
+        ChangeNotifierProvider(create: (_) => DisplayMaterialsProvider(
+          firebaseStorageHelper: FirebaseStorageHelper(),
+          loadingDialog: LoadingDialog(),
+          notificationService: NotificationService(),
+          utils: Utils(),
+        )),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey, // Set the navigator key
         title: 'FindAny',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.blue),
         home: AuthCheck(),
         builder: EasyLoading.init(),
+        onGenerateRoute: (settings) {
+          if (settings.name == '/chatPage') {
+            final args = settings.arguments as Map<String, dynamic>;
+            final roomId = args['roomId'];
+            return MaterialPageRoute(
+              builder: (context) => ChatScreen(room: roomId),
+            );
+          }
+          return MaterialPageRoute(
+            builder: (context) => AuthCheck(),
+          );
+        },
+        routes: {
+          '/auth': (context) => AuthCheck(),
+          '/home': (context) => Home(),
+          '/busBooking': (context) => BusBookingHome(),
+          '/materials': (context) => MaterialsHome(),
+          '/newsList': (context) => NewsListScreen(),
+          '/groupchat': (context) => GroupChatHome(),
+        },
       ),
     );
   }

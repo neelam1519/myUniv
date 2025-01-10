@@ -1,267 +1,226 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:findany_flutter/groupchat/CreateRoom.dart';
-import 'package:findany_flutter/utils/sharedpreferences.dart';
-import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-
+import 'package:provider/provider.dart';
+import 'chatcard.dart';
+import 'groupchathome_provider.dart';
+import 'CreateRoom.dart';
 import 'chatscreen.dart';
+import 'package:findany_flutter/utils/LoadingDialog.dart';
 
 class GroupChatHome extends StatefulWidget {
-  const GroupChatHome({super.key});
+  const GroupChatHome({Key? key}) : super(key: key);
 
   @override
   _GroupChatHomeState createState() => _GroupChatHomeState();
 }
 
 class _GroupChatHomeState extends State<GroupChatHome> {
+  late GroupChatHomeProvider provider;
+
   @override
   void initState() {
     super.initState();
-    _ensureUserRegistered();
+    provider = Provider.of<GroupChatHomeProvider>(context, listen: false);
+    provider.fetchUnJoinedGroups();
+    provider.checkAdminStatus();
   }
 
-  Future<void> _ensureUserRegistered() async {
-    try {
-      String? uid = await Utils().getCurrentUserUID();
-      if (uid == null) {
-        throw Exception("User not logged in");
-      }
-      // Check if the user already exists in Firestore
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
-      if (!userDoc.exists) {
-        String? name = await Utils().getCurrentUserDisplayName();
-        if (name == null || name.isEmpty) {
-          throw Exception("User display name not found");
+  Widget _buildJoinedGroups() {
+    return StreamBuilder<List<types.Room>>(
+      stream: FirebaseChatCore.instance.rooms(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
         }
 
-        String renamed = Utils().removeTextAfterFirstNumber(name);
-        DocumentReference documentReference = FirebaseFirestore.instance.doc('UserDetails/$uid');
-        String? url = await SharedPreferences().getDataFromReference(documentReference, 'ProfileImageURL');
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Text(
+              "No Groups available",
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+          );
+        }
 
-        await FirebaseChatCore.instance.createUserInFirestore(
-          types.User(
-            firstName: renamed,
-            id: uid,
-            imageUrl: url ?? '',
-            lastName: '',
-          ),
+        final rooms = snapshot.data!;
+
+        return Column(
+          children: rooms.map((room) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('rooms')
+                  .doc(room.id)
+                  .collection('messages')
+                  .orderBy('createdAt', descending: true)
+                  .limit(1)
+                  .snapshots(),
+              builder: (context, messageSnapshot) {
+                String lastMessage = "No messages yet";
+                DateTime lastMessageTime = DateTime.now(); // Default value
+                String profileImageUrl =
+                    room.imageUrl ?? "assets/images/groupchat.png";
+
+                if (messageSnapshot.hasData && messageSnapshot.data!.docs.isNotEmpty) {
+                  final lastMessageData = messageSnapshot.data!.docs.first.data()
+                  as Map<String, dynamic>;
+
+                  // Safely check if 'text' exists
+                  if (lastMessageData.containsKey('text')) {
+                    lastMessage = lastMessageData['text'] as String;
+                  } else if (lastMessageData.containsKey('name')) {
+                    // Fallback for file or image messages with a 'name' field
+                    lastMessage = "File: ${lastMessageData['name']}";
+                  } else {
+                    lastMessage = "Unsupported message type";
+                  }
+
+                  // Safely handle 'createdAt' field
+                  if (lastMessageData.containsKey('createdAt')) {
+                    final timestamp = lastMessageData['createdAt'] as Timestamp?;
+                    if (timestamp != null) {
+                      lastMessageTime = timestamp.toDate();
+                    }
+                  }
+                }
+
+                return GestureDetector(
+                  onTap: () {
+                    print("Clicked on Room ID: ${room.id}");
+                    // Navigate to the room's chat screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(room: room),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    child: ChatCard(
+                      chatName: room.name ?? "Untitled Room",
+                      lastMessage: lastMessage,
+                      lastMessageTime: lastMessageTime,
+                      profileImageUrl: profileImageUrl,
+                    ),
+                  ),
+                );
+              },
+            );
+          }).toList(),
         );
-
-        print("User registered: $uid");
-        _addUserToGroup("on0PYULNaQE0H8zRlC30", uid);
-      } else {
-        print("User already registered: $uid");
-        _addUserToGroup("on0PYULNaQE0H8zRlC30", uid);
-      }
-    } catch (e) {
-      print('Error during user registration: $e');
-    }
+      },
+    );
   }
 
-  Future<void> _addUserToGroup(String groupId, String userId) async {
-    try {
-      final groupDoc = FirebaseFirestore.instance.collection('rooms').doc(groupId);
-
-      // Fetch the group document
-      final groupSnapshot = await groupDoc.get();
-
-      if (!groupSnapshot.exists) {
-        print('Group $groupId does not exist.');
-        return;
-      }
-
-      final groupData = groupSnapshot.data();
-      final List<dynamic> users = groupData?['userIds'] ?? [];
-
-      // Check if the user is already in the group
-      if (users.contains(userId)) {
-        print('User $userId is already in the group.');
-        return;
-      }
-      // Add user to the group
-      await groupDoc.update({
-        'userIds': FieldValue.arrayUnion([userId]),
-      });
-
-      print('User $userId added to group $groupId.');
-    } catch (error) {
-      print('Error adding user to group: $error');
+  Widget _buildUnJoinedGroups() {
+    List<Map<String, dynamic>> groups = provider.unJoinedGroups;
+    if(groups.isEmpty){
+      return Center(
+        child: Text("No Un Joined Groups Found"),
+      );
     }
+    return ListView.builder(
+      itemCount: groups.length,
+      itemBuilder: (BuildContext context, int index) {
+        var room = groups[index];
+        return Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          elevation: 8,
+          shadowColor: Colors.black.withOpacity(0.2),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(20.0),
+            title: Text(
+              room['name'] ?? "Untitled Room",
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20),
+            ),
+            subtitle: Text("Room ID: ${room['id']}", style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey)),
+            trailing: ElevatedButton(
+              onPressed: () {
+                provider.joinGroup(room['id']);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors .blueAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              ),
+              child: Text("Join", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            onTap: () {
+              // Optionally, navigate to the room's chat screen or show group details
+            },
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Group Chats',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 22,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.blueAccent,
-        elevation: 0,
-      ),
-      body: StreamBuilder<List<types.Room>>(
-        stream: FirebaseChatCore.instance.rooms(),
-        builder: (context, snapshot) {
-          print("Snapshot: ${snapshot.data}");
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(fontSize: 16),
+    return Consumer<GroupChatHomeProvider>(
+      builder: (context, provider, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'Group Chats',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 24,
               ),
-            );
-          }
-
-          final rooms = snapshot.data ?? [];
-          if (rooms.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'No groups yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => CreateRoomPage()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: const Text('Create a Group'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-            itemCount: rooms.length,
-            itemBuilder: (context, index) {
-              final room = rooms[index];
-              final lastMessage = room.lastMessages?.isNotEmpty ?? false
-                  ? room.lastMessages!.last
-                  : null;
-
-              // Extract last message text and time
-              final lastMessageText = lastMessage is types.TextMessage
-                  ? lastMessage.text
-                  : 'No messages yet';
-              final formattedTime = room.updatedAt != null
-                  ? Utils.formatTimestamp(room.updatedAt!)
-                  : '';
-              final unreadCount = room.metadata?['unreadCount'] ?? 0;
-
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.blueAccent,
+            elevation: 0,
+            actions: provider.isAdmin ? [
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ChatScreen(room: room),
+                      builder: (context) => CreateRoomPage(),
                     ),
                   );
                 },
-                child: Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.blue.shade100,
-                      radius: 25,
-                      child: room.imageUrl != null
-                          ? ClipRRect(
-                        borderRadius: BorderRadius.circular(50),
-                        child: Image.network(
-                          room.imageUrl!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                          : Text(
-                        room.name != null && room.name!.isNotEmpty
-                            ? room.name![0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    title: Text(
-                      room.name ?? 'Unknown Room',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                      ),
-                    ),
-                    subtitle: Text(
-                      lastMessageText,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          formattedTime,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        if (unreadCount > 0)
-                          Container(
-                            margin: const EdgeInsets.only(top: 5),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$unreadCount',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+              ),
+            ] : null,
+          ),
+          body: provider.selectedIndex == 0
+              ? _buildJoinedGroups()  // Display joined groups
+              : _buildUnJoinedGroups(),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: provider.selectedIndex,
+            onTap: provider.setSelectedIndex,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.group),
+                label: 'Joined Groups',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.add_circle_outline),
+                label: 'Unjoined Groups',
+              ),
+            ],
+            selectedItemColor: Colors.blueAccent,
+            unselectedItemColor: Colors.grey,
+            backgroundColor: Colors.white,
+            elevation: 5,
+          ),
+        );
+      },
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    provider.clearList();
   }
 }

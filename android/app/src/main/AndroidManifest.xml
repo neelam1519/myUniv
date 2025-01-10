@@ -20,6 +20,8 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
             android:directBootAware="true">
+            android:networkSecurityConfig="@xml/network_security_config"
+            android:usesCleartextTraffic="true"
 
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
@@ -60,7 +62,6 @@
             android:value="ca-app-pub-7692584421652718~9352982817"/>
 
     </application>
-
 
     <queries>
         <intent>

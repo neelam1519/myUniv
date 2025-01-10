@@ -1,8 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/busbooking/busbookinghome.dart';
 import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
 import 'package:findany_flutter/utils/grid_item.dart';
+import 'package:findany_flutter/utils/test.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,7 +18,6 @@ import 'home_drawer_screen.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
-
   @override
   State<Home> createState() => _HomeState();
 }
@@ -36,6 +36,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _homeProvider = Provider.of<HomeProvider>(context, listen: false);
       _homeProvider.loadData(context);
       utils.updateToken();
+      _homeProvider.requestPermission();
     });
   }
 
@@ -123,6 +124,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         imagePath: 'assets/images/universitynews.jpeg',
                         title: 'University News',
                         destination: NewsListScreen(),
+                      ),
+                      GridItem(
+                        imagePath: 'assets/images/busbooking.png',
+                        title: 'Bus Booking',
+                        destination: PDFViewerPage(pdfUrl: "https://drive.google.com/uc?export=download&id=1TB33HVqiX6JaUO1QsEEWgbM_51ffpsSp"),
                       ),
                     ],
                   ),
