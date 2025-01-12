@@ -79,7 +79,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => NewsListProvider()),
         ChangeNotifierProvider(create: (_) => BusBookingHomeProvider()),
-        ChangeNotifierProvider(create: (_) => FetchBuslistProvider()),
+        ChangeNotifierProvider(create: (_) => FetchBusListProvider()),
         ChangeNotifierProvider(create: (_) => AcademicDetailsProvider()),
         ChangeNotifierProvider(create: (_) => QAndAProvider()),
         ChangeNotifierProvider(create: (_) => PersonalDetailsProvider()),

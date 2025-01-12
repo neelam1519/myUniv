@@ -1,8 +1,9 @@
+import 'package:findany_flutter/busbooking/buslist.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:intl/intl.dart';
 import 'busbooking_home_provider.dart';
 
 class BusBookingHome extends StatefulWidget {
@@ -37,10 +38,6 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       ),
       body: Consumer<BusBookingHomeProvider>(
         builder: (context, busHomeProvider, child) {
-          // Set default date as today's date if it's not already set
-          if (busHomeProvider.selectedDateFormatted == null) {
-            busHomeProvider.selectedDateFormatted = DateFormat('yyyy-MM-dd').format(DateTime.now());
-          }
 
           return AnimationLimiter(
             child: Padding(
@@ -59,7 +56,7 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                       value: busHomeProvider.selectedFrom,
                       items: busHomeProvider.fromPlaces,
                       onChanged: (newValue) async {
-                        //await busHomeProvider.updateFromPlace(newValue);
+                        await busHomeProvider.updateSelectedFrom(newValue);
                       },
                     ),
                     const SizedBox(height: 16.0),
@@ -68,22 +65,34 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                       value: busHomeProvider.selectedTo,
                       items: busHomeProvider.toPlaces,
                       onChanged: (newValue) async {
-                        //await busHomeProvider.updateToPlace(newValue);
+                        await busHomeProvider.updateSelectedTo(newValue);
                       },
                     ),
                     const SizedBox(height: 16.0),
                     _buildDateField(
                       label: 'Select Date',
-                      selectedDate: DateFormat('dd-MM-yyyy').format(DateTime.now()), // Set today's date
+                      selectedDate: DateFormat('dd-MM-yyyy').format(busHomeProvider.selectedDate), // Set today's date
                       onDateChanged: (newDate) async {
-                        // Update the selected date in the provider
-                        //await busHomeProvider.updateSelectedDate(newDate);
+                        print('DateTIme: $newDate  ${newDate.runtimeType}');
+                        await busHomeProvider.updateSelectedDate(newDate!);
                       },
+
                     ),
                     const SizedBox(height: 24.0),
                     ElevatedButton(
                       onPressed: () async {
-                        await busHomeProvider.searchBuses(context);
+
+                        print("Selected: ${busHomeProvider.selectedFrom!}   ${busHomeProvider.selectedTo!}   ${busHomeProvider.selectedDate}");
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>  BusList(
+                              fromLocation: busHomeProvider.selectedFrom!,
+                              toLocation: busHomeProvider.selectedTo! ,
+                              selectedDate: busHomeProvider.selectedDate ,
+                            ),
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14.0),
@@ -133,7 +142,6 @@ class _BusBookingHomeState extends State<BusBookingHome> {
     );
   }
 
-
   Widget _buildDateField({
     required String label,
     required String selectedDate,
@@ -155,13 +163,13 @@ class _BusBookingHomeState extends State<BusBookingHome> {
           onPressed: () async {
             DateTime? pickedDate = await showDatePicker(
               context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime(2020),
+              initialDate: DateTime.now(), // Today as the initial date
+              firstDate: DateTime.now(),    // Prevent past date selection
               lastDate: DateTime(2101),
             );
             if (pickedDate != null) {
-              String formattedDate = DateFormat('dd-MM-yyyy').format(pickedDate);
-              onDateChanged(pickedDate);
+              print('Picked Date: $pickedDate');
+              onDateChanged(pickedDate);  // Update date in the provider
             }
           },
         ),
@@ -170,14 +178,15 @@ class _BusBookingHomeState extends State<BusBookingHome> {
         DateTime? pickedDate = await showDatePicker(
           context: context,
           initialDate: DateTime.now(),
-          firstDate: DateTime(2020),
+          firstDate: DateTime.now(),
           lastDate: DateTime(2101),
         );
         if (pickedDate != null) {
-          String formattedDate = DateFormat('dd-MM-yyyy').format(pickedDate);
+          print('Picked Date: $pickedDate');
           onDateChanged(pickedDate);
         }
       },
     );
   }
+
 }

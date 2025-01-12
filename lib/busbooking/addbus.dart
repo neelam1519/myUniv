@@ -1,6 +1,7 @@
 import 'package:findany_flutter/Firebase/realtimedatabase.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class AddBusScreen extends StatefulWidget {
   const AddBusScreen({Key? key}) : super(key: key);
@@ -14,31 +15,30 @@ class _AddBusScreenState extends State<AddBusScreen> {
   final TextEditingController _busNumberController = TextEditingController();
   final TextEditingController _totalSeatsController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _departureDateController = TextEditingController();
+  final TextEditingController _departureTimeController = TextEditingController();
+  final TextEditingController _arrivalDateController = TextEditingController();
+  final TextEditingController _arrivalTimeController = TextEditingController();
   RealTimeDatabase realTimeDatabase = RealTimeDatabase();
 
   final List<String> _fromLocations = [
     'City Center',
     'University',
     'Train Station',
+    'Airport',
+    'Bus Terminal',
   ];
 
-  final Map<String, Map<String, Map<String, List<String>>>> _schedule = {
-    'City Center': {
-      'Airport': {
-        '2025-01-15': ['10:00 AM', '02:00 PM', '06:00 PM'],
-        '2025-01-16': ['10:00 AM', '02:00 PM'],
-      },
-      'Bus Terminal': {
-        '2025-01-15': ['09:00 AM', '01:00 PM', '05:00 PM'],
-        '2025-01-16': ['09:00 AM', '01:00 PM'],
-      },
-    },
-  };
+  final List<String> _toLocations = [
+    'City Center',
+    'University',
+    'Train Station',
+    'Airport',
+    'Bus Terminal',
+  ];
 
   String? _selectedFrom;
   String? _selectedTo;
-  String? _selectedDate;
-  String? _selectedTime;
 
   Future<void> _addBus() async {
     if (_formKey.currentState!.validate()) {
@@ -48,8 +48,10 @@ class _AddBusScreenState extends State<AddBusScreen> {
           'busNumber': busCount,
           'from': _selectedFrom,
           'to': _selectedTo,
-          'date': _selectedDate,
-          'time': _selectedTime,
+          'departureDate': _departureDateController.text.trim(),
+          'departureTime': _departureTimeController.text.trim(),
+          'arrivalDate': _arrivalDateController.text.trim(),
+          'arrivalTime': _arrivalTimeController.text.trim(),
           'totalSeats': int.parse(_totalSeatsController.text.trim()),
           'availableSeats': int.parse(_totalSeatsController.text.trim()),
           'price': double.parse(_priceController.text.trim()),
@@ -72,12 +74,40 @@ class _AddBusScreenState extends State<AddBusScreen> {
     _busNumberController.clear();
     _totalSeatsController.clear();
     _priceController.clear();
+    _departureDateController.clear();
+    _departureTimeController.clear();
+    _arrivalDateController.clear();
+    _arrivalTimeController.clear();
     setState(() {
       _selectedFrom = null;
       _selectedTo = null;
-      _selectedDate = null;
-      _selectedTime = null;
     });
+  }
+
+  Future<void> _pickDate(TextEditingController controller) async {
+    DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+    if (selectedDate != null) {
+      setState(() {
+        controller.text = DateFormat('yyyy-MM-dd').format(selectedDate);
+      });
+    }
+  }
+
+  Future<void> _pickTime(TextEditingController controller) async {
+    TimeOfDay? selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (selectedTime != null) {
+      setState(() {
+        controller.text = selectedTime.format(context);
+      });
+    }
   }
 
   @override
@@ -105,9 +135,6 @@ class _AddBusScreenState extends State<AddBusScreen> {
                   onChanged: (value) {
                     setState(() {
                       _selectedFrom = value;
-                      _selectedTo = null;
-                      _selectedDate = null;
-                      _selectedTime = null;
                     });
                   },
                   items: _fromLocations.map<DropdownMenuItem<String>>((from) {
@@ -119,89 +146,101 @@ class _AddBusScreenState extends State<AddBusScreen> {
                   validator: (value) => value == null ? 'Please select a starting location' : null,
                 ),
                 const SizedBox(height: 16.0),
-                if (_selectedFrom != null)
-                  DropdownButtonFormField<String>(
-                    value: _selectedTo,
-                    decoration: const InputDecoration(
-                      labelText: 'To',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedTo = value;
-                        _selectedDate = null;
-                        _selectedTime = null;
-                      });
-                    },
-                    items: _schedule[_selectedFrom]!
-                        .keys
-                        .map<DropdownMenuItem<String>>((to) {
-                      return DropdownMenuItem<String>(
-                        value: to,
-                        child: Text(to),
-                      );
-                    }).toList(),
-                    validator: (value) => value == null ? 'Please select a destination' : null,
+                DropdownButtonFormField<String>(
+                  value: _selectedTo,
+                  decoration: const InputDecoration(
+                    labelText: 'To',
+                    border: OutlineInputBorder(),
                   ),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTo = value;
+                    });
+                  },
+                  items: _toLocations.map<DropdownMenuItem<String>>((to) {
+                    return DropdownMenuItem<String>(
+                      value: to,
+                      child: Text(to),
+                    );
+                  }).toList(),
+                  validator: (value) => value == null ? 'Please select a destination' : null,
+                ),
                 const SizedBox(height: 16.0),
-                if (_selectedFrom != null && _selectedTo != null)
-                  DropdownButtonFormField<String>(
-                    value: _selectedDate,
-                    decoration: const InputDecoration(
-                      labelText: 'Date',
-                      border: OutlineInputBorder(),
+                TextFormField(
+                  controller: _arrivalDateController,
+                  decoration: InputDecoration(
+                    labelText: 'Arrival Date',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () => _pickDate(_arrivalDateController),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedDate = value;
-                        _selectedTime = null;
-                      });
-                    },
-                    items: _schedule[_selectedFrom]![_selectedTo]!
-                        .keys
-                        .map<DropdownMenuItem<String>>((date) {
-                      return DropdownMenuItem<String>(
-                        value: date,
-                        child: Text(date),
-                      );
-                    }).toList(),
-                    validator: (value) => value == null ? 'Please select a date' : null,
                   ),
+                  readOnly: true,
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please select an arrival date'
+                      : null,
+                ),
                 const SizedBox(height: 16.0),
-                if (_selectedFrom != null && _selectedTo != null && _selectedDate != null)
-                  DropdownButtonFormField<String>(
-                    value: _selectedTime,
-                    decoration: const InputDecoration(
-                      labelText: 'Time',
-                      border: OutlineInputBorder(),
+                TextFormField(
+                  controller: _arrivalTimeController,
+                  decoration: InputDecoration(
+                    labelText: 'Arrival Time',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.access_time),
+                      onPressed: () => _pickTime(_arrivalTimeController),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedTime = value;
-                      });
-                    },
-                    items: _schedule[_selectedFrom]![_selectedTo]![_selectedDate]!
-                        .map<DropdownMenuItem<String>>((time) {
-                      return DropdownMenuItem<String>(
-                        value: time,
-                        child: Text(time),
-                      );
-                    }).toList(),
-                    validator: (value) => value == null ? 'Please select a time' : null,
                   ),
+                  readOnly: true,
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please select an arrival time'
+                      : null,
+                ),
                 const SizedBox(height: 16.0),
-                if (_selectedTime != null)
-                  TextFormField(
-                    controller: _priceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Ticket Price',
-                      border: OutlineInputBorder(),
+                TextFormField(
+                  controller: _departureDateController,
+                  decoration: InputDecoration(
+                    labelText: 'Departure Date',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () => _pickDate(_departureDateController),
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Please enter the ticket price'
-                        : null,
                   ),
+                  readOnly: true,
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please select a departure date'
+                      : null,
+                ),
+                const SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _departureTimeController,
+                  decoration: InputDecoration(
+                    labelText: 'Departure Time',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.access_time),
+                      onPressed: () => _pickTime(_departureTimeController),
+                    ),
+                  ),
+                  readOnly: true,
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please select a departure time'
+                      : null,
+                ),
+                const SizedBox(height: 16.0),
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ticket Price',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please enter the ticket price'
+                      : null,
+                ),
                 const SizedBox(height: 16.0),
                 TextFormField(
                   controller: _totalSeatsController,
