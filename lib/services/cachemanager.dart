@@ -16,18 +16,10 @@ class CustomCacheManager {
     );
 
     try {
-      // Check if the file is already cached
-      final fileInfo = await cacheManager.getFileFromCache(url);
 
-      if (fileInfo != null) {
-        print('File found in cache: ${fileInfo.file.path}');
-        return _ensurePdfExtension(fileInfo.file);
-      } else {
-        // If the file is not cached, download and store it
-        print('File not found in cache, downloading...');
-        final file = await cacheManager.getSingleFile(url);
-        return _ensurePdfExtension(file);
-      }
+      final file = await cacheManager.getSingleFile(url);
+      return _ensurePdfExtension(file);
+
     } catch (e) {
       print('Error downloading or fetching PDF: $e');
       rethrow;

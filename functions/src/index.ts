@@ -64,26 +64,24 @@ export const sendGroupMessageNotification = functions.firestore
       return null;
     }
 
-const notification = {
-  notification: {
-    title: `${senderName} in Group Chat`,
-    body: message,
-  },
-  data: {
-    roomId: roomId,
-    route: "/home",
-    click_action: "FLUTTER_NOTIFICATION_CLICK", // Required for Android deep linking
-  },
-  android: {
-    notification: {
-      clickAction: "FLUTTER_NOTIFICATION_CLICK", // For handling notifications in Flutter
-      channelId: "Neelam", // Ensure this matches the app's notification channel
-      sound: "default", // Play the default notification sound
-    },
-  },
-};
-
-
+    const notification = {
+      notification: {
+        title: `${senderName} in Group Chat`,
+        body: message,
+      },
+      data: {
+        roomId: roomId,
+        route: "/home",
+        click_action: "FLUTTER_NOTIFICATION_CLICK", // Required for Android deep linking
+      },
+      android: {
+        notification: {
+          clickAction: "FLUTTER_NOTIFICATION_CLICK", // For handling notifications in Flutter
+          channelId: "Neelam", // Ensure this matches the app's notification channel
+          sound: "default", // Play the default notification sound
+        },
+      },
+    };
 
     try {
       const response = await admin.messaging().sendEachForMulticast({ tokens, ...notification });

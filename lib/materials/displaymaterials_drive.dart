@@ -2,9 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:provider/provider.dart';
-
-import '../services/pdfscreen.dart';
+import 'package:shimmer/shimmer.dart'; // Add shimmer package for shimmer effect
+import '../services/cachemanager.dart';
 import 'displaymaterials_drive_provider.dart';
+import '../services/pdfscreen.dart';
 
 class DriveMaterials extends StatefulWidget {
   final String year;
@@ -39,20 +40,17 @@ class _DriveMaterialsState extends State<DriveMaterials> {
   void _fetchMaterials(String type) {
     String path;
 
-
     if (type == 'PDFs') {
-      path =
-      "materials/${widget.year}/${widget.branch}/SUBJECTS/${widget.subject}/${widget.unit}/";
+      path = "materials/${widget.year}/${widget.branch}/SUBJECTS/${widget.subject}/${widget.unit}/";
     } else {
-      path =
-      "materials/${widget.year}/${widget.branch}/SUBJECTS/${widget.subject}/QUESTIONPAPERS/";
+      path = "materials/${widget.year}/${widget.branch}/SUBJECTS/${widget.subject}/QUESTIONPAPERS/";
     }
 
     print('Fetching materials from path: $path');
     DocumentReference documentReference = FirebaseFirestore.instance.doc(path);
 
     // Fetch the material list from Firestore
-    context.read<PDFProvider>().getPdfList(documentReference);
+     context.read<PDFProvider>().getPdfList(documentReference);
   }
 
   Future<Widget> _generateThumbnail(String localPath) async {
@@ -84,17 +82,42 @@ class _DriveMaterialsState extends State<DriveMaterials> {
       ),
       body: Consumer<PDFProvider>(
         builder: (context, provider, child) {
-          if (provider.materials == null) {
-            // Show a loading dialog when materials are null
-            return const Center(
-              child: CircularProgressIndicator(),
+          if (provider.totalpdfCount == null || provider.materials.isEmpty) {
+            // Show CircularProgressIndicator until totalpdfCount is fetched
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (provider.materials.isEmpty) {
+            // Show shimmer effect based on totalpdfCount when data is loading
+            int? shimmerCount = provider.totalpdfCount != null ? provider.totalpdfCount : 3; // Default to 3 if count is 0
+            return GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // Two shimmer cards per row
+                childAspectRatio: 0.8, // Adjust the height-to-width ratio of cards
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              padding: const EdgeInsets.all(8),
+              itemCount: shimmerCount, // Display shimmer based on totalpdfCount
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      height: 120,
+                      color: Colors.white,
+                    ),
+                  ),
+                );
+              },
             );
           }
 
-          final materials = provider.materials!;
-          String noMaterialsText =
-          _currentIndex == 0 ? 'No PDFs Found' : 'No Question Papers Found';
-
+          final materials = provider.materials;
+          String noMaterialsText = _currentIndex == 0 ? 'No PDFs Found' : 'No Question Papers Found';
+          print('Materialss: $materials');
           if (materials.isEmpty) {
             return Center(
               child: Text(
@@ -200,7 +223,12 @@ class _DriveMaterialsState extends State<DriveMaterials> {
           setState(() {
             _currentIndex = index;
             currentView = index == 0 ? 'PDFs' : 'Question Papers';
-            _fetchMaterials(currentView); // Fetch materials based on the view
+
+            // Clear materials before fetching new ones
+            context.read<PDFProvider>().clearMaterials();
+            //print('Materials navigation: ${}');
+
+            _fetchMaterials(currentView);
           });
         },
         items: const [
@@ -214,6 +242,7 @@ class _DriveMaterialsState extends State<DriveMaterials> {
           ),
         ],
       ),
+
     );
   }
 }

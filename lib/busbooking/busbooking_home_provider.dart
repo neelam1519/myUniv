@@ -30,7 +30,7 @@ class BusBookingHomeProvider with ChangeNotifier {
   String? _selectedDateFormatted;
   DateTime? _selectedDate;
   String? _selectedTiming;
-  double? _travelCost;
+  Map<String, List<double>> _travelCosts = {};
   List<String> _fromPlaces = [];
   List<String> _toPlaces = [];
   List<String> _timings = [];
@@ -105,26 +105,10 @@ class BusBookingHomeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  double? get travelCost => _travelCost;
-
-  set travelCost(double? value) {
-    _travelCost = value;
-    notifyListeners();
-  }
 
   List<String> get fromPlaces => _fromPlaces;
 
-  set fromPlaces(List<String> value) {
-    _fromPlaces = value;
-    notifyListeners();
-  }
-
   List<String> get toPlaces => _toPlaces;
-
-  set toPlaces(List<String> value) {
-    _toPlaces = value;
-    notifyListeners();
-  }
 
   List<String> get timings => _timings;
 
@@ -371,64 +355,6 @@ class BusBookingHomeProvider with ChangeNotifier {
     }
   }
 
-  _fetchDetails(String fromPlace, String toPlace) async {
-    try {
-      Map<String, dynamic>? detailsData = await FireStoreService().getDocumentDetails(detailsDoc);
-      print('Details Data: $detailsData');
-      if (detailsData != null && detailsData.containsKey(fromPlace)) {
-        Map<String, dynamic> details = detailsData[fromPlace][toPlace];
-
-        print("Fetched Details: $details");
-
-        Map<String, dynamic> datesData = details['Dates'];
-
-        Set<String> availableDates = {};
-        dateToTimingsMap.clear();
-
-        final dateFormat = DateFormat('dd-MM-yyyy');
-
-        datesData.forEach((id, timestamp) {
-          DateTime dateTime = (timestamp as Timestamp).toDate();
-          String date = dateFormat.format(dateTime);
-          String time = timeFormat.format(dateTime); // Changed to use the new time format
-          availableDates.add(date);
-
-          if (!dateToTimingsMap.containsKey(date)) {
-            dateToTimingsMap[date] = {};
-          }
-
-          if (!dateToTimingsMap[date]!.containsKey(id)) {
-            dateToTimingsMap[date]![id] = [];
-          }
-
-          dateToTimingsMap[date]![id]!.add(time);
-        });
-
-        // Sort dates
-        _availableDates = availableDates.toList()
-          ..sort((a, b) => dateFormat.parse(a).compareTo(dateFormat.parse(b)));
-        _selectedDateFormatted = _availableDates.isNotEmpty ? _availableDates.first : null;
-        _selectedDate = _selectedDateFormatted != null ? dateFormat.parse(_selectedDateFormatted!) : null;
-
-        updateTimingsForSelectedDate();
-
-        _travelCost = double.tryParse(details['Cost'].toString()) ?? 0;
-        _selectedTiming = _timings.isNotEmpty ? _timings.first : null;
-        _costController.text = _travelCost != null ? '₹${_travelCost!.toStringAsFixed(2)}' : 'N/A';
-        _updateTotalCost();
-      } else {
-        _availableDates = [];
-        _timings = [];
-        _travelCost = null;
-        _costController.text = 'N/A';
-        _updateTotalCost();
-      }
-    } catch (e) {
-      print("error is ${e.toString()}");
-    } finally {
-      loadingDialog.dismiss();
-    }
-  }
 
   updateTimingsForSelectedDate() {
     final dateFormat = DateFormat('dd-MM-yyyy');
@@ -448,8 +374,8 @@ class BusBookingHomeProvider with ChangeNotifier {
   }
 
   _updateTotalCost() {
-    double totalCost = (_travelCost ?? 0) * _people.length;
-    _totalCostController.text = '₹${totalCost.toStringAsFixed(2)}';
+    // double totalCost = (_travelCost ?? 0) * _people.length;
+    // _totalCostController.text = '₹${totalCost.toStringAsFixed(2)}';
   }
 
 
@@ -563,89 +489,58 @@ class BusBookingHomeProvider with ChangeNotifier {
     }
   }
 
-  fetchFromPlaces() async {
-    loadingDialog.showDefaultLoading("Getting data...");
+  Future<void> fetchBusDetails() async {
     try {
-      placesData = await fireStoreService.getDocumentDetails(placesDoc);
+      // Clear previous data
+      _fromPlaces.clear();
+      _toPlaces.clear();
+      _availableDates.clear();
+      _timings.clear();
 
-      if (placesData != null && placesData!.isNotEmpty) {
-        _fromPlaces = List<String>.from(placesData!['from'] ?? []);
-        _toPlaces = List<String>.from(placesData!['to'] ?? []);
-        _selectedFrom = _fromPlaces.isNotEmpty ? _fromPlaces.first : null;
-        _selectedTo = _toPlaces.isNotEmpty ? _toPlaces.first : null;
-        notifyListeners();
-        if (_selectedFrom != null && _selectedTo != null) {
-          _fetchDetails(_selectedFrom!, _selectedTo!);
+      // Fetch all bus documents from the Firestore collection
+      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('buses').get();
+
+      for (QueryDocumentSnapshot doc in snapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+        // Extract and add data to respective lists if not already present
+        if (data.containsKey('from') && !_fromPlaces.contains(data['from'])) {
+          _fromPlaces.add(data['from']);
         }
-      } else {
-        print('Empty Data Found');
-      }
-    } catch (e) {
-      print(e);
-    } finally {
-      loadingDialog.dismiss();
-    }
-  }
+        if (data.containsKey('to') && !_toPlaces.contains(data['to'])) {
+          _toPlaces.add(data['to']);
+        }
+        if (data.containsKey('date') && !_availableDates.contains(data['date'])) {
+          _availableDates.add(data['date']);
+        }
+        if (data.containsKey('time') && !_timings.contains(data['time'])) {
+          _timings.add(data['time']);
+        }
 
-  fetchDetails(String fromPlace, String toPlace) async {
-    try {
-      Map<String, dynamic>? detailsData = await FireStoreService().getDocumentDetails(detailsDoc);
-      print('Details Data: $detailsData');
-      if (detailsData != null && detailsData.containsKey(fromPlace)) {
-        Map<String, dynamic> details = detailsData[fromPlace][toPlace];
-
-        print("Fetched Details: $details");
-
-        Map<String, dynamic> datesData = details['Dates'];
-
-        Set<String> availableDates = {};
-        dateToTimingsMap.clear();
-
-        final dateFormat = DateFormat('dd-MM-yyyy');
-
-        datesData.forEach((id, timestamp) {
-          DateTime dateTime = (timestamp as Timestamp).toDate();
-          String date = dateFormat.format(dateTime);
-          String time = timeFormat.format(dateTime); // Changed to use the new time format
-          availableDates.add(date);
-
-          if (!dateToTimingsMap.containsKey(date)) {
-            dateToTimingsMap[date] = {};
+        // Extract and store travel cost for specific routes
+        if (data.containsKey('from') && data.containsKey('to') && data.containsKey('price')) {
+          if (_travelCosts.containsKey(doc.id)) {
+            _travelCosts[doc.id]!.add(data['price']);
+          } else {
+            _travelCosts[doc.id] = [data['price']];
           }
-
-          if (!dateToTimingsMap[date]!.containsKey(id)) {
-            dateToTimingsMap[date]![id] = [];
-          }
-
-          dateToTimingsMap[date]![id]!.add(time);
-        });
-
-        // Sort dates
-        _availableDates = availableDates.toList()
-          ..sort((a, b) => dateFormat.parse(a).compareTo(dateFormat.parse(b)));
-        _selectedDateFormatted = _availableDates.isNotEmpty ? _availableDates.first : null;
-        _selectedDate = _selectedDateFormatted != null ? dateFormat.parse(_selectedDateFormatted!) : null;
-
-        updateTimingsForSelectedDate();
-
-        _travelCost = double.tryParse(details['Cost'].toString()) ?? 0;
-        _selectedTiming = _timings.isNotEmpty ? _timings.first : null;
-        _costController.text = _travelCost != null ? '₹${_travelCost!.toStringAsFixed(2)}' : 'N/A';
-        _updateTotalCost();
-        notifyListeners();
-      } else {
-        print('No Data in fetchDetails');
-        _availableDates = [];
-        _timings = [];
-        _travelCost = null;
-        _costController.text = 'N/A';
-        _updateTotalCost();
-        notifyListeners();
+        }
       }
+
+      // Sort lists for better usability
+      _fromPlaces.sort();
+      _toPlaces.sort();
+      _availableDates.sort();
+      _timings.sort();
+
+      // Debug or process travel costs
+      _travelCosts.forEach((route, prices) {
+        debugPrint("Route: $route, Prices: ${prices.join(", ")}");
+      });
+
+      notifyListeners();
     } catch (e) {
-      print("Fetch Details: $e");
-    } finally {
-      loadingDialog.dismiss();
+      debugPrint('Error fetching bus details: $e');
     }
   }
 
@@ -657,348 +552,3 @@ class BusBookingHomeProvider with ChangeNotifier {
     super.dispose();
   }
 }
-
-// import 'dart:convert';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_database/firebase_database.dart';
-// import 'package:flutter/foundation.dart';
-// import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
-// import 'package:razorpay_flutter/razorpay_flutter.dart';
-// import '../Firebase/firestore.dart';
-// import '../Firebase/realtimedatabase.dart';
-// import '../apis/busbookinggsheet.dart';
-// import '../services/sendnotification.dart';
-// import '../utils/LoadingDialog.dart';
-// import '../utils/utils.dart';
-// import 'package:http/http.dart' as http;
-//
-// class BusBookingHomeProvider with ChangeNotifier {
-//   LoadingDialog loadingDialog = LoadingDialog();
-//   FireStoreService fireStoreService = FireStoreService();
-//   BusBookingGSheet busBookingGSheet = BusBookingGSheet();
-//   RealTimeDatabase realTimeDatabase = RealTimeDatabase();
-//   NotificationService notificationService = NotificationService();
-//   Utils utils = Utils();
-//
-//   final FirebaseDatabase _database = FirebaseDatabase.instance;
-//
-//   String? _selectedFrom;
-//   String? _selectedTo;
-//   String? _selectedDateFormatted;
-//   DateTime? _selectedDate;
-//   String? _selectedTiming;
-//   double? _travelCost;
-//   List<String> _fromPlaces = [];
-//   List<String> _toPlaces = [];
-//   List<String> _timings = [];
-//   List<String> _availableDates = [];
-//   String busID = "";
-//   int _waitingListSeats = 0;
-//   int _availableSeats = 0;
-//   String? _announcementText = "";
-//   String? message = "";
-//   String? contactus = "";
-//
-//   Map<String, dynamic>? detailsData = {};
-//   Map<String, dynamic>? placesData = {};
-//   Map<String, Map<String, List<String>>> dateToTimingsMap = {};
-//
-//   DocumentReference placesDoc = FirebaseFirestore.instance.doc("busbooking/places");
-//   DocumentReference detailsDoc = FirebaseFirestore.instance.doc("busbooking/Details");
-//
-//   final TextEditingController _costController = TextEditingController();
-//   final TextEditingController _totalCostController = TextEditingController();
-//   final timeFormat = DateFormat('hh:mm a');
-//   String _mobileNumber = "";
-//   String trainNo = "";
-//
-//   final List<Map<String, String?>> _people = [];
-//
-//   Razorpay razorpay = Razorpay();
-//   String apiUrl = 'https://api.razorpay.com/v1/orders';
-//   static const _razorpayKey = 'rzp_live_kYGlb6Srm9dDRe';
-//   static const _apiSecret = 'GPRg9ri7zy4r7QeRe9lT2xUx';
-//
-//
-//
-//
-//   Future<void> listen(String busID) async {
-//     loadingDialog.showDefaultLoading("Getting Seats Availability...");
-//     final DatabaseReference databaseReference = _database.ref('BusBookingTickets/$busID');
-//
-//     databaseReference.onValue.listen((event) {
-//       final dataSnapshot = event.snapshot;
-//       if (dataSnapshot.exists) {
-//         _availableSeats = dataSnapshot.child('Available').value as int;
-//         _waitingListSeats = dataSnapshot.child('WaitingList').value as int;
-//         notifyListeners();
-//         if (kDebugMode) {
-//           print('Available Seats: $_availableSeats');
-//         }
-//         if (kDebugMode) {
-//           print('Waiting List: $_waitingListSeats');
-//         }
-//       } else {
-//         if (kDebugMode) {
-//           print('No data available for busID: $busID');
-//         }
-//       }
-//     });
-//
-//     _availableSeats = await realTimeDatabase.getCurrentValue('BusBookingTickets/$busID/Available') ?? 0;
-//     _waitingListSeats = await realTimeDatabase.getCurrentValue('BusBookingTickets/$busID/WaitingList') ?? 0;
-//     notifyListeners();
-//     loadingDialog.dismiss();
-//   }
-//
-//   Future<void> _fetchAnnouncementText() async {
-//     final DatabaseReference announcementRef = _database.ref('BusBookingTickets/Announcements');
-//     announcementRef.onValue.listen((event) {
-//       final DataSnapshot snapshot = event.snapshot;
-//       if (snapshot.exists) {
-//         _announcementText = snapshot.value as String?;
-//         notifyListeners();
-//       } else {
-//         _announcementText = null;
-//         notifyListeners();
-//       }
-//     });
-//
-//     final DatabaseReference messageText = _database.ref('BusBookingTickets/message');
-//     messageText.onValue.listen((event) {
-//       final DataSnapshot snapshot = event.snapshot;
-//       if (snapshot.exists) {
-//         message = snapshot.value as String?;
-//         notifyListeners();
-//       } else {
-//         message = null;
-//         notifyListeners();
-//       }
-//     });
-//
-//     final DatabaseReference contactText = _database.ref('BusBookingTickets/contact');
-//     contactText.onValue.listen((event) {
-//       final DataSnapshot snapshot = event.snapshot;
-//       if (snapshot.exists) {
-//         contactus = snapshot.value as String?;
-//         notifyListeners();
-//       } else {
-//         contactus = null;
-//         notifyListeners();
-//       }
-//     });
-//   }
-//
-//   initializeRazorpay() async {
-//     razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
-//     razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
-//     razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWallet);
-//   }
-//
-//   Future<String?> createOrder(int amount) async {
-//     try {
-//       final response = await http.post(
-//         Uri.parse(apiUrl),
-//         headers: <String, String>{
-//           'Content-Type': 'application/json',
-//           'Authorization': 'Basic ${base64Encode(utf8.encode("$_razorpayKey:$_apiSecret"))}',
-//         },
-//         body: jsonEncode(<String, dynamic>{
-//           'amount': amount * 100,
-//           'currency': 'INR',
-//           'receipt': 'order_receipt_${DateTime.now().millisecondsSinceEpoch}',
-//           'payment_capture': 1,
-//         }),
-//       );
-//
-//       if (response.statusCode == 200) {
-//         if (kDebugMode) {
-//           print('Got response code as 200');
-//         }
-//         final responseData = jsonDecode(response.body);
-//         return responseData['id'];
-//       } else {
-//         if (kDebugMode) {
-//           print('Failed to create order: ${response.statusCode}');
-//         }
-//         if (kDebugMode) {
-//           print('Response body: ${response.body}');
-//         }
-//         return null;
-//       }
-//     } catch (e) {
-//       print('Error creating order: $e');
-//       return null;
-//     }
-//   }
-//
-//   void startPayment(int amount, String number, String email) async {
-//     if (!await utils.checkInternetConnection()) {
-//       utils.showToastMessage('Connect to the Internet');
-//       return;
-//     }
-//     loadingDialog.showDefaultLoading('Redirecting to Payment Page');
-//     final orderId = await createOrder(amount);
-//     loadingDialog.dismiss();
-//     print('Order ID: $orderId');
-//     if (orderId != null) {
-//       print('Order ID is not null');
-//       var options = {
-//         'key': _razorpayKey,
-//         'amount': amount * 100,
-//         'currency': 'INR',
-//         'name': 'FindAny',
-//         'description': 'Bus Booking',
-//         'prefill': {'contact': number, 'email': email},
-//         'order_id': orderId,
-//       };
-//       try {
-//         razorpay.open(options);
-//       } catch (e) {
-//         debugPrint('Razorpay Error: $e');
-//       }
-//     } else {
-//       print('Order is Null');
-//     }
-//   }
-//
-//   Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
-//     if (kDebugMode) {
-//       print('razorpay successful ${response.paymentId}');
-//     }
-//     await updateTickets(_people.length, response);
-//   }
-//
-//   void handlePaymentError(PaymentFailureResponse response) {
-//     if (kDebugMode) {
-//       print('razorpay unsuccessful: ${response.message}');
-//     }
-//     utils.showToastMessage('Payment unsuccessful');
-//   }
-//
-//   void handleExternalWallet(ExternalWalletResponse response) {
-//     if (kDebugMode) {
-//       print('razorpay External wallet ${response.walletName}');
-//     }
-//   }
-//
-//   Future<void> updateTickets(int peopleCount, PaymentSuccessResponse response) async {
-//     final DatabaseReference ticketRef = _database.ref('BusBookingTickets/$busID');
-//     String availableTickets = 'BusBookingTickets/$busID/Available';
-//     String waitingListTickets = 'BusBookingTickets/$busID/WaitingList';
-//
-//     int currentTickets = (await realTimeDatabase.getCurrentValue(availableTickets) as int?) ?? 0;
-//     int currentWaitingList = (await realTimeDatabase.getCurrentValue(waitingListTickets) as int?) ?? 0;
-//     int waitingListCount = 0;
-//     int confirmTicketCount = 0;
-//
-//     if (currentTickets <= 0) {
-//       currentWaitingList += peopleCount;
-//       await ticketRef.child('WaitingList').set(currentWaitingList);
-//       waitingListCount = peopleCount;
-//       if (kDebugMode) {
-//         print('All tickets are sold out. Added $peopleCount people to the waiting list.');
-//       }
-//     } else if (peopleCount <= currentTickets) {
-//       currentTickets -= peopleCount;
-//       await ticketRef.child('Available').set(currentTickets);
-//       confirmTicketCount = peopleCount;
-//       if (kDebugMode) {
-//         print('Booked $peopleCount tickets. Remaining tickets: $currentTickets');
-//       }
-//     } else {
-//       int bookedTickets = currentTickets;
-//       int waitingListAddition = peopleCount - currentTickets;
-//       currentTickets = 0;
-//       currentWaitingList += waitingListAddition;
-//
-//       await ticketRef.child('Available').set(currentTickets);
-//       await ticketRef.child('WaitingList').set(currentWaitingList);
-//
-//       waitingListCount = waitingListAddition;
-//       confirmTicketCount = bookedTickets;
-//
-//       if (kDebugMode) {
-//         print('Booked $bookedTickets tickets. Added $waitingListAddition people to the waiting list.');
-//       }
-//     }
-//
-//     await uploadData(response, confirmTicketCount, waitingListCount);
-//   }
-//
-//
-//   Future<void> uploadData(PaymentSuccessResponse response, int confirmTickets, int waitingListTickets) async {
-//     loadingDialog.showDefaultLoading('Booking Ticket...');
-//     if (kDebugMode) {
-//       print('Response: ${response.data}');
-//     }
-//
-//     String? email = await utils.getCurrentUserEmail();
-//     String regNo = utils.removeEmailDomain(email!);
-//
-//     int? bookingID = await realTimeDatabase.incrementValue("BusBookingTickets/TicketID");
-//
-//     List<dynamic> data = [
-//       regNo,
-//       _mobileNumber,
-//       email,
-//       _selectedFrom.toString(),
-//       _selectedTo.toString(),
-//       _selectedDate.toString(),
-//       _selectedTiming.toString(),
-//       trainNo,
-//       _totalCostController.text,
-//       response.paymentId ?? "",
-//       bookingID,
-//       "$confirmTickets - $waitingListTickets",
-//       _people.toString()
-//     ];
-//
-//     busBookingGSheet.updateCell(data,busID);
-//
-//     Map<String, dynamic> busBookingData = {
-//       'REGISTRATION NUMBER': regNo,
-//       'MOBILE NUMBER': _mobileNumber,
-//       'FROM': _selectedFrom,
-//       'TO': _selectedTo,
-//       'DATE': _selectedDate,
-//       'TIMINGS': _selectedTiming,
-//       'TRAIN NO': trainNo,
-//       'TOTAL COST': _totalCostController.text,
-//       'PAYMENT ID': response.paymentId,
-//       'PEOPLE LIST': _people,
-//       'TICKET COUNT': _people.length,
-//       'CONFIRM TICKETS': confirmTickets,
-//       'WAITING LIST TICKETS': waitingListTickets,
-//       'BOOKING ID': bookingID
-//     };
-//
-//     DocumentReference historyRef = FirebaseFirestore.instance.doc("UserDetails/${await utils.getCurrentUserUID()}/BusBooking/BookedTickets");
-//
-//     DocumentReference busDetailsRef = FirebaseFirestore.instance.doc('/busbooking/BookingIDs/$busID/$bookingID');
-//     await fireStoreService.uploadMapDataToFirestore(busBookingData, busDetailsRef);
-//     Map<String, dynamic> historyData = {bookingID.toString(): busDetailsRef};
-//     await fireStoreService.uploadMapDataToFirestore(historyData, historyRef);
-//     utils.showToastMessage('Ticket is booked. Check the history');
-//
-//     DocumentReference tokenRef = FirebaseFirestore.instance.doc('AdminDetails/BusBooking');
-//     List<String> tokens = await utils.getSpecificTokens(tokenRef);
-//
-//     notificationService.sendNotification(tokens, "Bus Booking", 'Bus is booked with the ID: $bookingID', {});
-//
-//     String? token = await utils.getToken();
-//
-//     notificationService.sendNotification([token], "Bus Booking", 'Your bus is booked with the ID $bookingID. You can check your booking details in the history', {});
-//     loadingDialog.dismiss();
-//   }
-//
-//
-//   @override
-//   void dispose() {
-//     razorpay.clear();
-//     _costController.dispose();
-//     _totalCostController.dispose();
-//     super.dispose();
-//   }
-// }

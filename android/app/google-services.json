@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "87807759596-ihd7qi16aon6vng0fv6pp5h5q0v1b6cc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.neelam.FindAny",
+            "certificate_hash": "7816bf890c9b7e180e3e451f1bdfc7eab6e29a0e"
+          }
+        },
+        {
           "client_id": "87807759596-q977etq27s66ebo38spmdpq143tc9lba.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -1,4 +1,5 @@
 import 'package:findany_flutter/Firebase/firestore.dart';
+import 'package:findany_flutter/busbooking/addbus.dart';
 import 'package:findany_flutter/busbooking/busbookinghome.dart';
 import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/universitynews/NewsList.dart';
@@ -128,7 +129,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                       GridItem(
                         imagePath: 'assets/images/busbooking.png',
                         title: 'Bus Booking',
-                        destination: PDFViewerPage(pdfUrl: "https://drive.google.com/uc?export=download&id=1TB33HVqiX6JaUO1QsEEWgbM_51ffpsSp"),
+                        destination: BusBookingHome(),
                       ),
                     ],
                   ),

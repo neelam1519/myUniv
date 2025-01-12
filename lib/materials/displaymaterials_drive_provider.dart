@@ -5,22 +5,26 @@ import 'dart:io';
 import '../services/cachemanager.dart';
 
 class PDFProvider with ChangeNotifier {
-  List<MaterialsPDFModel?>? _materials;
+  List<MaterialsPDFModel> _materials = [];
+  int? totalpdfCount;
 
-  List<MaterialsPDFModel?>? get materials => _materials;
+  List<MaterialsPDFModel> get materials => _materials;
 
   final FireStoreService fireStoreService = FireStoreService();
 
+
+
+
+
   Future<void> getPdfList(DocumentReference docRef) async {
     try {
-      _materials = null;
-      notifyListeners();
+      _materials.clear();
 
       Map<String, dynamic>? materials = await fireStoreService.getDocumentDetails(docRef);
       if (materials != null && materials.isNotEmpty) {
-        _materials = [];
-
+        totalpdfCount = materials.keys.length;
         for (var key in materials.keys) {
+
           String pdfUrl = materials[key];
 
           // Convert shareable link to direct download link
@@ -32,8 +36,8 @@ class PDFProvider with ChangeNotifier {
               localPath: cachedFile.path, // Store the local path of the cached file
             );
 
-            // Add the downloaded PDF to the list and notify listeners
-            _materials!.add(pdfModel);
+            _materials.add(pdfModel);
+            print('Materials: $_materials $totalpdfCount');
             notifyListeners();
           }).catchError((e) {
             print('Error downloading PDF $key: $e');
@@ -56,12 +60,23 @@ class PDFProvider with ChangeNotifier {
 
     if (match != null && match.groupCount > 0) {
       String fileId = match.group(1)!;
-      return 'https://drive.google.com/uc?export=download&id=$fileId';
+      String downloadUrl = "https://drive.google.com/uc?export=download&id=$fileId";
+      print('Download Url: $downloadUrl');
+      return downloadUrl;
     }
 
     // If the URL doesn't match, return the original URL
     return shareableUrl;
   }
+
+
+
+   void clearMaterials() {
+      _materials = [];
+      totalpdfCount = null; // Reset the total count
+      notifyListeners();
+    }
+
 }
 
 class MaterialsPDFModel {

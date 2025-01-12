@@ -1,19 +1,18 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class NotificationService {
+
   final String serverKey = 'AAAAFHHAFOw:APA91bGXjNz0n9hlTXJ7DvqZfvWdPUA4niCrjyk5aFtVD6RbY5IUKIF_e1NlTQ3Z3tj9N0Q4mFENnU-K4BRFwmh6_Ht7iz6Qic6WjOMOehLDYPqXDOURoguGB19-WcQSBvATpK0YQScV';
   final String fcmEndpoint = 'https://fcm.googleapis.com/fcm/send';
 
-
   void initialize(){
+    print('Intializing Notification');
     AwesomeNotifications().initialize(
-      'assets/images/logo.png', // App icon
-      [
+      "assets/images/logo.png", [
         NotificationChannel(
           channelKey: 'Neelam',
           channelName: 'myUniv',
@@ -33,18 +32,18 @@ class NotificationService {
     final String? title = message.notification?.title;
     final String? body = message.notification?.body;
 
-    // Parse additional data if needed
     final Map<String, dynamic> data = message.data;
 
     AwesomeNotifications().createNotification(
+
       content: NotificationContent(
-        id: 10, // Unique notification ID
-        channelKey: 'basic_channel',
+        id: 11,
+        channelKey: 'Neelam',
         title: title,
         body: body,
-        notificationLayout: NotificationLayout.Default, // Customizable layout
-        payload: data.map((key, value) => MapEntry(key, value.toString())), // Add custom payload
-      ),
+        notificationLayout: NotificationLayout.Default,
+        payload: data.map((key, value) => MapEntry(key, value.toString())),
+      )
     );
   }
 
@@ -93,7 +92,5 @@ class NotificationService {
       }
     }
   }
-
-
 
 }
