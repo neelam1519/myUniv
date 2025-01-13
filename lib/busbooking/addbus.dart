@@ -22,19 +22,13 @@ class _AddBusScreenState extends State<AddBusScreen> {
   RealTimeDatabase realTimeDatabase = RealTimeDatabase();
 
   final List<String> _fromLocations = [
-    'City Center',
-    'University',
-    'Train Station',
-    'Airport',
-    'Bus Terminal',
+    'MADURAI RAILWAY STATION',
+    'VIRUDHUNAGAR RAILWAY STATION',
+    'SRIVILLIPUTTUR RAILWAY STATION',
   ];
 
   final List<String> _toLocations = [
-    'City Center',
-    'University',
-    'Train Station',
-    'Airport',
-    'Bus Terminal',
+    'KALASALINGAM UNIVERSITY',
   ];
 
   String? _selectedFrom;
@@ -54,7 +48,7 @@ class _AddBusScreenState extends State<AddBusScreen> {
           'arrivalTime': _arrivalTimeController.text.trim(),
           'totalSeats': int.parse(_totalSeatsController.text.trim()),
           'availableSeats': int.parse(_totalSeatsController.text.trim()),
-          'price': double.parse(_priceController.text.trim()),
+          'price': int.parse(_priceController.text.trim()),
           'status': 'active',
         });
 

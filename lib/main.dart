@@ -9,7 +9,6 @@ import 'package:findany_flutter/provider/addnotification_provider.dart';
 import 'package:findany_flutter/provider/auth_provider.dart';
 import 'package:findany_flutter/busbooking/busbooking_home_provider.dart';
 import 'package:findany_flutter/materials/display_materials_provider.dart';
-import 'package:findany_flutter/busbooking/history_provider.dart';
 import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/Login/login_provider.dart';
 import 'package:findany_flutter/navigation/map_provider.dart';
@@ -88,7 +87,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PdfScreenProvider()),
         ChangeNotifierProvider(create: (_) => AddNewsProvider()),
         ChangeNotifierProvider(create: (_) => AddNotificationProvider()),
-        ChangeNotifierProvider(create: (_) => BusBookedHistoryProvider()),
         ChangeNotifierProvider(create: (_) => NewsDetailsScreenProvider()),
         ChangeNotifierProvider(create: (_) => NotificationHomeProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),

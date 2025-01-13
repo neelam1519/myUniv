@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/busbooking/paymentstatus.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
 
 import '../apis/razorpay.dart';
+
 
 class TravelDetailsPage extends StatefulWidget {
   final Map<String, dynamic> busDetails;
@@ -16,23 +18,42 @@ class TravelDetailsPage extends StatefulWidget {
 class _TravelDetailsPageState extends State<TravelDetailsPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _contactController = TextEditingController();
+  Utils utils = Utils();
   final List<Map<String, dynamic>> _passengers = [
     {'name': '', 'gender': 'M'}
   ];
-  final int totalSeats = 40;
-  int bookedSeats = 0;
 
-  int get availableSeats => totalSeats - bookedSeats;
+  int availableSeats = 0;
 
   int get ticketPrice => widget.busDetails['price'].round() ?? 0;
 
   int get totalCost => _passengers.length * ticketPrice;
-  Utils utils= Utils();
 
   @override
-  void dispose() {
-    _contactController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    availableSeats = widget.busDetails["availableSeats"];
+
+    _listenToBusSeatUpdates();
+  }
+
+  // Listen for updates in the Firestore document to track seat availability
+  void _listenToBusSeatUpdates() {
+    print("bus  listen: ${widget.busDetails}");
+    FirebaseFirestore.instance
+        .collection('buses')
+        .doc(widget.busDetails['busNumber'].toString())  // assuming you have a busId field
+        .snapshots()
+        .listen((documentSnapshot) {
+      if (documentSnapshot.exists) {
+        final updatedBusData = documentSnapshot.data()!;
+        print("updated bus details $updatedBusData");
+        setState(() {
+          availableSeats = updatedBusData["availableSeats"];
+        });
+      }
+    });
+
   }
 
   void _addPassenger() {
@@ -59,27 +80,17 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
 
   Future<void> _submitBooking() async {
     if (_formKey.currentState?.validate() ?? false) {
-
-
-      //print('Passenger Details: $_passengers');
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => PaymentStatus(
-      //       busDetails: widget.busDetails,
-      //       passengerDetails: _passengers,
-      //       isPaymentSuccessful: true, // Payment was successful
-      //     ),
-      //   ),
-      // );
-
       String? email = await utils.getCurrentUserEmail();
       final razorpay = RazorPayment();
       razorpay.initializeRazorpay(context);
       razorpay.startPayment(totalCost, _contactController.text, email!, widget.busDetails, _passengers);
-
-
     }
+  }
+
+  @override
+  void dispose() {
+    _contactController.dispose();
+    super.dispose();
   }
 
   @override

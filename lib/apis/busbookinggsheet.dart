@@ -47,6 +47,7 @@ class BusBookingGSheet {
           'TO', // To
           'Bus Date', // Bus Date
           'Bus Time', // Bus Time
+          'Ticket Status',
           'Ticket Count', // Ticket Count
           'Total Amount', // Total Amount
           'Payment ID', // Payment ID
@@ -64,6 +65,7 @@ class BusBookingGSheet {
         bookingData['TO'], // To
         bookingData['Bus Date'], // Bus Date
         bookingData['Bus Time'], // Bus Time
+        bookingData['Ticket Status'], // Payment ID
         bookingData['Ticket Count'], // Ticket Count
         bookingData['Total Amount'], // Total Amount
         bookingData['Payment ID'], // Payment ID

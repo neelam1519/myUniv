@@ -4,14 +4,13 @@ import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/Firebase/realtimedatabase.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/utils.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:http/http.dart' as http;
 
 import '../busbooking/paymentstatus.dart';
-import 'busbookinggsheet.dart'; // Assuming your GSheets utility is set up
+import 'busbookinggsheet.dart';
 
 class RazorPayment extends ChangeNotifier {
   LoadingDialog loadingDialog = LoadingDialog();
@@ -113,7 +112,7 @@ class RazorPayment extends ChangeNotifier {
   }
 
   handlePaymentSuccess(PaymentSuccessResponse response, BuildContext context) async {
-    loadingDialog.showDefaultLoading("Confirming Ticket");
+    loadingDialog.showDefaultLoading("Booking Ticket");
 
     if (kDebugMode) {
       print("Payment successful: ${response.paymentId}");
@@ -122,6 +121,10 @@ class RazorPayment extends ChangeNotifier {
     try {
       int? bookingID = await realTimeDatabase.incrementValue("TicketsCount");
 
+      // Default ticket status
+      String ticketStatus = "WaitingList";
+
+      // Booking data
       Map<String, dynamic> data = {
         "Booking ID": bookingID,
         "Booking Time": DateTime.now(),
@@ -129,25 +132,61 @@ class RazorPayment extends ChangeNotifier {
         "Mobile Number": _mobileNumber,
         "From": _busDetails['from'],
         "TO": _busDetails['to'],
-        'Bus Date': _busDetails['arrivalDate'],
+        "Bus Date": _busDetails['arrivalDate'],
         "Bus Time": _busDetails['arrivalTime'],
         "Ticket Count": _passengerDetails.length,
         "Passenger Details": _passengerDetails,
         "Total Amount": _amountPaid,
-        "Payment ID": response.paymentId
+        "Payment ID": response.paymentId,
+        "Ticket Status": ticketStatus,
       };
 
       String? uid = await utils.getCurrentUserUID();
       print('UID: $uid');
-      DocumentReference documentReference = FirebaseFirestore.instance.doc("users/$uid/busbooking/${bookingID}");
-      DocumentReference busReference = FirebaseFirestore.instance.doc("buses/${_busDetails['busNumber']}/tickets/busbooking/${bookingID}");
 
-      Map<String, DocumentReference> userbusRef = {bookingID.toString(): documentReference};
-      await fireStoreService.uploadMapDataToFirestore(userbusRef, busReference);
-      await fireStoreService.uploadMapDataToFirestore(data, documentReference);
+      DocumentReference userBookingReference = FirebaseFirestore.instance.doc("users/$uid/busbooking/${bookingID}");
+      DocumentReference busReference = FirebaseFirestore.instance.doc("buses/${_busDetails['busNumber']}");
 
+      // Perform Firestore transaction
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot busSnapshot = await transaction.get(busReference);
+        if (!busSnapshot.exists) {
+          throw Exception("Bus does not exist!");
+        }
+
+        // Fetch available seats and current lists
+        int availableSeats = busSnapshot['availableSeats'];
+        int passengersCount = _passengerDetails.length;
+        List<dynamic> confirmedTickets = busSnapshot['confirmedTickets'] ?? [];
+        List<dynamic> waitingListTickets = busSnapshot['waitingListTickets'] ?? [];
+
+        // Update status based on seat availability
+        if (availableSeats >= passengersCount) {
+          ticketStatus = "Confirmed";
+          confirmedTickets.add(userBookingReference);
+          transaction.update(busReference, {
+            'availableSeats': availableSeats - passengersCount,
+            'confirmedTickets': confirmedTickets,
+          });
+        } else {
+          ticketStatus = "WaitingList";
+          waitingListTickets.add(data);
+          transaction.update(busReference, {
+            'waitingListTickets': waitingListTickets,
+          });
+        }
+      });
+
+      // Update ticket status in booking data
+      data["Ticket Status"] = ticketStatus;
+
+      // After verifying, upload the data to Firestore
+      await fireStoreService.uploadMapDataToFirestore(data, userBookingReference);
+
+      // Update Google Sheets
       await updateGoogleSheets(data);
 
+      // Navigate to the payment status page
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -158,8 +197,8 @@ class RazorPayment extends ChangeNotifier {
           ),
         ),
       );
-      loadingDialog.dismiss();
 
+      loadingDialog.dismiss();
     } catch (e) {
       loadingDialog.dismiss();
       if (kDebugMode) {
@@ -168,7 +207,6 @@ class RazorPayment extends ChangeNotifier {
       // Show error dialog or retry logic
     }
   }
-
 
   handlePaymentError(PaymentFailureResponse response, BuildContext context) {
     if (kDebugMode) {

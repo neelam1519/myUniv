@@ -1,3 +1,4 @@
+import 'package:findany_flutter/busbooking/bookinghistory.dart';
 import 'package:findany_flutter/busbooking/buslist.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,7 +39,6 @@ class _BusBookingHomeState extends State<BusBookingHome> {
       ),
       body: Consumer<BusBookingHomeProvider>(
         builder: (context, busHomeProvider, child) {
-
           return AnimationLimiter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -73,23 +73,20 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                       label: 'Select Date',
                       selectedDate: DateFormat('dd-MM-yyyy').format(busHomeProvider.selectedDate), // Set today's date
                       onDateChanged: (newDate) async {
-                        print('DateTIme: $newDate  ${newDate.runtimeType}');
                         await busHomeProvider.updateSelectedDate(newDate!);
                       },
-
                     ),
                     const SizedBox(height: 24.0),
                     ElevatedButton(
                       onPressed: () async {
-
                         print("Selected: ${busHomeProvider.selectedFrom!}   ${busHomeProvider.selectedTo!}   ${busHomeProvider.selectedDate}");
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>  BusList(
+                            builder: (context) => BusList(
                               fromLocation: busHomeProvider.selectedFrom!,
-                              toLocation: busHomeProvider.selectedTo! ,
-                              selectedDate: busHomeProvider.selectedDate ,
+                              toLocation: busHomeProvider.selectedTo!,
+                              selectedDate: busHomeProvider.selectedDate,
                             ),
                           ),
                         );
@@ -103,6 +100,33 @@ class _BusBookingHomeState extends State<BusBookingHome> {
                       ),
                       child: Text(
                         'Search Buses',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24.0),
+                    // Button to view booking history
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BookingHistory(), // New screen to view booking history
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14.0),
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                      ),
+                      child: Text(
+                        'View Booking History',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -168,25 +192,11 @@ class _BusBookingHomeState extends State<BusBookingHome> {
               lastDate: DateTime(2101),
             );
             if (pickedDate != null) {
-              print('Picked Date: $pickedDate');
               onDateChanged(pickedDate);  // Update date in the provider
             }
           },
         ),
       ),
-      onTap: () async {
-        DateTime? pickedDate = await showDatePicker(
-          context: context,
-          initialDate: DateTime.now(),
-          firstDate: DateTime.now(),
-          lastDate: DateTime(2101),
-        );
-        if (pickedDate != null) {
-          print('Picked Date: $pickedDate');
-          onDateChanged(pickedDate);
-        }
-      },
     );
   }
-
 }

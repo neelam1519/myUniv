@@ -15,46 +15,31 @@ class LoginProvider with ChangeNotifier {
   final FireStoreService fireStoreService = FireStoreService();
 
 
-  // final GoogleSignIn googleSignIn = GoogleSignIn(
-  //   // scopes: [
-  //   //   'email',
-  //   //   'profile',
-  //   //   'https://www.googleapis.com/auth/userinfo.email',
-  //   //   'https://www.googleapis.com/auth/userinfo.profile',
-  //   //   'openid',
-  //   // ],
-  // );
+  final GoogleSignIn googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'openid',
+    ],
+  );
 
   Future<UserCredential?> signInWithGoogle() async {
     loadingDialog.showDefaultLoading("Signing in...");
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: [
-        'openid',
-        'email',
-        'https://www.googleapis.com/auth/userinfo.profile',
-      ]
-      // serverClientId: '87807759596-ijh25ipt7ig7bq78jl2lr70qjmhdu1m5.apps.googleusercontent.com',
-      // clientId: '87807759596-q977etq27s66ebo38spmdpq143tc9lba.apps.googleusercontent.com'
-          );
+      print("google signin data ${googleSignIn.clientId} ${googleSignIn.serverClientId} ${googleSignIn.scopes}");
 
-      print("google signin data ${googleSignIn.clientId}   ${googleSignIn.serverClientId}  ${googleSignIn.scopes}");
-
-      final GoogleSignInAccount? googleUser  = await googleSignIn.signIn();
-      if (googleUser  == null) {
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
         print('Sign-in aborted by user.');
         loadingDialog.dismiss();
         return null;
       }
 
-      final GoogleSignInAuthentication? googleAuth = await googleUser .authentication;
-      if (googleAuth == null) {
-        print('Google authentication failed.');
-        loadingDialog.dismiss();
-        return null;
-      }
-
-      if (googleAuth.accessToken == null) {
-        print('Access token is null. Check user permissions and scopes.');
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        print('Access token or ID token is null.');
         loadingDialog.dismiss();
         return null;
       }
@@ -69,14 +54,15 @@ class LoginProvider with ChangeNotifier {
       return await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e, stackTrace) {
       print('Error signing in with Google: $e');
-      utils.showToastMessage('Login Error Please try after some time');
       print('Stack trace: $stackTrace');
+      utils.showToastMessage('Login Error. Please try again later.');
       loadingDialog.dismiss();
       return null;
     }
   }
 
-  // Future<void> handleGoogleSignIn(BuildContext context) async {
+
+// Future<void> handleGoogleSignIn(BuildContext context) async {
   //   if (await googleSignIn.isSignedIn()) {
   //     print("not disconnected");
   //     await googleSignIn.disconnect();

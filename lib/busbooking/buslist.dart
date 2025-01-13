@@ -35,6 +35,9 @@ class _BusListState extends State<BusList> {
         toLocation: widget.toLocation,
         selectedDate: formattedDate,
       );
+
+      // Start listening to Firestore updates
+      Provider.of<FetchBusListProvider>(context, listen: false).listenToBusUpdates();
     });
   }
 
@@ -147,7 +150,7 @@ class _BusListState extends State<BusList> {
     final String arrivalTime = bus['arrivalTime'] ?? "N/A";
     final String departureTime = bus['departureTime'] ?? "N/A";
     final String duration = bus['duration'] ?? "N/A";
-    final int price = bus['price'] ?? 0;
+    final int price = (bus['price'] ?? 0.0).toInt();
 
     return Card(
       shape: RoundedRectangleBorder(
