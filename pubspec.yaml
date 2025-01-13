@@ -40,6 +40,8 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
   table_calendar:
 
+  lottie: ^3.3.1
+
   google_sign_in: ^6.2.1
   flutter_easyloading: ^3.0.5
   file_picker:
@@ -103,3 +105,5 @@ flutter:
   assets:
     - assets/images/
     - assets/images/logo.png
+    - assets/findany-84c36-b2a3e1d26731.json
+    - assets/lotties/

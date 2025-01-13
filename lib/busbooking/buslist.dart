@@ -147,7 +147,7 @@ class _BusListState extends State<BusList> {
     final String arrivalTime = bus['arrivalTime'] ?? "N/A";
     final String departureTime = bus['departureTime'] ?? "N/A";
     final String duration = bus['duration'] ?? "N/A";
-    final double price = bus['price'] ?? 0.0;
+    final int price = bus['price'] ?? 0;
 
     return Card(
       shape: RoundedRectangleBorder(

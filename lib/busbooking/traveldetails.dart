@@ -1,4 +1,8 @@
+import 'package:findany_flutter/busbooking/paymentstatus.dart';
+import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
+
+import '../apis/razorpay.dart';
 
 class TravelDetailsPage extends StatefulWidget {
   final Map<String, dynamic> busDetails;
@@ -13,30 +17,28 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _contactController = TextEditingController();
   final List<Map<String, dynamic>> _passengers = [
-    {'name': TextEditingController(), 'gender': 'M'}
+    {'name': '', 'gender': 'M'}
   ];
-  final int totalSeats = 40; // Example total seat count
-  int bookedSeats = 0; // Tracks the number of currently booked seats
+  final int totalSeats = 40;
+  int bookedSeats = 0;
 
   int get availableSeats => totalSeats - bookedSeats;
 
   int get ticketPrice => widget.busDetails['price'].round() ?? 0;
 
   int get totalCost => _passengers.length * ticketPrice;
+  Utils utils= Utils();
 
   @override
   void dispose() {
     _contactController.dispose();
-    for (var passenger in _passengers) {
-      passenger['name'].dispose();
-    }
     super.dispose();
   }
 
   void _addPassenger() {
-    if (_passengers.last['name'].text.isNotEmpty && availableSeats > 0) {
+    if (_passengers.last['name'].isNotEmpty && availableSeats > 0) {
       setState(() {
-        _passengers.add({'name': TextEditingController(), 'gender': 'M'});
+        _passengers.add({'name': '', 'gender': 'M'});
       });
     } else if (availableSeats <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,40 +57,28 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
     });
   }
 
-  void _submitBooking() {
+  Future<void> _submitBooking() async {
     if (_formKey.currentState?.validate() ?? false) {
-      String passengerDetails = '';
-      for (int i = 0; i < _passengers.length; i++) {
-        passengerDetails +=
-        'Passenger ${i + 1}: ${_passengers[i]['name'].text}, Gender: ${_passengers[i]['gender']}\n';
-      }
 
-      setState(() {
-        bookedSeats += _passengers.length;
-      });
 
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Booking Confirmed'),
-            content: Text(
-              'You have successfully booked seats for ${_passengers.length} passenger(s) with the contact number ${_contactController.text}.\n\n'
-                  'Bus Number: ${widget.busDetails['busNumber']}\n'
-                  'Departure: ${widget.busDetails['departureTime']}\n\n'
-                  'Passenger Details:\n$passengerDetails\nTotal Cost: ₹$totalCost',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
+      //print('Passenger Details: $_passengers');
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => PaymentStatus(
+      //       busDetails: widget.busDetails,
+      //       passengerDetails: _passengers,
+      //       isPaymentSuccessful: true, // Payment was successful
+      //     ),
+      //   ),
+      // );
+
+      String? email = await utils.getCurrentUserEmail();
+      final razorpay = RazorPayment();
+      razorpay.initializeRazorpay(context);
+      razorpay.startPayment(totalCost, _contactController.text, email!, widget.busDetails, _passengers);
+
+
     }
   }
 
@@ -140,7 +130,12 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
                       children: [
                         Expanded(
                           child: TextFormField(
-                            controller: passenger['name'],
+                            initialValue: passenger['name'],
+                            onChanged: (value) {
+                              setState(() {
+                                _passengers[index]['name'] = value;
+                              });
+                            },
                             decoration: InputDecoration(
                               labelText: 'Passenger ${index + 1} Name',
                               border: const OutlineInputBorder(),
@@ -223,17 +218,16 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
                 // Submit Button
                 Align(
                   alignment: Alignment.center,
-                  child:ElevatedButton(
+                  child: ElevatedButton(
                     onPressed: _submitBooking,
                     child: const Text('Confirm Booking'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
-                      foregroundColor: Colors.white, // Set text color to white
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
-
                 ),
               ],
             ),
@@ -243,4 +237,3 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
     );
   }
 }
-

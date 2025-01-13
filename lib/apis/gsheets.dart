@@ -11,7 +11,7 @@ class UserSheetsApi {
 
   // Load credentials from assets
   Future<String> _loadCredentials() async {
-    return await rootBundle.loadString('assets/gsheets_credentials.json');
+    return await rootBundle.loadString('assets/findany-84c36-b2a3e1d26731.json');
   }
 
   Future<void> _initGSheets() async {
