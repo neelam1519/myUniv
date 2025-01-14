@@ -104,6 +104,5 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/images/logo.png
     - assets/findany-84c36-b2a3e1d26731.json
     - assets/lotties/

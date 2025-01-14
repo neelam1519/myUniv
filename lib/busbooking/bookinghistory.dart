@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/utils/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
 class BookingHistory extends StatefulWidget {
@@ -45,9 +46,14 @@ class _BookingHistoryState extends State<BookingHistory> {
         if (data != null) {
           // Safely handle bookingTime conversion (check if it exists and is not null)
           DateTime? bookingTime;
-          if (data['bookingTime'] != null) {
+          String? readableBookingTime;
+
+          if (data['Booking Time'] != null) {
             // Convert to DateTime if bookingTime exists
             bookingTime = (data['Booking Time'] as Timestamp).toDate();
+
+            // Format the DateTime to a readable format (e.g., "Jan 13, 2025 10:30 AM")
+            readableBookingTime = DateFormat('MMM dd, yyyy hh:mm a').format(bookingTime);
           }
 
           // Add data to the history list
@@ -60,9 +66,10 @@ class _BookingHistoryState extends State<BookingHistory> {
             'ticketCount': data['Ticket Count'] ?? 0,
             'totalAmount': data['Ticket Count'] ?? 0.0,
             'paymentID': data['Payment ID'] ?? 'Not provided',
-            'bookingTime': bookingTime, // Store DateTime or null if no bookingTime
+            'bookingTime': readableBookingTime,
           });
         }
+        print('Document Details: $data');
       }
 
       // Update the state once data is fetched
@@ -174,7 +181,7 @@ class _BookingHistoryState extends State<BookingHistory> {
                   Text('Date: ${booking['busDate']}'),
                   Text('Time: ${booking['busTime']}'),
                   Text('Tickets: ${booking['ticketCount']}'),
-                  Text('Total: \$${booking['totalAmount']}'),
+                  Text('Total Paid Amount: \₹${booking['totalAmount']}'),
                   Text('Payment ID: ${booking['paymentID']}'),
                   booking['bookingTime'] != null
                       ? Text('Booking Time: ${booking['bookingTime']}')

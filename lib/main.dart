@@ -57,6 +57,7 @@ void main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+
   NotificationService().initialize();
   runApp(const MyApp());
 }

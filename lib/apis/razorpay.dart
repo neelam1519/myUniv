@@ -120,13 +120,11 @@ class RazorPayment extends ChangeNotifier {
 
     try {
       int? bookingID = await realTimeDatabase.incrementValue("TicketsCount");
-
-      // Default ticket status
       String ticketStatus = "WaitingList";
 
-      // Booking data
       Map<String, dynamic> data = {
         "Booking ID": bookingID,
+        "Bus Number" : _busDetails["busNumber"],
         "Booking Time": DateTime.now(),
         "Email": _email,
         "Mobile Number": _mobileNumber,
@@ -147,20 +145,17 @@ class RazorPayment extends ChangeNotifier {
       DocumentReference userBookingReference = FirebaseFirestore.instance.doc("users/$uid/busbooking/${bookingID}");
       DocumentReference busReference = FirebaseFirestore.instance.doc("buses/${_busDetails['busNumber']}");
 
-      // Perform Firestore transaction
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         DocumentSnapshot busSnapshot = await transaction.get(busReference);
         if (!busSnapshot.exists) {
           throw Exception("Bus does not exist!");
         }
 
-        // Fetch available seats and current lists
         int availableSeats = busSnapshot['availableSeats'];
         int passengersCount = _passengerDetails.length;
         List<dynamic> confirmedTickets = busSnapshot['confirmedTickets'] ?? [];
         List<dynamic> waitingListTickets = busSnapshot['waitingListTickets'] ?? [];
 
-        // Update status based on seat availability
         if (availableSeats >= passengersCount) {
           ticketStatus = "Confirmed";
           confirmedTickets.add(userBookingReference);
@@ -177,16 +172,10 @@ class RazorPayment extends ChangeNotifier {
         }
       });
 
-      // Update ticket status in booking data
       data["Ticket Status"] = ticketStatus;
-
-      // After verifying, upload the data to Firestore
       await fireStoreService.uploadMapDataToFirestore(data, userBookingReference);
-
-      // Update Google Sheets
       await updateGoogleSheets(data);
 
-      // Navigate to the payment status page
       Navigator.push(
         context,
         MaterialPageRoute(

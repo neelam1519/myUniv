@@ -30,10 +30,10 @@ class AuthCheck extends StatelessWidget {
                     print('Auth Check Screen returnin Home');
                     return const Home();
                   } else {
-                    return const Login();
+                    return Login();
                   }
                 } else {
-                  return const Login();
+                  return Login();
                 }
               }
             },

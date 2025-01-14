@@ -1,12 +1,96 @@
+import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_signin_button/button_list.dart';
 import 'package:flutter_signin_button/button_view.dart';
-import 'package:provider/provider.dart';
-
-import 'login_provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Login extends StatelessWidget {
-  const Login({super.key});
+  Login({super.key});
+
+  final GoogleSignIn googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'profile',
+      'openid',
+    ],
+    serverClientId: '87807759596-u8abgv3eprlfa30cvfmijeu31olmv9qb.apps.googleusercontent.com',
+  );
+
+  LoadingDialog loadingDialog = LoadingDialog();
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    try {
+      loadingDialog.showDefaultLoading("Signing you in...");
+      print("Displaying loading dialog...");
+
+      print("Initiating Google Sign-In...");
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        print("Google Sign-In was canceled by the user.");
+        Navigator.of(context).pop();
+        return;
+      }
+      print("Google Sign-In successful. User info: ${googleUser.displayName}, ${googleUser.email}");
+
+      print("Fetching authentication tokens...");
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        print("Authentication tokens are null. AccessToken: ${googleAuth.accessToken}, IdToken: ${googleAuth.idToken}");
+        Navigator.of(context).pop(); // Dismiss loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Authentication failed.')),
+        );
+        return;
+      }
+      print("Authentication tokens fetched successfully. AccessToken: ${googleAuth.accessToken}");
+
+      print("Creating Firebase credential...");
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      print("Signing in with Firebase...");
+      final UserCredential userCredential =
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      Navigator.of(context).pop(); // Dismiss loading dialog
+
+      if (user != null) {
+        print("Firebase sign-in successful. User: ${user.displayName}, Email: ${user.email}");
+        if (user.email != null && user.email!.endsWith('@klu.ac.in')) {
+          print("User email is valid: ${user.email}");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login successful!')),
+          );
+          // Navigate to the home page or perform other actions
+        } else {
+          print("Invalid email domain. User email: ${user.email}");
+          await googleSignIn.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Use your university email to log in.')),
+          );
+        }
+      } else {
+        print("Firebase sign-in returned null user.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign-in failed.')),
+        );
+      }
+    } catch (e, stackTrace) {
+      print("Error during sign-in: $e");
+      print("Stack trace: $stackTrace");
+      Navigator.of(context).pop(); // Dismiss loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login error: $e')),
+      );
+    }finally{
+      loadingDialog.dismiss();
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,24 +132,10 @@ class Login extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40.0),
-              Consumer<LoginProvider>(
-                builder: (context, loginProvider, child) {
-                  return SignInButton(
-                    Buttons.Google,
-                    text: "Sign in with Google",
-                    onPressed: () async {
-                      bool internet = await loginProvider.utils.checkInternetConnection();
-                      if (internet) {
-                        if (context.mounted) {
-                          print("User is signing in...");
-                          await loginProvider.signInWithGoogle();
-                        }
-                      } else {
-                        loginProvider.utils.showToastMessage('Check your internet connection');
-                      }
-                    },
-                  );
-                },
+              SignInButton(
+                Buttons.Google,
+                text: "Sign in with Google",
+                onPressed: () => signInWithGoogle(context),
               ),
             ],
           ),

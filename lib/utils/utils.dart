@@ -196,7 +196,7 @@ class Utils {
       }
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const Login()),
+        MaterialPageRoute(builder: (context) => Login()),
       );
     } catch (e) {
       print('Error during sign-out: $e');

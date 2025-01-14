@@ -81,9 +81,20 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
   Future<void> _submitBooking() async {
     if (_formKey.currentState?.validate() ?? false) {
       String? email = await utils.getCurrentUserEmail();
-      final razorpay = RazorPayment();
-      razorpay.initializeRazorpay(context);
-      razorpay.startPayment(totalCost, _contactController.text, email!, widget.busDetails, _passengers);
+      String mobileNumber = _contactController.text;
+
+      if (utils.isValidMobileNumber(mobileNumber)) {
+        final razorpay = RazorPayment();
+        razorpay.initializeRazorpay(context);
+        razorpay.startPayment(totalCost, _contactController.text, email!, widget.busDetails, _passengers);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid mobile number. Please enter a valid 10-digit number.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
