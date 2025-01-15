@@ -86,18 +86,14 @@ class DisplayMaterialsProvider extends ChangeNotifier {
     int totalFiles = pdfFileNames.length;
     int downloadedCount = 0;
 
-    // Extract the filenames from the downloadedFiles list
     List<String> downloadedFileNames = downloadedFiles.map((file) {
       return file.path.split('/').last.replaceAll(' ', '');
     }).toList();
 
     for (var fileName in pdfFileNames) {
       if (stopDownload) break;
-
-      // Clean up the fileName to match the format used in the downloadedFileNames list
       String cleanedFileName = fileName.replaceAll(' ', '');
 
-      // Check if the file is already downloaded
       if (!downloadedFileNames.contains(cleanedFileName)) {
         Directory cacheDir = await getTemporaryDirectory();
         String cachePath = '${cacheDir.path}/${storagePath.replaceAll(' ', '')}/$appBarText';
@@ -110,8 +106,8 @@ class DisplayMaterialsProvider extends ChangeNotifier {
             if (downloadedFile != null) {
               print("Downloading File: $fileName");
               downloadedFiles.add(downloadedFile);
-              streamController.add(downloadedFiles.toList()); // Show the downloaded file immediately
-              notifyListeners(); // Notify listeners to update the UI
+              streamController.add(downloadedFiles.toList());
+              notifyListeners();
             }
           });
         }
@@ -146,11 +142,9 @@ class DisplayMaterialsProvider extends ChangeNotifier {
   Future<void> updateIndex(int index, String path, String unit) async {
     print("UpdateIndex Provider: $index  $path/$unit");
 
-    // Stop ongoing downloads and clear data
-    stopDownload = true; // Stop any ongoing downloads
-    clearScreenData(); // Clear existing data
+    stopDownload = true;
+    clearScreenData();
 
-    // Update the current index and app bar text based on the new index
     currentIndex = index;
     if (index == 0) {
       appBarText = 'PDFs';
@@ -160,10 +154,10 @@ class DisplayMaterialsProvider extends ChangeNotifier {
       storagePath = '$path/QUESTION PAPERS';
     }
 
-    stopDownload = false; // Allow downloads to start again
+    stopDownload = false;
     loadingDialog.showDefaultLoading('Loading files...');
 
-    await initialize("", ""); // Re-initialize with new storage path
+    await initialize("", "");
   }
 
   Future<void> uploadFiles(String subject, String unit) async {

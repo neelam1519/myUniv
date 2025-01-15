@@ -1,79 +1,107 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:findany_flutter/services/cachemanager.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis_auth/auth_io.dart';
+import 'dart:io';
+import 'package:flutter/services.dart' show rootBundle;
 
 class GoogleDriveService {
-  final _scopes = [drive.DriveApi.driveScope];
+  late drive.DriveApi _driveApi;
+  CustomCacheManager cacheManager = CustomCacheManager();
 
-  Future<drive.DriveApi> _getDriveApi() async {
+  Future<void> authenticate() async {
     try {
-      // Load the service account credentials
-      final credentials = await rootBundle.loadString('assets/googleDrive.json');
-      final accountCredentials = ServiceAccountCredentials.fromJson(json.decode(credentials));
+      // Load credentials from the JSON file
+      String credentials = await _loadCredentials();
+      print("Credentials loaded successfully.");
 
-      // Authenticate using the service account credentials
-      final authClient = await clientViaServiceAccount(accountCredentials, _scopes);
-      return drive.DriveApi(authClient);
+      final accountCredentials = ServiceAccountCredentials.fromJson(credentials);
+      final scopes = [drive.DriveApi.driveScope];
+
+      // Authenticate and initialize _driveApi
+      final client = await clientViaServiceAccount(accountCredentials, scopes);
+      _driveApi = drive.DriveApi(client);
+      print("Authentication successful.");
     } catch (e) {
-      print('Error getting Drive API client: $e');
-      rethrow;  // Re-throwing to allow calling functions to handle it
+      print("Error during authentication: $e");
     }
   }
 
-  Future<List<drive.File>> listFiles(String folderId) async {
+  Future<String> _loadCredentials() async {
     try {
-      final driveApi = await _getDriveApi();
-      print('Fetching files from folder ID: $folderId');
-      final fileList = await driveApi.files.list(
-          q: "'$folderId' in parents",
-          $fields: "files(id, name)"
-      );
-      print('File List Response: ${fileList.files}');
-      if (fileList.files != null && fileList.files!.isNotEmpty) {
-        print('Files found:');
-        for (var file in fileList.files!) {
-          print('Name: ${file.name}, ID: ${file.id}');
-        }
-      } else {
-        print('No files found in the folder.');
-      }
-      return fileList.files ?? [];
+      // Load the service account credentials from the assets
+      String credentials = await rootBundle.loadString('assets/findany-84c36-b2a3e1d26731.json');
+      print("Credentials file loaded from assets.");
+      return credentials;
     } catch (e) {
-      print('Error retrieving file list: $e');
+      print("Error loading credentials: $e");
+      rethrow; // Rethrow the error to handle it in the calling function
+    }
+  }
+
+  Future<List<drive.File>> listFoldersInFolder(String folderId) async {
+    try {
+      print("Listing folders inside folder with ID: $folderId");
+
+      // Query for folders inside the specified folder by its ID
+      final fileList = await _driveApi.files.list(
+        q: "'$folderId' in parents and mimeType='application/vnd.google-apps.folder'", // Filter by folder type
+        $fields: "files(id, name)", // Specify the fields to return
+      );
+
+      // Check if any folders were found
+      if (fileList.files == null || fileList.files!.isEmpty) {
+        print("No folders found inside the specified folder.");
+        return [];
+      }
+
+      // Print the folders found for debugging
+      print("Folders found inside folder:");
+      for (var folder in fileList.files!) {
+        print("Folder ID: ${folder.id}, Folder Name: ${folder.name}");
+      }
+
+      // Return the list of folders found
+      return fileList.files!;
+    } catch (e) {
+      print("An error occurred while listing folders: $e");
       return [];
     }
   }
 
-  Future<String?> getAccountEmail() async {
+  Stream<File> listFilesInFolderWithCache(String folderId) async* {
     try {
-      final driveApi = await _getDriveApi();
-      final about = await driveApi.about.get($fields: 'user/emailAddress');
-      print('Account Email: ${about.user?.emailAddress}');
-      return about.user?.emailAddress;
+      print("Listing files in folder with ID: $folderId");
+
+      // Fetch the list of files in the folder
+      final fileList = await _driveApi.files.list(
+        q: "'$folderId' in parents and mimeType != 'application/vnd.google-apps.folder'",
+        $fields: "files(id, name, webContentLink)",
+      );
+
+      if (fileList.files == null || fileList.files!.isEmpty) {
+        print("No files found in folder.");
+        return;
+      }
+
+      print("Files found in folder:");
+
+      for (var file in fileList.files!) {
+        final fileName = file.name ?? "unknown_file";
+        final fileUrl = file.webContentLink;
+
+        print("Processing File: $fileName");
+
+        if (fileUrl != null) {
+          final cachedFile = await cacheManager.downloadAndCachePDF(fileUrl, fileName);
+          print("File cached: ${cachedFile.path}");
+          yield cachedFile; // Emit the cached file immediately
+        } else {
+          print("Skipping file $fileName (no download link).");
+        }
+      }
     } catch (e) {
-      print('Error retrieving account email: $e');
-      return null;
-    }
-  }
-
-  Future<void> uploadFile(String folderId, String filePath) async {
-    try {
-      final driveApi = await _getDriveApi();
-
-      var file = drive.File();
-      file.parents = [folderId];
-      file.name = filePath.split('/').last;
-
-      var fileContent = File(filePath).openRead();
-      var media = drive.Media(fileContent, File(filePath).lengthSync());
-
-      var response = await driveApi.files.create(file, uploadMedia: media);
-
-      print('File uploaded: ${response.name}, ID: ${response.id}');
-    } catch (e) {
-      print('Error uploading file: $e');
+      print("An error occurred while listing files: $e");
+      rethrow;
     }
   }
 }

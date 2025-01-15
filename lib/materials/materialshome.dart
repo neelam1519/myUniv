@@ -1,7 +1,12 @@
+import 'dart:io';
+
+import 'package:findany_flutter/materials/units.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../apis/googleDrive.dart';
 import 'materials_provider.dart';
-import 'units.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
+
 
 class MaterialsHome extends StatelessWidget {
   const MaterialsHome({super.key});
@@ -60,21 +65,11 @@ class MaterialsHome extends StatelessWidget {
                                     context,
                                     'Branch',
                                     materialProvider.branchList,
-                                    materialProvider.currentBranchSelectedOption,
-                                        (value) {
+                                    materialProvider.currentBranchSelectedOption, (value) {
                                       materialProvider.branchSelectedOption = value;
-                                      materialProvider.getSpecialization();
                                       materialProvider.updateSharedPrefsValues();
                                       materialProvider.getSubjects();
                                     },
-                                  ),
-                                  const SizedBox(height: 16.0),
-                                  _buildDropdown(
-                                    context,
-                                    'Stream',
-                                    materialProvider.availableSpecializations,
-                                    materialProvider.currentStreamSelectedOption,
-                                    materialProvider.newStreamSelection,
                                   ),
                                   const SizedBox(height: 24.0),
                                   ElevatedButton(
@@ -91,7 +86,6 @@ class MaterialsHome extends StatelessWidget {
                                       }
                                       Navigator.pop(context);
                                       materialProvider.getSubjects();
-                                      materialProvider.updateSharedPrefsValues();
                                     },
                                     child: const Text(
                                       'Apply Filters',
@@ -131,7 +125,7 @@ class MaterialsHome extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ListView.builder(
-                    itemCount: provider.availableSubjects.length,
+                    itemCount: provider.subjects.length,
                     itemBuilder: (context, index) {
                       return Card(
                         elevation: 4.0,
@@ -140,7 +134,7 @@ class MaterialsHome extends StatelessWidget {
                         ),
                         child: ListTile(
                           title: Text(
-                            provider.availableSubjects[index].toString(),
+                            provider.subjects[index].toString(),
                             style: const TextStyle(
                               fontSize: 15.0,
                               fontWeight: FontWeight.w500,
@@ -148,26 +142,31 @@ class MaterialsHome extends StatelessWidget {
                           ),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 18),
                           onTap: () async {
-                            final selectedSubject = provider.availableSubjects[index].toString();
-                            if (!await provider.utils.checkInternetConnection()) {
-                              provider.utils.showToastMessage('Connect to the Internet');
-                              return;
+                            provider.selectedSubject = provider.subjects[index];
+
+                            String subjectID = "";
+                            List<Map<String,String>> data = provider.subjectsWithID;
+                            print('Selected Subject: ${provider.selectedSubject}');
+
+                            for (var subject in data) {
+                              if (subject.containsKey(provider.selectedSubject)) {
+                                subjectID = subject[provider.selectedSubject]!;
+                                break;
+                              }
                             }
+
+                            print('Subject ID: $subjectID');
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => Units(
-                                  year:provider.yearSelectedOption ?? '3',
-                                  branch: provider.branchSelectedOption ?? 'CSE',
-                                  stream: provider.streamSelectedOption ?? "SOFTWARE ENGINEERING",
-                                  subject: selectedSubject,
+                                  subjectID: subjectID,
+                                  subjectname: provider.selectedSubject,
                                 ),
                               ),
-                            ).then((_) {
-                              provider.selectedSubjects.remove(selectedSubject);
-                              provider.selectedSubjects.insert(0, selectedSubject);
-                              provider.sortSubjects();
-                            });
+                            );
+
                           },
                         ),
                       );

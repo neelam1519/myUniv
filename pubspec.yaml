@@ -36,6 +36,10 @@ dependencies:
   #materials
   pdfx: ^2.8.0
 
+  #google
+  googleapis:
+  googleapis_auth:
+
   #animations
   flutter_staggered_animations: ^1.1.1
   table_calendar:

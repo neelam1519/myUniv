@@ -5,7 +5,7 @@ import 'package:path/path.dart'; // To work with file paths
 class CustomCacheManager {
 
   /// Downloads or fetches the cached PDF with a dynamic cache key.
-  static Future<File> downloadAndCachePDF(String url, String cacheKey) async {
+   Future<File> downloadAndCachePDF(String url, String cacheKey) async {
     // Create a custom CacheManager with the dynamic cache key
     final cacheManager = CacheManager(
       Config(

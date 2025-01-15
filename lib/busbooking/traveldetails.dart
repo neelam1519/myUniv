@@ -83,6 +83,19 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
       String? email = await utils.getCurrentUserEmail();
       String mobileNumber = _contactController.text;
 
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => PaymentStatus(
+      //       busDetails: widget.busDetails,
+      //       passengerDetails: _passengers,
+      //       isPaymentSuccessful: true,
+      //       ticketStatus: 'testing',
+      //       waitingListCount: 0, // Pass the correct waiting list count
+      //     ),
+      //   ),
+      // );
+
       if (utils.isValidMobileNumber(mobileNumber)) {
         final razorpay = RazorPayment();
         razorpay.initializeRazorpay(context);

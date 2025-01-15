@@ -64,12 +64,12 @@ class _BusListState extends State<BusList> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: _editRouteAndDate,
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.edit, color: Colors.white),
+        //     onPressed: _editRouteAndDate,
+        //   ),
+        // ],
         backgroundColor: Colors.blue.shade900,
       ),
       body: Consumer<FetchBusListProvider>(

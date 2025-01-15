@@ -1,3 +1,4 @@
+import 'package:findany_flutter/Home.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_signin_button/button_list.dart';
@@ -27,6 +28,9 @@ class Login extends StatelessWidget {
       print("Initiating Google Sign-In...");
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Sign-In was canceled by the user.')),
+        );
         print("Google Sign-In was canceled by the user.");
         Navigator.of(context).pop();
         return;
@@ -37,7 +41,6 @@ class Login extends StatelessWidget {
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       if (googleAuth.accessToken == null || googleAuth.idToken == null) {
         print("Authentication tokens are null. AccessToken: ${googleAuth.accessToken}, IdToken: ${googleAuth.idToken}");
-        Navigator.of(context).pop(); // Dismiss loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Authentication failed.')),
         );
@@ -56,14 +59,21 @@ class Login extends StatelessWidget {
       await FirebaseAuth.instance.signInWithCredential(credential);
       final User? user = userCredential.user;
 
-      Navigator.of(context).pop(); // Dismiss loading dialog
-
       if (user != null) {
         print("Firebase sign-in successful. User: ${user.displayName}, Email: ${user.email}");
         if (user.email != null && user.email!.endsWith('@klu.ac.in')) {
           print("User email is valid: ${user.email}");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Login successful!')),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User Logged in Sucessfully')),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Home(),
+            ),
           );
           // Navigate to the home page or perform other actions
         } else {
@@ -86,9 +96,9 @@ class Login extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login error: $e')),
       );
-    }finally{
-      loadingDialog.dismiss();
     }
+
+    loadingDialog.dismiss();
   }
 
 

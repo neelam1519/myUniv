@@ -1,10 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:findany_flutter/utils/LoadingDialog.dart';
 import 'package:findany_flutter/utils/sharedpreferences.dart';
 import 'package:findany_flutter/utils/utils.dart';
+import '../apis/googleDrive.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
 
 class MaterialsProvider with ChangeNotifier {
   final FireStoreService fireStoreService = FireStoreService();
@@ -15,26 +16,19 @@ class MaterialsProvider with ChangeNotifier {
 
   List<String> yearsList = ['1', '2', '3', '4'];
   List<String> branchList = ['CSE', 'ECE'];
-  List<String> specializations = [];
-  List<String> cseSpecialization = [
-    'CYBER SECURITY',
-    'ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING',
-    'DATA SCIENCE',
-    'INTERNET OF THINGS'
-  ];
-  List<String> eceSpecialization = [
-    'ARTIFICIAL INTELLIGENCE FOR CYBER SECURITY',
-    'EMBEDDED AND INTERNET OF THINGS',
-    'MICROCHIP PHYSICAL DESIGN',
-    'INTEGRATED CIRCUITS DESIGN AND VERIFICATION'
-  ];
-  List<dynamic> subjects = [];
+
+  List<Map<String,String>> subjectsWithID = [];
+  List<dynamic> _subjects = [];
   List<String> selectedSubjects = [];
 
   String? yearSelectedOption = '1';
   String? branchSelectedOption = 'CSE';
+  String selectedSubject = '';
   String? streamSelectedOption;
   String? _announcementText;
+
+  GoogleDriveService driveService = GoogleDriveService();
+
 
   MaterialsProvider() {
     initialize();
@@ -43,7 +37,6 @@ class MaterialsProvider with ChangeNotifier {
 
   Future<void> initialize() async {
     await getSharedPrefsValues();
-    getSpecialization();
     getSubjects();
   }
 
@@ -54,11 +47,6 @@ class MaterialsProvider with ChangeNotifier {
     branchSelectedOption =
         await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ??
             branchList.first;
-    if (specializations.isNotEmpty) {
-      streamSelectedOption =
-          await sharedPreferences.getSecurePrefsValue('streamSelectedOption') ??
-              specializations.first;
-    }
     selectedSubjects =
         await sharedPreferences.getListFromSecureStorage('selectedSubjects');
     notifyListeners();
@@ -78,60 +66,37 @@ class MaterialsProvider with ChangeNotifier {
     });
   }
 
-  void getSpecialization() {
-    if (branchSelectedOption == 'CSE') {
-      specializations = cseSpecialization;
-    } else if (branchSelectedOption == 'ECE') {
-      specializations = eceSpecialization;
-    }
-
-    if (specializations.isNotEmpty) {
-      if (streamSelectedOption == null ||
-          !specializations.contains(streamSelectedOption)) {
-        streamSelectedOption = specializations.first;
-      }
-    }
-    notifyListeners();
-  }
 
   Future<void> getSubjects() async {
     loadingDialog.showDefaultLoading('Getting subjects');
     subjects.clear();
-    DocumentReference branchRef = FirebaseFirestore.instance
-        .doc('subjects/$yearSelectedOption/$branchSelectedOption/COMMON');
-    DocumentReference streamRef = FirebaseFirestore.instance.doc(
-        'subjects/$yearSelectedOption/$branchSelectedOption/$streamSelectedOption');
+    await driveService.authenticate();
 
-    Map<String, dynamic>? branchDetails =
-        await fireStoreService.getDocumentDetails(branchRef);
-    Map<String, dynamic>? streamDetails =
-        await fireStoreService.getDocumentDetails(streamRef);
+    List<drive.File> folders = await driveService.listFoldersInFolder("1It2hLS1rcRLk46eLPz95m9mTXYY22WS2");
 
-    List<dynamic> branchValues = branchDetails!.values.toList() ?? [];
-    List<dynamic> streamValues = streamDetails!.values.toList() ?? [];
-
-    subjects.addAll(branchValues);
-    subjects.addAll(streamValues);
-    sortSubjects();
-
-    notifyListeners();
-    loadingDialog.dismiss();
-  }
-
-  void sortSubjects() {
-    subjects.sort((a, b) {
-      int indexA = selectedSubjects.indexOf(a);
-      int indexB = selectedSubjects.indexOf(b);
-      if (indexA == -1 && indexB == -1) {
-        return 0;
-      } else if (indexA == -1) {
-        return 1;
-      } else if (indexB == -1) {
-        return -1;
+    for (var folder in folders) {
+      if(folder.name == branchSelectedOption){
+        List<drive.File> folders = await driveService.listFoldersInFolder(folder.id!);
+        for(var folder in folders){
+          if(folder.name == "YEAR $yearSelectedOption"){
+            List<drive.File> allSubjects = await driveService.listFoldersInFolder(folder.id!);
+            for(var subject in allSubjects){
+              subjectsWithID.add({subject.name!: subject.id!});
+            }
+            notifyListeners();
+            print('Subjects: $subjects');
+          }else{
+            print('Selected year not present $yearSelectedOption');
+          }
+        }
+      }else{
+        print('Selected Branch not present $branchSelectedOption');
       }
-      return indexA.compareTo(indexB);
-    });
-    notifyListeners();
+    }
+    for (var subject in subjectsWithID) {
+      subjects.add(subject.keys.first);  // Get the first (and only) key in the map
+    }
+    loadingDialog.dismiss();
   }
 
   Future<void> updateSharedPrefsValues() async {
@@ -153,8 +118,7 @@ class MaterialsProvider with ChangeNotifier {
 
   // Getters for UI
   String? get announcementText => _announcementText;
-  List<String> get availableSpecializations => specializations;
-  List<dynamic> get availableSubjects => subjects;
+  List<dynamic> get  subjects => _subjects;
   String? get currentYearSelectedOption => yearSelectedOption;
   String? get currentBranchSelectedOption => branchSelectedOption;
   String? get currentStreamSelectedOption => streamSelectedOption;
@@ -167,5 +131,10 @@ class MaterialsProvider with ChangeNotifier {
   void newStreamSelection(String? value) {
     streamSelectedOption = value;
     notifyListeners();
+  }
+
+  set setSelectedSubject(String value) {
+    selectedSubject = value;
+    notifyListeners(); // Notify listeners when the value is updated
   }
 }

@@ -121,10 +121,11 @@ class RazorPayment extends ChangeNotifier {
     try {
       int? bookingID = await realTimeDatabase.incrementValue("TicketsCount");
       String ticketStatus = "WaitingList";
+      int waitingListCount = 0;
 
       Map<String, dynamic> data = {
         "Booking ID": bookingID,
-        "Bus Number" : _busDetails["busNumber"],
+        "Bus Number": _busDetails["busNumber"],
         "Booking Time": DateTime.now(),
         "Email": _email,
         "Mobile Number": _mobileNumber,
@@ -142,7 +143,7 @@ class RazorPayment extends ChangeNotifier {
       String? uid = await utils.getCurrentUserUID();
       print('UID: $uid');
 
-      DocumentReference userBookingReference = FirebaseFirestore.instance.doc("users/$uid/busbooking/${bookingID}");
+      DocumentReference userBookingReference = FirebaseFirestore.instance.doc("users/$uid/busbooking/$bookingID");
       DocumentReference busReference = FirebaseFirestore.instance.doc("buses/${_busDetails['busNumber']}");
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
@@ -165,6 +166,7 @@ class RazorPayment extends ChangeNotifier {
           });
         } else {
           ticketStatus = "WaitingList";
+          waitingListCount = waitingListTickets.length + 1; // New position in the waiting list
           waitingListTickets.add(data);
           transaction.update(busReference, {
             'waitingListTickets': waitingListTickets,
@@ -173,9 +175,11 @@ class RazorPayment extends ChangeNotifier {
       });
 
       data["Ticket Status"] = ticketStatus;
+
       await fireStoreService.uploadMapDataToFirestore(data, userBookingReference);
       await updateGoogleSheets(data);
 
+      // Pass the calculated waitingListCount dynamically
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -183,6 +187,8 @@ class RazorPayment extends ChangeNotifier {
             busDetails: _busDetails,
             passengerDetails: _passengerDetails,
             isPaymentSuccessful: true,
+            ticketStatus: data["Ticket Status"],
+            waitingListCount: waitingListCount, // Pass the correct waiting list count
           ),
         ),
       );
@@ -197,6 +203,7 @@ class RazorPayment extends ChangeNotifier {
     }
   }
 
+
   handlePaymentError(PaymentFailureResponse response, BuildContext context) {
     if (kDebugMode) {
       print("Payment error: ${response.code} - ${response.message}");
@@ -207,7 +214,9 @@ class RazorPayment extends ChangeNotifier {
         builder: (context) => PaymentStatus(
           busDetails: _busDetails,
           passengerDetails: _passengerDetails,
-          isPaymentSuccessful: false, // Payment was successful
+          isPaymentSuccessful: true,
+          ticketStatus: 'PAYMENT FAILED',
+          waitingListCount: 0, // Pass the correct waiting list count
         ),
       ),
     );
