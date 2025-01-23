@@ -112,7 +112,7 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
       if (utils.isValidMobileNumber(mobileNumber)) {
         final razorpay = RazorPayment();
         razorpay.initializeRazorpay(context);
-        razorpay.startPayment(totalCost, _contactController.text, _trainNumberController.text,email!, widget.busDetails, _passengers);
+        razorpay.startPayment(totalCost, _contactController.text,_trainNumberController.text,email!, widget.busDetails, _passengers);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
