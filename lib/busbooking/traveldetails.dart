@@ -184,8 +184,6 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
                   ),
                 ),
               ),
-
-
               // Passenger Details Form
               const SizedBox(height: 16),
               Form(
