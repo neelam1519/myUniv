@@ -1,15 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
-import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import '../apis/razorpay.dart';
-import '../utils/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
-
+import '../Firebase/firestore.dart';
+import '../apis/razorpay.dart';
+import '../utils/utils.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 class TravelDetailsPage extends StatefulWidget {
   final Map<String, dynamic> busDetails;
@@ -31,11 +30,9 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
 
   int availableSeats = 0;
   String url = '';
-  bool _isTermsAccepted = false; // Add this state variable at the class level
-
+  bool _isTermsAccepted = false;
   int get ticketPrice => widget.busDetails['price'].round() ?? 0;
   List<dynamic> imageUrls = [];
-
   int get totalCost => _passengers.length * ticketPrice;
   FireStoreService fireStoreService = FireStoreService();
 
@@ -45,16 +42,12 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
     availableSeats = widget.busDetails["availableSeats"];
     _listenToBusSeatUpdates();
     getTermsAndConditions();
-
   }
 
-  Future<void> getTermsAndConditions()async {
+  Future<void> getTermsAndConditions() async {
     DocumentReference documentReference = FirebaseFirestore.instance.doc('buses/${widget.busDetails['busNumber']}');
     url = await fireStoreService.getFieldValue(documentReference, 'termsandconditions');
     imageUrls = await fireStoreService.getFieldValue(documentReference, 'imageUrls');
-    print('Url: $url');
-    print('image Urls: $imageUrls');
-
   }
 
   void _listenToBusSeatUpdates() {
@@ -112,7 +105,7 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
       if (utils.isValidMobileNumber(mobileNumber)) {
         final razorpay = RazorPayment();
         razorpay.initializeRazorpay(context);
-        razorpay.startPayment(totalCost, _contactController.text,_trainNumberController.text,email!, widget.busDetails, _passengers);
+        razorpay.startPayment(totalCost, _contactController.text, _trainNumberController.text, email!, widget.busDetails, _passengers);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -149,12 +142,6 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
             ),
           ),
         ),
-        actions: [
-          // IconButton(
-          //   icon: const Icon(Icons.info, color: Colors.white),
-          //   onPressed: () {},
-          // ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -179,65 +166,25 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      Text(
+                        'Date: ${widget.busDetails['arrivalDate']}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Departure Time: ${widget.busDetails['departureTime']}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Available Seats: $availableSeats',
+                        style: const TextStyle(fontSize: 16, color: Colors.green),
+                      ),
                     ],
                   ),
                 ),
               ),
 
-              // Travel Details Section
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Travel Details',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Arrival:',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                '${widget.busDetails['arrivalDate']} at ${widget.busDetails['arrivalTime']}',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Departure:',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                '${widget.busDetails['departureDate']} at ${widget.busDetails['departureTime']}',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
 
               // Passenger Details Form
               const SizedBox(height: 16),
@@ -369,7 +316,6 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
                             });
                           },
                         ),
-
                         Expanded(
                           child: GestureDetector(
                             onTap: () async {
@@ -409,7 +355,6 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
           ],
         ),
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -455,30 +400,23 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: PageView.builder(
+                  child: CarouselSlider.builder(
                     itemCount: imageUrls.length,
-                    itemBuilder: (context, index) {
+                    itemBuilder: (context, index, realIndex) {
                       return GestureDetector(
                         onTap: () async {
-                          // Show the loading dialog while downloading
                           showDialog(
                             context: context,
-                            barrierDismissible: false, // Disable dismissing by tapping outside
+                            barrierDismissible: false,
                             builder: (context) {
-                              return Center(
+                              return const Center(
                                 child: CircularProgressIndicator(),
                               );
                             },
                           );
-
-                          // Download the image
                           String filePath = await _downloadImage(imageUrls[index]);
-
-                          // Close the loading dialog
                           Navigator.of(context).pop();
-
                           if (filePath.isNotEmpty) {
-                            // Open the downloaded file
                             final result = await OpenFile.open(filePath);
                             if (result.type != ResultType.done) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -487,16 +425,24 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
                             }
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to download image')),
+                              const SnackBar(content: Text('Failed to download image')),
                             );
                           }
                         },
-                        child: Image.network(
-                          imageUrls[index],
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrls[index],
                           fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => const Icon(Icons.error),
                         ),
                       );
                     },
+                    options: CarouselOptions(
+                      autoPlay: true,
+                      enlargeCenterPage: true,
+                      aspectRatio: 2.0,
+                      initialPage: 2,
+                    ),
                   ),
                 ),
               ],
@@ -509,19 +455,14 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
 
   Future<String> _downloadImage(String imageUrl) async {
     try {
-      // Get the temporary directory to store the image
       final dir = await getTemporaryDirectory();
       final filePath = '${dir.path}/image_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      // Download the image
       final dio = Dio();
       await dio.download(imageUrl, filePath);
-
       return filePath;
     } catch (e) {
       print('Error downloading image: $e');
       return '';
     }
   }
-
 }
