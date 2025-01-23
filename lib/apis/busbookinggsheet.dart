@@ -43,9 +43,11 @@ class BusBookingGSheet {
           'Booking ID', // Booking ID
           'Booking Time', // Booking Time
           'Email', // Email
-          'Mobile Number', // Mobile Number
           'From', // From
           'TO', // To
+          'Passenger details',
+          'Mobile Number', // Mobile Number
+          'Train Number',
           'Bus Date', // Bus Date
           'Bus Time', // Bus Time
           'Ticket Status',
@@ -53,22 +55,24 @@ class BusBookingGSheet {
           'Total Amount', // Total Amount
           'Payment ID', // Payment ID
         ];
-        await sheet.values.insertRow(1, headers);  // Insert headers at row 1 (first row)
+        await sheet.values.insertRow(1, headers);
       }
 
       // Format the data into a row to insert
       final row = [
-        bookingData['Booking ID'], // Booking ID
-        bookingData['Booking Time'].toString(), // Booking Time
-        bookingData['Email'], // Email
-        bookingData['Mobile Number'], // Mobile Number
-        bookingData['From'], // From
-        bookingData['TO'], // To
-        bookingData['Bus Date'], // Bus Date
-        bookingData['Bus Time'], // Bus Time
-        bookingData['Ticket Status'], // Payment ID
-        bookingData['Ticket Count'], // Ticket Count
-        bookingData['Total Amount'], // Total Amount
+        bookingData['Booking ID'],
+        bookingData['Booking Time'].toString(),
+        bookingData['From'],
+        bookingData['TO'],
+        bookingData['Email'],
+        bookingData['Passenger Details'],
+        bookingData['Mobile Number'],
+        bookingData['Train Number'],
+        bookingData['Bus Date'],
+        bookingData['Bus Time'],
+        bookingData['Ticket Status'],
+        bookingData['Ticket Count'],
+        bookingData['Total Amount'],
         bookingData['Payment ID'], // Payment ID
       ];
 

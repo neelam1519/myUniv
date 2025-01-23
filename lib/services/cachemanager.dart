@@ -4,29 +4,46 @@ import 'package:path/path.dart'; // To work with file paths
 
 class CustomCacheManager {
 
-  /// Downloads or fetches the cached PDF with a dynamic cache key.
-   Future<File> downloadAndCachePDF(String url, String cacheKey) async {
-    // Create a custom CacheManager with the dynamic cache key
+  Future<File> downloadAndCachePDF(String url, String originalName,String folderID) async {
+    print('Url: $url');
     final cacheManager = CacheManager(
       Config(
-        cacheKey, // Custom cache key passed as input
+        'pdf_cache/$folderID', // Use a static cache key for simplicity
         stalePeriod: const Duration(days: 3), // Cache expiration period (3 days)
         maxNrOfCacheObjects: 100, // Max number of cache objects
       ),
     );
 
     try {
-
       final file = await cacheManager.getSingleFile(url);
-      return _ensurePdfExtension(file);
 
+      // Ensure correct file extension and naming
+      return _ensureCorrectFilename(file, originalName);
     } catch (e) {
       print('Error downloading or fetching PDF: $e');
       rethrow;
     }
   }
 
-  /// Ensures that the cached file has a `.pdf` extension.
+  File _ensureCorrectFilename(File file, String originalName) {
+    final directory = file.parent;
+    final correctName = _sanitizeFilename(originalName);
+
+    final correctPath = '${directory.path}/$correctName';
+
+    // Rename the file if it doesn't match the original name
+    if (file.path != correctPath) {
+      final renamedFile = file.renameSync(correctPath);
+      print('File renamed to: ${renamedFile.path}');
+      return renamedFile;
+    }
+    return file;
+  }
+
+  String _sanitizeFilename(String name) {
+    return name.replaceAll(RegExp(r'[\/:*?"<>|]'), '_');
+  }
+
   static Future<File> _ensurePdfExtension(File file) async {
     if (file.path.endsWith('.pdf')) {
       return file;

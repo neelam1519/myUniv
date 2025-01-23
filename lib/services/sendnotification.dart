@@ -12,7 +12,7 @@ class NotificationService {
   void initialize(){
     print('Intializing Notification');
     AwesomeNotifications().initialize(
-      "assets/images/logo.png", [
+      "resource://drawable/notification.png", [
         NotificationChannel(
           channelKey: 'Neelam',
           channelName: 'myUniv',
@@ -35,7 +35,6 @@ class NotificationService {
     final Map<String, dynamic> data = message.data;
 
     AwesomeNotifications().createNotification(
-
       content: NotificationContent(
         id: 11,
         channelKey: 'Neelam',
@@ -43,6 +42,7 @@ class NotificationService {
         body: body,
         notificationLayout: NotificationLayout.Default,
         payload: data.map((key, value) => MapEntry(key, value.toString())),
+
       )
     );
   }

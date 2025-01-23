@@ -119,21 +119,22 @@ class RealTimeDatabase {
     }
   }
 
-  Future<dynamic> getCurrentValue(String location) async {
+  Stream<String?> getCurrentValue(String location) {
     try {
       final DatabaseReference locationRef = FirebaseDatabase.instance.ref(location); // Get reference
-      DatabaseEvent event = await locationRef.once();
-
-      if (event.snapshot.exists) {
-        return event.snapshot.value;
-      } else {
-        return null; // Return null to indicate no data found
-      }
+      return locationRef.onValue.map((event) {
+        if (event.snapshot.exists) {
+          return event.snapshot.value.toString(); // Return the data as a String
+        } else {
+          return null; // Return null if no data exists
+        }
+      });
     } catch (e) {
-      print('Error fetching current value: $e');
-      return null; // Handle errors gracefully
+      print('Error setting up stream: $e');
+      return Stream.value(null); // Return null if there's an error
     }
   }
+
 
 
 }

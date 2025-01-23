@@ -50,6 +50,8 @@ class _AddBusScreenState extends State<AddBusScreen> {
           'availableSeats': int.parse(_totalSeatsController.text.trim()),
           'price': int.parse(_priceController.text.trim()),
           'status': 'active',
+          'confirmedTickets' : [],
+          'waitingListTickets' : []
         });
 
         ScaffoldMessenger.of(context).showSnackBar(

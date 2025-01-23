@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:shimmer/shimmer.dart';
 import '../apis/googleDrive.dart';
@@ -20,6 +21,7 @@ class _DriveMaterialsState extends State<DriveMaterials> {
   final GoogleDriveService _driveService = GoogleDriveService();
   List<Map<String, String?>> _materials = [];
   bool _isLoading = true;
+  int? fileCount;
 
   @override
   void initState() {
@@ -33,15 +35,20 @@ class _DriveMaterialsState extends State<DriveMaterials> {
     try {
       await _driveService.authenticate();
 
+      fileCount =await _driveService.countFilesInFolder(widget.unitID);
+      print("File Count: $fileCount");
+
       Stream<File> filesStream = _driveService.listFilesInFolderWithCache(widget.unitID);
 
       await for (var file in filesStream) {
+        print('File: ${file.uri}');
         setState(() {
           _materials.add({
             'filename': file.uri.pathSegments.last,
             'localPath': file.path,
           });
         });
+        _isLoading = false;
       }
     } catch (e) {
       print('Error fetching materials: $e');
@@ -63,12 +70,13 @@ class _DriveMaterialsState extends State<DriveMaterials> {
   }
 
   void _openPdf(String localPath) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PdfViewerScreen(pdfPath: localPath),
-      ),
-    );
+    OpenFile.open(localPath);
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => PdfViewerScreen(pdfPath: localPath),
+    //   ),
+    // );
   }
 
   @override
@@ -77,34 +85,12 @@ class _DriveMaterialsState extends State<DriveMaterials> {
       appBar: AppBar(
         title: Text(widget.unitName),
       ),
-      body: _isLoading
-          ? GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.8,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-        ),
-        padding: const EdgeInsets.all(8),
-        itemCount: 6, // Show shimmer placeholders
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
-                height: 120,
-                color: Colors.white,
-              ),
-            ),
-          );
-        },
-      )
-          : _materials.isEmpty
+      body: fileCount == null
+          ? pdfShimmer() // Show shimmer while fileCount is null
+          : fileCount == 0
           ? const Center(
         child: Text(
-          'No PDFs Found',
+          'No Materials Found for this subject',
           style: TextStyle(fontSize: 18),
         ),
       )
@@ -116,87 +102,116 @@ class _DriveMaterialsState extends State<DriveMaterials> {
           mainAxisSpacing: 8,
         ),
         padding: const EdgeInsets.all(8),
-        itemCount: _materials.length,
+        itemCount: fileCount, // Use fileCount for the number of cards
         itemBuilder: (context, index) {
-          final pdf = _materials[index];
+          if (index < _materials.length) {
+            final pdf = _materials[index];
 
-          if (pdf['localPath'] != null) {
-            return FutureBuilder<Widget>(
-              future: _generateThumbnail(pdf['localPath']!),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+            if (pdf['localPath'] != null) {
+              return FutureBuilder<Widget>(
+                future: _generateThumbnail(pdf['localPath']!),
+                builder: (context, snapshot) {
                   return Card(
                     elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
+                    child: InkWell(
+                      onTap: () => _openPdf(pdf['localPath']!),
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error, size: 50, color: Colors.red),
-                        const SizedBox(height: 8),
-                        Text(
-                          pdf['filename'] ?? 'Unknown File',
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                              child: snapshot.connectionState ==
+                                  ConnectionState.waiting
+                                  ? const Center(
+                                child:
+                                CircularProgressIndicator(),
+                              ) // Show loading dialog
+                                  : snapshot.hasError
+                                  ? Column(
+                                mainAxisAlignment:
+                                MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.error,
+                                      size: 50,
+                                      color: Colors.red),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Error Loading Thumbnail',
+                                    textAlign:
+                                    TextAlign.center,
+                                  ),
+                                ],
+                              )
+                                  : snapshot.data,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              pdf['filename'] ?? 'Unknown File',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
-                }
-
-                return Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: InkWell(
-                    onTap: () => _openPdf(pdf['localPath']!),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                            child: snapshot.data,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            pdf['filename'] ?? 'Unknown File',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          } else {
-            return const SizedBox.shrink();
+                },
+              );
+            }
           }
+          // Placeholder for files not yet loaded
+          return Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(), // Show loading indicator
+            ),
+          );
         },
       ),
+    );
+  }
+
+
+  Widget pdfShimmer(){
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      padding: const EdgeInsets.all(8),
+      itemCount: 6,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              height: 120,
+              color: Colors.white,
+            ),
+          ),
+        );
+      },
     );
   }
 }

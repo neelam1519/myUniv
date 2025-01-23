@@ -9,7 +9,6 @@ import 'package:googleapis/drive/v3.dart' as drive;
 
 class MaterialsProvider with ChangeNotifier {
   final FireStoreService fireStoreService = FireStoreService();
-  final LoadingDialog loadingDialog = LoadingDialog();
   final SharedPreferences sharedPreferences = SharedPreferences();
   final Utils utils = Utils();
   final FirebaseDatabase _database = FirebaseDatabase.instance;
@@ -29,7 +28,6 @@ class MaterialsProvider with ChangeNotifier {
 
   GoogleDriveService driveService = GoogleDriveService();
 
-
   MaterialsProvider() {
     initialize();
     fetchAnnouncementText();
@@ -48,13 +46,13 @@ class MaterialsProvider with ChangeNotifier {
         await sharedPreferences.getSecurePrefsValue('branchSelectedOption') ??
             branchList.first;
     selectedSubjects =
-        await sharedPreferences.getListFromSecureStorage('selectedSubjects');
+    await sharedPreferences.getListFromSecureStorage('selectedSubjects');
     notifyListeners();
   }
 
   Future<void> fetchAnnouncementText() async {
     final DatabaseReference announcementRef =
-        _database.ref('Materials/Announcement');
+    _database.ref('Materials/Announcement');
     announcementRef.onValue.listen((event) {
       final DataSnapshot snapshot = event.snapshot;
       if (snapshot.exists) {
@@ -66,10 +64,10 @@ class MaterialsProvider with ChangeNotifier {
     });
   }
 
-
   Future<void> getSubjects() async {
-    loadingDialog.showDefaultLoading('Getting subjects');
-    subjects.clear();
+    subjectsWithID.clear();  // Clear the subjects list before adding new data
+    _subjects.clear();  // Clear the subjects list to avoid old data
+
     await driveService.authenticate();
 
     List<drive.File> folders = await driveService.listFoldersInFolder("1It2hLS1rcRLk46eLPz95m9mTXYY22WS2");
@@ -93,10 +91,12 @@ class MaterialsProvider with ChangeNotifier {
         print('Selected Branch not present $branchSelectedOption');
       }
     }
+
     for (var subject in subjectsWithID) {
-      subjects.add(subject.keys.first);  // Get the first (and only) key in the map
+      _subjects.add(subject.keys.first);  // Add the subject name to the list
     }
-    loadingDialog.dismiss();
+
+    notifyListeners();  // Notify listeners to update the UI with the new subjects
   }
 
   Future<void> updateSharedPrefsValues() async {
@@ -110,15 +110,13 @@ class MaterialsProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    sharedPreferences.storeListInSecureStorage(
-        selectedSubjects, 'selectedSubjects');
-    loadingDialog.dismiss();
+    sharedPreferences.storeListInSecureStorage(selectedSubjects, 'selectedSubjects');
     super.dispose();
   }
 
   // Getters for UI
   String? get announcementText => _announcementText;
-  List<dynamic> get  subjects => _subjects;
+  List<dynamic> get subjects => _subjects;
   String? get currentYearSelectedOption => yearSelectedOption;
   String? get currentBranchSelectedOption => branchSelectedOption;
   String? get currentStreamSelectedOption => streamSelectedOption;
@@ -135,6 +133,6 @@ class MaterialsProvider with ChangeNotifier {
 
   set setSelectedSubject(String value) {
     selectedSubject = value;
-    notifyListeners(); // Notify listeners when the value is updated
+    notifyListeners();  // Notify listeners when the value is updated
   }
 }

@@ -32,6 +32,5 @@ module.exports = {
     "linebreak-style": ["error", "windows"],
     "max-len": ["error", {"code": 120 }],
 
-
   },
 };

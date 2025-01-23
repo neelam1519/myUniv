@@ -1,9 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:findany_flutter/busbooking/paymentstatus.dart';
-import 'package:findany_flutter/utils/utils.dart';
+import 'package:dio/dio.dart';
+import 'package:findany_flutter/Firebase/firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'package:open_file_plus/open_file_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../apis/razorpay.dart';
+import '../utils/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 
 
 class TravelDetailsPage extends StatefulWidget {
@@ -18,42 +23,53 @@ class TravelDetailsPage extends StatefulWidget {
 class _TravelDetailsPageState extends State<TravelDetailsPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _contactController = TextEditingController();
+  final TextEditingController _trainNumberController = TextEditingController();
   Utils utils = Utils();
   final List<Map<String, dynamic>> _passengers = [
     {'name': '', 'gender': 'M'}
   ];
 
   int availableSeats = 0;
+  String url = '';
+  bool _isTermsAccepted = false; // Add this state variable at the class level
 
   int get ticketPrice => widget.busDetails['price'].round() ?? 0;
+  List<dynamic> imageUrls = [];
 
   int get totalCost => _passengers.length * ticketPrice;
+  FireStoreService fireStoreService = FireStoreService();
 
   @override
   void initState() {
     super.initState();
     availableSeats = widget.busDetails["availableSeats"];
-
     _listenToBusSeatUpdates();
+    getTermsAndConditions();
+
   }
 
-  // Listen for updates in the Firestore document to track seat availability
+  Future<void> getTermsAndConditions()async {
+    DocumentReference documentReference = FirebaseFirestore.instance.doc('buses/${widget.busDetails['busNumber']}');
+    url = await fireStoreService.getFieldValue(documentReference, 'termsandconditions');
+    imageUrls = await fireStoreService.getFieldValue(documentReference, 'imageUrls');
+    print('Url: $url');
+    print('image Urls: $imageUrls');
+
+  }
+
   void _listenToBusSeatUpdates() {
-    print("bus  listen: ${widget.busDetails}");
     FirebaseFirestore.instance
         .collection('buses')
-        .doc(widget.busDetails['busNumber'].toString())  // assuming you have a busId field
+        .doc(widget.busDetails['busNumber'].toString())
         .snapshots()
         .listen((documentSnapshot) {
       if (documentSnapshot.exists) {
         final updatedBusData = documentSnapshot.data()!;
-        print("updated bus details $updatedBusData");
         setState(() {
           availableSeats = updatedBusData["availableSeats"];
         });
       }
     });
-
   }
 
   void _addPassenger() {
@@ -79,27 +95,24 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
   }
 
   Future<void> _submitBooking() async {
-    if (_formKey.currentState?.validate() ?? false) {
+    if (_formKey.currentState?.validate() == true) {
       String? email = await utils.getCurrentUserEmail();
       String mobileNumber = _contactController.text;
 
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => PaymentStatus(
-      //       busDetails: widget.busDetails,
-      //       passengerDetails: _passengers,
-      //       isPaymentSuccessful: true,
-      //       ticketStatus: 'testing',
-      //       waitingListCount: 0, // Pass the correct waiting list count
-      //     ),
-      //   ),
-      // );
+      if(!_isTermsAccepted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Accept the Terms and conditions.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
       if (utils.isValidMobileNumber(mobileNumber)) {
         final razorpay = RazorPayment();
         razorpay.initializeRazorpay(context);
-        razorpay.startPayment(totalCost, _contactController.text, email!, widget.busDetails, _passengers);
+        razorpay.startPayment(totalCost, _contactController.text, _trainNumberController.text,email!, widget.busDetails, _passengers);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -121,154 +134,394 @@ class _TravelDetailsPageState extends State<TravelDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Enter Travel Details', style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
-        backgroundColor: Colors.blue.shade900,
+        title: const Center(
+          child: Text(
+            'Book Your Journey',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blueAccent, Colors.lightBlue],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        actions: [
+          // IconButton(
+          //   icon: const Icon(Icons.info, color: Colors.white),
+          //   onPressed: () {},
+          // ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Bus Details Section
+              Card(
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${widget.busDetails['from']} → ${widget.busDetails['to']}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Travel Details Section
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Travel Details',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Arrival:',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                '${widget.busDetails['arrivalDate']} at ${widget.busDetails['arrivalTime']}',
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Departure:',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                '${widget.busDetails['departureDate']} at ${widget.busDetails['departureTime']}',
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Passenger Details Form
+              const SizedBox(height: 16),
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Passenger Details',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._passengers.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      var passenger = entry.value;
+                      return Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: passenger['name'],
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _passengers[index]['name'] = value;
+                                    });
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: 'Passenger ${index + 1} Name',
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Enter a name';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              DropdownButton<String>(
+                                value: passenger['gender'],
+                                onChanged: (value) {
+                                  setState(() {
+                                    passenger['gender'] = value!;
+                                  });
+                                },
+                                items: ['M', 'F'].map((gender) {
+                                  return DropdownMenuItem(
+                                    value: gender,
+                                    child: Text(gender),
+                                  );
+                                }).toList(),
+                              ),
+                              if (_passengers.length > 1)
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                  onPressed: () => _removePassenger(index),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ElevatedButton.icon(
+                        onPressed: _addPassenger,
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        label: const Text('Add Passenger'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _contactController,
+                      decoration: const InputDecoration(
+                        labelText: 'Contact Number',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Enter a contact number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _trainNumberController,
+                      decoration: const InputDecoration(
+                        labelText: 'Train Number',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Enter your Train number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        _showBusImages(context);
+                      },
+                      child: const Text('Check Bus Images'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _isTermsAccepted,
+                          onChanged: (value) {
+                            setState(() {
+                              _isTermsAccepted = value ?? false;
+                            });
+                          },
+                        ),
+
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              if (await canLaunchUrl(Uri.parse(url))) {
+                                await launchUrl(Uri.parse(url));
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Could not open Terms and Conditions.')),
+                                );
+                              }
+                            },
+                            child: const Text(
+                              'I agree to the Terms and Conditions',
+                              style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              offset: const Offset(0, -2),
+              blurRadius: 6.0,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Total Cost: ₹$totalCost',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            ElevatedButton(
+              onPressed: _submitBooking,
+              child: const Text('Book Tickets'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBusImages(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: MediaQuery.of(context).size.height * 0.5,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Travel details at the top
-                Text(
-                  '${widget.busDetails['from']} → ${widget.busDetails['to']}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Date: ${widget.busDetails['arrivalDate']}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Departure Time: ${widget.busDetails['departureTime']}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Available Seats: $availableSeats',
-                  style: const TextStyle(fontSize: 16, color: Colors.green),
-                ),
-                const SizedBox(height: 16),
-
-                // Passenger Input
-                ..._passengers.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  var passenger = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: passenger['name'],
-                            onChanged: (value) {
-                              setState(() {
-                                _passengers[index]['name'] = value;
-                              });
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Passenger ${index + 1} Name',
-                              border: const OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Enter a name';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        DropdownButton<String>(
-                          value: passenger['gender'],
-                          onChanged: (value) {
-                            setState(() {
-                              passenger['gender'] = value!;
-                            });
-                          },
-                          items: ['M', 'F'].map((gender) {
-                            return DropdownMenuItem(
-                              value: gender,
-                              child: Text(gender),
-                            );
-                          }).toList(),
-                        ),
-                        if (_passengers.length > 1)
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle, color: Colors.red),
-                            onPressed: () => _removePassenger(index),
-                          ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-
-                // Add Passenger Button
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: ElevatedButton(
-                    onPressed: _addPassenger,
-                    child: const Text(
-                      'Add Passenger',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade900,
-                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Contact Number
-                TextFormField(
-                  controller: _contactController,
-                  decoration: const InputDecoration(
-                    labelText: 'Contact Number',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter a contact number';
-                    }
-                    return null;
+                IconButton(
+                  icon: const Icon(Icons.close, size: 30),
+                  onPressed: () {
+                    Navigator.of(context).pop();
                   },
+                  padding: EdgeInsets.zero,
+                  alignment: Alignment.topRight,
                 ),
                 const SizedBox(height: 16),
+                Expanded(
+                  child: PageView.builder(
+                    itemCount: imageUrls.length,
+                    itemBuilder: (context, index) {
+                      return GestureDetector(
+                        onTap: () async {
+                          // Show the loading dialog while downloading
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false, // Disable dismissing by tapping outside
+                            builder: (context) {
+                              return Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
+                          );
 
-                // Total Cost
-                Text(
-                  'Total Cost: ₹$totalCost',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
+                          // Download the image
+                          String filePath = await _downloadImage(imageUrls[index]);
 
-                // Submit Button
-                Align(
-                  alignment: Alignment.center,
-                  child: ElevatedButton(
-                    onPressed: _submitBooking,
-                    child: const Text('Confirm Booking'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
+                          // Close the loading dialog
+                          Navigator.of(context).pop();
+
+                          if (filePath.isNotEmpty) {
+                            // Open the downloaded file
+                            final result = await OpenFile.open(filePath);
+                            if (result.type != ResultType.done) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Could not open the file: ${result.message}')),
+                              );
+                            }
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to download image')),
+                            );
+                          }
+                        },
+                        child: Image.network(
+                          imageUrls[index],
+                          fit: BoxFit.cover,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+
+  Future<String> _downloadImage(String imageUrl) async {
+    try {
+      // Get the temporary directory to store the image
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}/image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      // Download the image
+      final dio = Dio();
+      await dio.download(imageUrl, filePath);
+
+      return filePath;
+    } catch (e) {
+      print('Error downloading image: $e');
+      return '';
+    }
+  }
+
 }

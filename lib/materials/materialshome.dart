@@ -1,12 +1,9 @@
 import 'dart:io';
-
 import 'package:findany_flutter/materials/units.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../apis/googleDrive.dart';
+import 'package:shimmer/shimmer.dart';
 import 'materials_provider.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
-
 
 class MaterialsHome extends StatelessWidget {
   const MaterialsHome({super.key});
@@ -66,10 +63,10 @@ class MaterialsHome extends StatelessWidget {
                                     'Branch',
                                     materialProvider.branchList,
                                     materialProvider.currentBranchSelectedOption, (value) {
-                                      materialProvider.branchSelectedOption = value;
-                                      materialProvider.updateSharedPrefsValues();
-                                      materialProvider.getSubjects();
-                                    },
+                                    materialProvider.branchSelectedOption = value;
+                                    materialProvider.updateSharedPrefsValues();
+                                    materialProvider.getSubjects();
+                                  },
                                   ),
                                   const SizedBox(height: 24.0),
                                   ElevatedButton(
@@ -84,6 +81,7 @@ class MaterialsHome extends StatelessWidget {
                                         provider.utils.showToastMessage('Connect to the Internet');
                                         return;
                                       }
+                                      materialProvider.subjects.clear();
                                       Navigator.pop(context);
                                       materialProvider.getSubjects();
                                     },
@@ -124,7 +122,9 @@ class MaterialsHome extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: ListView.builder(
+                  child: provider.subjects.isEmpty  // Check for loading state
+                      ? _buildShimmerEffect() // Display shimmer effect while loading
+                      : ListView.builder(
                     itemCount: provider.subjects.length,
                     itemBuilder: (context, index) {
                       return Card(
@@ -166,7 +166,6 @@ class MaterialsHome extends StatelessWidget {
                                 ),
                               ),
                             );
-
                           },
                         ),
                       );
@@ -175,6 +174,31 @@ class MaterialsHome extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShimmerEffect() {
+    return ListView.builder(
+      itemCount: 10, // Shimmer effect shows for 10 items by default
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Card(
+            elevation: 4.0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: ListTile(
+              title: Container(
+                height: 16.0,
+                color: Colors.white,
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            ),
           ),
         );
       },
@@ -203,10 +227,7 @@ class MaterialsHome extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           ),
           items: items.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
+            return DropdownMenuItem<String>(value: value, child: Text(value));
           }).toList(),
         ),
       ],

@@ -34,14 +34,16 @@ class _BookingHistoryState extends State<BookingHistory> {
   // Fetch booking history for the current user
   Future<void> fetchBookingHistory() async {
     try {
-      CollectionReference collectionReference = FirebaseFirestore.instance.collection('users/$userId/busbooking');
+      CollectionReference collectionReference =
+      FirebaseFirestore.instance.collection('users/$userId/busbooking');
       List<String> documents = await fireStoreService.getDocumentNames(collectionReference);
       print('Documents: $documents');
 
       List<Map<String, dynamic>> fetchedBookingHistory = [];
 
       for (String doc in documents) {
-        Map<String, dynamic>? data = await fireStoreService.getDocumentDetails(collectionReference.doc(doc));
+        Map<String, dynamic>? data =
+        await fireStoreService.getDocumentDetails(collectionReference.doc(doc));
 
         if (data != null) {
           // Safely handle bookingTime conversion (check if it exists and is not null)
@@ -53,8 +55,19 @@ class _BookingHistoryState extends State<BookingHistory> {
             bookingTime = (data['Booking Time'] as Timestamp).toDate();
 
             // Format the DateTime to a readable format (e.g., "Jan 13, 2025 10:30 AM")
-            readableBookingTime = DateFormat('MMM dd, yyyy hh:mm a').format(bookingTime);
+            readableBookingTime =
+                DateFormat('MMM dd, yyyy hh:mm a').format(bookingTime);
           }
+
+          // Ensure Passenger Details are in the expected format
+          final List<Map<String, dynamic>> passengers =
+              (data['Passenger Details'] as List<dynamic>?)
+                  ?.map((passenger) => {
+                'name': passenger['name'] ?? 'Unknown',
+                'gender': passenger['gender'] ?? 'N/A',
+              })
+                  .toList() ??
+                  [];
 
           // Add data to the history list
           fetchedBookingHistory.add({
@@ -64,15 +77,19 @@ class _BookingHistoryState extends State<BookingHistory> {
             'busDate': data['Bus Date'] ?? 'Not provided',
             'busTime': data['Bus Time'] ?? 'Not provided',
             'ticketCount': data['Ticket Count'] ?? 0,
-            'totalAmount': data['Ticket Count'] ?? 0.0,
+            'totalAmount': data['Total Amount'] ?? 0.0,
             'paymentID': data['Payment ID'] ?? 'Not provided',
             'bookingTime': readableBookingTime,
+            'passengerDetails': passengers,
           });
         }
         print('Document Details: $data');
       }
 
-      // Update the state once data is fetched
+      // Sort the fetchedBookingHistory by bookingID in descending order
+      fetchedBookingHistory.sort((a, b) => b['bookingID'].compareTo(a['bookingID']));
+
+      // Update the state once data is fetched and sorted
       setState(() {
         bookingHistory = fetchedBookingHistory;
         isLoading = false; // Set loading to false after data is fetched
@@ -186,6 +203,18 @@ class _BookingHistoryState extends State<BookingHistory> {
                   booking['bookingTime'] != null
                       ? Text('Booking Time: ${booking['bookingTime']}')
                       : Text('Booking Time: Not available'),
+                  SizedBox(height: 8),
+                  Text(
+                    'Passengers:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  ...List<Widget>.generate(
+                    booking['passengerDetails'].length,
+                        (index) {
+                      final passenger = booking['passengerDetails'][index];
+                      return Text('${index + 1}) ${passenger['name']} (${passenger['gender']})');
+                    },
+                  ),
                 ],
               ),
               onTap: () {

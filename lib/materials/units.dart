@@ -1,5 +1,3 @@
-import 'package:findany_flutter/materials/displaymaterials.dart';
-import 'package:findany_flutter/materials/display_materials_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../apis/googleDrive.dart';

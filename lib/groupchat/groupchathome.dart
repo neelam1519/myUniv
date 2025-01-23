@@ -221,6 +221,5 @@ class _GroupChatHomeState extends State<GroupChatHome> {
   @override
   void dispose() {
     super.dispose();
-    provider.clearList();
   }
 }

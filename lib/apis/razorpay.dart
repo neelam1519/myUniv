@@ -27,6 +27,7 @@ class RazorPayment extends ChangeNotifier {
   String _email = "";
   String _mobileNumber = "";
   int _amountPaid = 0;
+  String _trainNumber = '';
 
   initializeRazorpay(BuildContext context) async {
     razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, (response) {
@@ -39,12 +40,13 @@ class RazorPayment extends ChangeNotifier {
 
   }
 
-  startPayment(int amount, String number, String email, Map<String, dynamic> busDetails, List<Map<String, dynamic>> passengerDetails) async {
+  startPayment(int amount, String number, String trainNumber,String email, Map<String, dynamic> busDetails, List<Map<String, dynamic>> passengerDetails) async {
     _busDetails = busDetails;
     _passengerDetails = passengerDetails;
     _email = email;
     _mobileNumber = number;
     _amountPaid = amount;
+    _trainNumber = trainNumber;
 
     if (!await utils.checkInternetConnection()) {
       utils.showToastMessage('Connect to the Internet');
@@ -129,6 +131,7 @@ class RazorPayment extends ChangeNotifier {
         "Booking Time": DateTime.now(),
         "Email": _email,
         "Mobile Number": _mobileNumber,
+        "Train Number": _trainNumber,
         "From": _busDetails['from'],
         "TO": _busDetails['to'],
         "Bus Date": _busDetails['arrivalDate'],
@@ -180,7 +183,7 @@ class RazorPayment extends ChangeNotifier {
       await updateGoogleSheets(data);
 
       // Pass the calculated waitingListCount dynamically
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => PaymentStatus(
@@ -208,13 +211,13 @@ class RazorPayment extends ChangeNotifier {
     if (kDebugMode) {
       print("Payment error: ${response.code} - ${response.message}");
     }
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentStatus(
           busDetails: _busDetails,
           passengerDetails: _passengerDetails,
-          isPaymentSuccessful: true,
+          isPaymentSuccessful: false,
           ticketStatus: 'PAYMENT FAILED',
           waitingListCount: 0, // Pass the correct waiting list count
         ),

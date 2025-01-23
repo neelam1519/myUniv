@@ -10,14 +10,12 @@ class GoogleDriveService {
 
   Future<void> authenticate() async {
     try {
-      // Load credentials from the JSON file
       String credentials = await _loadCredentials();
       print("Credentials loaded successfully.");
 
       final accountCredentials = ServiceAccountCredentials.fromJson(credentials);
       final scopes = [drive.DriveApi.driveScope];
 
-      // Authenticate and initialize _driveApi
       final client = await clientViaServiceAccount(accountCredentials, scopes);
       _driveApi = drive.DriveApi(client);
       print("Authentication successful.");
@@ -92,7 +90,7 @@ class GoogleDriveService {
         print("Processing File: $fileName");
 
         if (fileUrl != null) {
-          final cachedFile = await cacheManager.downloadAndCachePDF(fileUrl, fileName);
+          final cachedFile = await cacheManager.downloadAndCachePDF(fileUrl, fileName,folderId);
           print("File cached: ${cachedFile.path}");
           yield cachedFile; // Emit the cached file immediately
         } else {
@@ -104,4 +102,25 @@ class GoogleDriveService {
       rethrow;
     }
   }
+
+  Future<int> countFilesInFolder(String folderId) async {
+    try {
+      print("Counting files in folder with ID: $folderId");
+
+      // Fetch the list of files in the folder
+      final fileList = await _driveApi.files.list(
+        q: "'$folderId' in parents and mimeType != 'application/vnd.google-apps.folder'", // Exclude folders
+        $fields: "files(id)", // Only need the file ID to count the files
+      );
+
+      // Return the count of files found
+      int fileCount = fileList.files?.length ?? 0;
+      print("Number of files in folder: $fileCount");
+      return fileCount;
+    } catch (e) {
+      print("An error occurred while counting files: $e");
+      return 0; // Return 0 if an error occurs
+    }
+  }
+
 }

@@ -8,7 +8,6 @@ import 'package:findany_flutter/provider/addnews_provider.dart';
 import 'package:findany_flutter/provider/addnotification_provider.dart';
 import 'package:findany_flutter/provider/auth_provider.dart';
 import 'package:findany_flutter/busbooking/busbooking_home_provider.dart';
-import 'package:findany_flutter/materials/display_materials_provider.dart';
 import 'package:findany_flutter/home_provider.dart';
 import 'package:findany_flutter/Login/login_provider.dart';
 import 'package:findany_flutter/navigation/map_provider.dart';
@@ -92,13 +91,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => GroupChatHomeProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => PDFProvider()),
-        ChangeNotifierProvider(create: (_) => DisplayMaterialsProvider(
-          firebaseStorageHelper: FirebaseStorageHelper(),
-          loadingDialog: LoadingDialog(),
-          notificationService: NotificationService(),
-          utils: Utils(),
-        )),
+        ChangeNotifierProvider(create: (_) => PDFProvider())
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey, // Set the navigator key
